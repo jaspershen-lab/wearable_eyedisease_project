@@ -17,7 +17,7 @@ read_heartrate_file <- function(file_path) {
 }
 
 # 获取所有参与者文件夹
-subject_folders <- list.dirs(root_dir, recursive = FALSE)
+subject_folders <- list.dirs("2_data/wearable data", recursive = FALSE)
 
 heart_rate_data <-
   purrr::map(subject_folders, function(folder) {
