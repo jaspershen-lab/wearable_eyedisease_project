@@ -16,7 +16,7 @@ read_heartrate_file <- function(file_path) {
   return(data)
 }
 
-# 获取所有参与者文件夹
+# all_subjects
 subject_folders <- list.dirs("2_data/wearable data", recursive = FALSE)
 
 heart_rate_data <-
@@ -91,6 +91,8 @@ heart_rate_data <-
     variable_info = variable_info
   )
 
+
+dir.create("3_data_analysis/1_data_preparation/1_heart_rate", recursive = TRUE)
 save(heart_rate_data, file = "3_data_analysis/1_data_preparation/1_heart_rate/heart_rate_data.rda", compress = "xz")
 
 
