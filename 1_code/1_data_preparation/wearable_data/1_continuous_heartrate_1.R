@@ -22,18 +22,29 @@ read_heartrate_file <- function(file_path) {
   } else if (ncol(data) == 4) {
     colnames(data) <- c("数据时间", "平均心率", "测量时间", "外部ID")
   } else {
-    stop("File:", file_path, "has unexpected number of columns:", ncol(data))
+    stop("File:",
+         file_path,
+         "has unexpected number of columns:",
+         ncol(data))
   }
   
   # 处理 measure_time 列
   if (is.numeric(data$"测量时间")) {
-    cat("File:", file_path, "has numeric measure_time. Converting to POSIXct.\n")
+    cat("File:",
+        file_path,
+        "has numeric measure_time. Converting to POSIXct.\n")
     data$"测量时间" <- as.POSIXct(data$"测量时间" / 1000, origin = "1970-01-01")  # 处理毫秒级时间戳
   } else if (is.character(data$"测量时间")) {
-    cat("File:", file_path, "has character measure_time. Converting to POSIXct.\n")
+    cat("File:",
+        file_path,
+        "has character measure_time. Converting to POSIXct.\n")
     data$"测量时间" <- as.POSIXct(data$"测量时间", format = "%Y-%m-%d %H:%M:%S")
   } else {
-    cat("File:", file_path, "has unknown measure_time type:", class(data$"测量时间"), "\n")
+    cat("File:",
+        file_path,
+        "has unknown measure_time type:",
+        class(data$"测量时间"),
+        "\n")
   }
   
   return(data)
@@ -76,7 +87,11 @@ heart_rate_data <-
         dplyr::distinct(sample_id, .keep_all = TRUE)
       
       # 添加更多调试信息
-      cat("Processed", nrow(subject_data), "unique records for", subject_id, "\n")
+      cat("Processed",
+          nrow(subject_data),
+          "unique records for",
+          subject_id,
+          "\n")
       
       return(subject_data)
     } else {
@@ -86,9 +101,9 @@ heart_rate_data <-
   })
 
 # 检查每个文件夹的处理结果
-for(i in seq_along(heart_rate_data)) {
+for (i in seq_along(heart_rate_data)) {
   folder_name <- basename(subject_folders[i])
-  if(!is.null(heart_rate_data[[i]])) {
+  if (!is.null(heart_rate_data[[i]])) {
     cat(folder_name, ": ", nrow(heart_rate_data[[i]]), " rows\n")
   } else {
     cat(folder_name, ": NULL\n")
@@ -115,10 +130,13 @@ sample_info <-
 # 修复sample_info
 sample_info_fixed <- sample_info %>%
   mutate(
-    subject_id = toupper(subject_id),  # 统一转换为大写
-    subject_id = gsub("SHH|ShH", "SH", subject_id),  # 修复ShH061的问题
-    measure_time = substr(measure_time, 1, 19),  # 保留到秒
-    sample_id = paste(subject_id, measure_time, sep = "_")  
+    subject_id = toupper(subject_id),
+    # 统一转换为大写
+    subject_id = gsub("SHH|ShH", "SH", subject_id),
+    # 修复ShH061的问题
+    measure_time = substr(measure_time, 1, 19),
+    # 保留到秒
+    sample_id = paste(subject_id, measure_time, sep = "_")
   )
 
 expression_data <-
@@ -148,8 +166,14 @@ heart_rate_data <- create_mass_dataset(
 )
 
 
+heart_rate_data@sample_info$measure_time <-
+  as.POSIXct(heart_rate_data@sample_info$measure_time, tz = "Asia/Shanghai")
 
+heart_rate_data <-
+  heart_rate_data %>%
+  activate_mass_dataset(what = "sample_info") %>%
+  dplyr::arrange(subject_id, measure_time)
 
-
-dir.create("3_data_analysis/1_data_preparation/wearable_data/1_heart_rate", recursive = TRUE)
+dir.create("3_data_analysis/1_data_preparation/wearable_data/1_heart_rate",
+           recursive = TRUE)
 save(heart_rate_data, file = "3_data_analysis/1_data_preparation/wearable_data/1_heart_rate/heart_rate_data.rda", compress = "xz")
