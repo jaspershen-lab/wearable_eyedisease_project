@@ -25,14 +25,14 @@ extract_measure_info <- function(filename) {
 result_list <- list()
 
 # Main processing
-all_subjects <- dir("2_data/OCTA/OCTA_bloodflow/")
+all_subjects <- dir("2_data/OCTA/OCTA_bloodflow_1/")
 
 for(i in 1:length(all_subjects)) {
   cat("\nProcessing subject", i, "(", all_subjects[i], ")\n")
   current_id <- paste0("SH", stringr::str_extract(all_subjects[i], "[0-9]{3}"))
   
   # Get all 6x6 files for this subject
-  all_files <- dir(file.path("2_data/OCTA/OCTA_bloodflow/", all_subjects[i]))
+  all_files <- dir(file.path("2_data/OCTA/OCTA_bloodflow_1/", all_subjects[i]))
   all_files <- all_files[stringr::str_detect(all_files, "6x6")]
   
   if(length(all_files) == 0) next
@@ -51,7 +51,7 @@ for(i in 1:length(all_subjects)) {
     current_time <- time_points[current_date]
     
     # Get all quantization files
-    quant_path <- file.path("2_data/OCTA/OCTA_bloodflow/", 
+    quant_path <- file.path("2_data/OCTA/OCTA_bloodflow_1/", 
                             all_subjects[i], temp_folder, "Quantization")
     all_data <- dir(quant_path)
     

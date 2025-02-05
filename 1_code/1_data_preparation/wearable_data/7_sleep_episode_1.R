@@ -12,6 +12,14 @@ read_sleep_file <- function(file_path) {
   data <- read.csv(file_path,
                    stringsAsFactors = FALSE,
                    fileEncoding = "UTF-8")
+  
+  # Check if the first column contains numeric timestamps or IDs
+  first_col <- data[[1]]
+  if (!any(grepl("-", first_col))) {
+    # If the first column doesn't contain date format (no "-"), skip it
+    data <- data[-1]
+  }
+  
   colnames(data) <- c(
     "数据时间",
     "最早入睡时间",
@@ -29,7 +37,7 @@ read_sleep_file <- function(file_path) {
 }
 
 # Process all subjects
-subject_folders <- list.dirs("2_data/wearable data", recursive = FALSE)
+subject_folders <- list.dirs("2_data/wearable data_1", recursive = FALSE)
 sleep_data <-
   purrr::map(subject_folders, function(folder) {
     subject_id <- basename(folder)
@@ -44,17 +52,22 @@ sleep_data <-
     
     if (length(sleep_files) > 0) {
       subject_data <- map_df(sleep_files, read_sleep_file)
+      
+      # Add subject_id before renaming columns
+      subject_data$subject_id <- subject_id
+      
       colnames(subject_data) <- c(
         "data_time",
         "sleep_start_time",
         "sleep_end_time",
         "light_sleep_duration",
         "deep_sleep_duration",
-        "dream_sleep_duration",
+        "rem_sleep_duration",
         "awake_duration",
         "total_sleep_duration",
         "daytime_sleep_duration",
         "sleep_score",
+        "external_id",
         "subject_id"
       )
       
@@ -67,20 +80,17 @@ sleep_data <-
           sleep_end_time,
           light_sleep_duration,
           deep_sleep_duration,
-          dream_sleep_duration,
+          rem_sleep_duration,
           awake_duration,
           total_sleep_duration,
           daytime_sleep_duration,
           sleep_score
-        )
-      
-      subject_data <-
-        subject_data %>%
+        ) %>%
         dplyr::mutate(sample_id = paste(subject_id, data_time, sep = "_")) %>%
         dplyr::mutate(
-          data_time = as.POSIXct(data_time),
-          sleep_start_time = as.POSIXct(sleep_start_time),
-          sleep_end_time = as.POSIXct(sleep_end_time)
+          data_time = as.POSIXct(data_time, format = "%Y-%m-%d %H:%M:%S"),
+          sleep_start_time = as.POSIXct(sleep_start_time, format = "%Y-%m-%d %H:%M:%S"),
+          sleep_end_time = as.POSIXct(sleep_end_time, format = "%Y-%m-%d %H:%M:%S")
         ) %>%
         dplyr::distinct(sample_id, .keep_all = TRUE)
       
@@ -110,21 +120,13 @@ sample_info <-
   sleep_data %>%
   dplyr::select(sample_id, subject_id, data_time, sleep_start_time, sleep_end_time)
 
-sample_info_fixed <- sample_info %>%
-  mutate(
-    subject_id = toupper(subject_id),  # 统一转换为大写
-    subject_id = gsub("SHH|ShH", "SH", subject_id),  # 修复ShH061的问题
-    data_time = paste0(substr(data_time, 1, 10), " 00:00:00"),  # 将 "+08" 替换为 "00:00:00"
-    sample_id = paste(subject_id, data_time, sep = "_")  # 重新构建 sample_id
-  )
-
 # Create expression data with all numeric sleep metrics
 expression_data <-
   sleep_data %>%
   dplyr::select(
     light_sleep_duration,
     deep_sleep_duration,
-    dream_sleep_duration,
+    rem_sleep_duration,
     awake_duration,
     total_sleep_duration,
     daytime_sleep_duration,
@@ -133,16 +135,14 @@ expression_data <-
   t() %>%
   as.data.frame()
 
-colnames(expression_data) <- sample_info_fixed$sample_id
-
-expression_data <- expression_data[, sample_info_fixed$sample_id]
+colnames(expression_data) <- sample_info$sample_id
 
 # Create variable info for all sleep metrics
 variable_info <- data.frame(
   variable_id = c(
     "light_sleep_duration",
     "deep_sleep_duration",
-    "dream_sleep_duration",
+    "rem_sleep_duration",
     "awake_duration",
     "total_sleep_duration",
     "daytime_sleep_duration",
@@ -150,14 +150,14 @@ variable_info <- data.frame(
   )
 )
 
-sample_info_fixed$class <- "Subject"
+sample_info$class <- "Subject"
 
 # Create mass dataset
 library(massdataset)
 sleep_data_mass <-
   create_mass_dataset(
     expression_data = expression_data,
-    sample_info = sample_info_fixed,
+    sample_info = sample_info,
     variable_info = variable_info
   )
 
