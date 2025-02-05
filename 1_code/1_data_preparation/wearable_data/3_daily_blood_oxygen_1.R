@@ -8,7 +8,7 @@ library(tidyr)
 library(dplyr)
 
 
-read_dailyheartrate_file <- function(file_path) {
+read_dailybloodoxygen_file <- function(file_path) {
   data <- read.csv(file_path,
                    stringsAsFactors = FALSE,
                    fileEncoding = "UTF-8")
@@ -21,10 +21,11 @@ read_dailyheartrate_file <- function(file_path) {
   }
   
   # Check number of columns and assign names accordingly
-  if (ncol(data) == 4) {
-    colnames(data) <- c("数据时间", "最大心率(beats/min)", "最小心率(beats/min)", "外部ID")
-  } else if (ncol(data) == 3) {
-    colnames(data) <- c("数据时间", "最大心率(beats/min)", "最小心率(beats/min)")
+  if (ncol(data) == 6) {
+    data <- data[, -1]
+    colnames(data) <- c("数据时间", "最大血氧饱和度(%)", "最小血氧饱和度(%)", "平均血氧饱和度(%)", "外部ID")
+  } else if (ncol(data) == 5) {
+    colnames(data) <- c("数据时间", "最大血氧饱和度(%)", "最小血氧饱和度(%)", "平均血氧饱和度(%)", "外部ID")
   } else {
     stop(paste("Unexpected number of columns:", ncol(data)))
   }
@@ -34,28 +35,28 @@ read_dailyheartrate_file <- function(file_path) {
 
 # all_subjects
 subject_folders <- list.dirs("2_data/wearable data_1", recursive = FALSE)
-daily_heart_rate_data <-
+daily_blood_oxygen_data <-
   purrr::map(subject_folders, function(folder) {
     subject_id <- basename(folder)
     cat(subject_id, " ")
     
     hr_files <- list.files(
       folder,
-      pattern = "t_apvddepp_dailyheart.*\\.txt$",
+      pattern = "t_apvddepp_dailybloodoxygensaturation.*\\.txt$",
       recursive = TRUE,
       full.names = TRUE
     )
     
     if (length(hr_files) > 0) {
-      subject_data <- map_df(hr_files, read_dailyheartrate_file)
+      subject_data <- map_df(hr_files, read_dailybloodoxygen_file)
       
       # Adjust column names based on number of columns
-      if (ncol(subject_data) == 4) {
-        colnames(subject_data) <- c("data_time", "daily_heart_rate_max", "daily_heart_rate_min", "subject_id")
+      if (ncol(subject_data) == 5) {
+        colnames(subject_data) <- c("data_time", "daily_blood_oxygen_max", "daily_blood_oxygen_min", "daily_blood_oxygen_mean", "subject_id")
         subject_data <- subject_data %>%
-          dplyr::select(subject_id, data_time, daily_heart_rate_max, daily_heart_rate_min)
+          dplyr::select(subject_id, data_time, daily_blood_oxygen_max, daily_blood_oxygen_min, daily_blood_oxygen_mean)
       } else {
-        colnames(subject_data) <- c("data_time", "daily_heart_rate_max", "daily_heart_rate_min")
+        colnames(subject_data) <- c("data_time", "daily_blood_oxygen_max", "daily_blood_oxygen_min", "daily_blood_oxygen_mean")
         subject_data <- subject_data %>%
           dplyr::mutate(subject_id = subject_id)  # Add subject_id column
       }
@@ -71,21 +72,20 @@ daily_heart_rate_data <-
     }
   })
 
-
-daily_heart_rate_data[[2]] %>%
+daily_blood_oxygen_data[[2]] %>%
   head(1000) %>%
-  ggplot(aes(data_time, daily_heart_rate_max)) +
+  ggplot(aes(data_time, daily_blood_oxygen_mean)) +
   geom_line()
 
 
-daily_heart_rate_data <-
-  daily_heart_rate_data %>%
+daily_blood_oxygen_data <-
+  daily_blood_oxygen_data %>%
   do.call(rbind, .) %>%
   as.data.frame()
 
 
 sample_info <-
-  daily_heart_rate_data %>%
+  daily_blood_oxygen_data %>%
   dplyr::select(sample_id, subject_id, data_time)
 
 sample_info_fixed <- sample_info %>%
@@ -96,12 +96,9 @@ sample_info_fixed <- sample_info %>%
     sample_id = paste(subject_id, data_time, sep = "_")  # 重新构建 sample_id
   )
 
-sample_info_fixed <- sample_info_fixed %>%
-  distinct(sample_id, .keep_all = TRUE)
-
 expression_data <-
-  daily_heart_rate_data %>%
-  dplyr::select(daily_heart_rate_max,daily_heart_rate_min) %>%
+  daily_blood_oxygen_data %>%
+  dplyr::select(daily_blood_oxygen_max,daily_blood_oxygen_min,daily_blood_oxygen_mean) %>%
   t() %>%
   as.data.frame()
 
@@ -112,8 +109,9 @@ expression_data <- expression_data[, sample_info_fixed$sample_id]
 
 variable_info <- data.frame(
   variable_id = c(
-    "daily_heart_rate_max",
-    "daily_heart_rate_min"
+    "daily_blood_oxygen_max",
+    "daily_blood_oxygen_min", 
+    "daily_blood_oxygen_mean"
   )
 )
 
@@ -121,12 +119,12 @@ sample_info_fixed$class <- "Subject"
 
 library(massdataset)
 
-daily_heart_rate_data <-
+daily_blood_oxygen_data <-
   create_mass_dataset(
     expression_data = expression_data,
     sample_info = sample_info_fixed,
     variable_info = variable_info
   )
 
-dir.create("3_data_analysis/1_data_preparation/wearable_data/4_daily_heart_rate", recursive = TRUE)
-save(daily_heart_rate_data, file = "3_data_analysis/1_data_preparation/wearable_data/4_daily_heart_rate/daily_heart_rate_data.rda", compress = "xz")
+dir.create("3_data_analysis/1_data_preparation/wearable_data/3_daily_blood_oxygen", recursive = TRUE)
+save(daily_blood_oxygen_data, file = "3_data_analysis/1_data_preparation/wearable_data/3_daily_blood_oxygen/daily_blood_oxygen_data.rda", compress = "xz")

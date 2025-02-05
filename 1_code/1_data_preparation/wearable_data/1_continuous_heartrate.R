@@ -92,8 +92,8 @@ heart_rate_data <-
   )
 
 
-dir.create("3_data_analysis/1_data_preparation/1_heart_rate", recursive = TRUE)
-save(heart_rate_data, file = "3_data_analysis/1_data_preparation/1_heart_rate/heart_rate_data.rda", compress = "xz")
+dir.create("3_data_analysis/1_data_preparation/wearable_data/1_heart_rate", recursive = TRUE)
+save(heart_rate_data, file = "3_data_analysis/1_data_preparation/wearable_data/1_heart_rate/heart_rate_data.rda", compress = "xz")
 
 
 

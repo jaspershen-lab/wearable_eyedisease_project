@@ -4,11 +4,12 @@ rm(list = ls())
 source('1_code/100_tools.R')
 library(tidyr)
 library(dplyr)
+library(readxl)
 
 ###mental health combine
-data_mental <- read_excel("2_data/mental questionnaire/mental_health_1.xlsx")
-data_baseline <- read_excel("2_data/baseline questionnaire/baseline_questionnaire_1.xlsx")
-data_va <- read_excel("2_data/va iop/va_iop_1.xlsx")
+data_mental <- read_excel("2_data/mental questionnaire/mental_health_2.xlsx")
+data_baseline <- read_excel("2_data/baseline questionnaire/baseline_questionnaire_2.xlsx")
+data_va <- read_excel("2_data/va iop/va_iop_3.xlsx")
 
 ###create working directory
 if (!dir.exists(
@@ -46,7 +47,7 @@ data_mental_long <- data_mental %>%
 
 # 转换为宽格式
 data_mental_wide <- data_mental_long %>%
-  select(-answer_instance) %>%
+  dplyr::select(-answer_instance) %>%
   pivot_wider(names_from = question, values_from = response)
 
 write.csv(data_mental_wide, "mental_health_transformed.csv", row.names = FALSE)
@@ -64,4 +65,4 @@ data_merged <- data_baseline %>%
 
 head(data_merged)
 
-write.csv(data_merged, "sample_info.csv", row.names = FALSE)
+write.csv(data_merged, "baseline_info.csv", row.names = FALSE)

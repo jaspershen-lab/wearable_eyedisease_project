@@ -17,7 +17,7 @@ read_bloodoxygen_file <- function(file_path) {
 }
 
 # all_subjects
-subject_folders <- list.dirs("2_data/wearable data", recursive = FALSE)
+subject_folders <- list.dirs("2_data/wearable data_1", recursive = FALSE)
 
 blood_oxygen_data <-
   purrr::map(subject_folders, function(folder) {
@@ -91,5 +91,5 @@ blood_oxygen_data <-
     variable_info = variable_info
   )
 
-dir.create("3_data_analysis/1_data_preparation/1_blood_oxygen", recursive = TRUE)
-save(blood_oxygen_data, file = "3_data_analysis/1_data_preparation/1_blood_oxygen/blood_oxygen_data.rda", compress = "xz")
+dir.create("3_data_analysis/1_data_preparation/wearable_data/2_blood_oxygen", recursive = TRUE)
+save(blood_oxygen_data, file = "3_data_analysis/1_data_preparation/wearable_data/2_blood_oxygen/blood_oxygen_data.rda", compress = "xz")
