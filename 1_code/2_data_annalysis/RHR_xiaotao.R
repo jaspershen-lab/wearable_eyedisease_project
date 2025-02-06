@@ -103,4 +103,4 @@ heart_rate_data@sample_info <-
   dplyr::left_join(sample_info_new[, c("sample_id", "label")], by = "sample_id")
 
 
-save(heart_rate_data, file = "heart_rate_data.rda")
+save(heart_rate_data, file = "heart_rate_data_RHR.rda")

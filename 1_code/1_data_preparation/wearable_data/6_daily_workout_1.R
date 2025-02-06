@@ -57,20 +57,20 @@ daily_workout_data <- purrr::map(subject_folders, function(folder) {
     # Add subject_id before renaming columns
     subject_data$subject_id <- basename(folder)
     
-    colnames(subject_data) <- c("data_time", "steps", "distance", "calorie", "external_id", "subject_id")
+    colnames(subject_data) <- c("measure_time", "steps", "distance", "calorie", "external_id", "subject_id")
     
     subject_data <- subject_data %>%
-      dplyr::select(subject_id, data_time, steps, distance, calorie) %>%
+      dplyr::select(subject_id, measure_time, steps, distance, calorie) %>%
       dplyr::mutate(
         subject_id = as.character(subject_id)
       ) %>%
-      dplyr::mutate(sample_id = paste(subject_id, data_time, sep = "_")) %>%
-      dplyr::mutate(data_time = as.POSIXct(data_time, format = "%Y-%m-%d %H:%M:%S")) %>%
+      dplyr::mutate(sample_id = paste(subject_id, measure_time, sep = "_")) %>%
+      dplyr::mutate(measure_time = as.POSIXct(measure_time, format = "%Y-%m-%d %H:%M:%S")) %>%
       # 对重复数据的处理
       group_by(sample_id) %>%
       summarise(
         subject_id = unique(subject_id)[1],  # 使用unique()[1]替代first()
-        data_time = min(data_time),          # 使用min()替代first()
+        measure_time = min(measure_time),          # 使用min()替代first()
         # 如果有非零值，取非零值中的最大值；如果都是零，就取0
         steps = ifelse(all(steps == 0), 0, max(steps[steps > 0], na.rm = TRUE)),
         distance = ifelse(all(distance == 0), 0, max(distance[distance > 0], na.rm = TRUE)),
@@ -89,19 +89,19 @@ daily_workout_data <- purrr::map(subject_folders, function(folder) {
 
 daily_workout_data %>%
   head(1000) %>%
-  ggplot(aes(data_time, steps)) +
+  ggplot(aes(measure_time, steps)) +
   geom_line()
 
 # mass_dataset
 sample_info <- daily_workout_data %>%
-  dplyr::select(sample_id, subject_id, data_time)
+  dplyr::select(sample_id, subject_id, measure_time)
 
 sample_info_fixed <- sample_info %>%
   mutate(
     subject_id = toupper(subject_id),  # 统一转换为大写
     subject_id = gsub("SHH|ShH", "SH", subject_id),  # 修复ShH061的问题
-    data_time = paste0(substr(data_time, 1, 10), " 00:00:00"),  # 将 "+08" 替换为 "00:00:00"
-    sample_id = paste(subject_id, data_time, sep = "_")  # 重新构建 sample_id
+    measure_time = paste0(substr(measure_time, 1, 10), " 00:00:00"),  # 将 "+08" 替换为 "00:00:00"
+    sample_id = paste(subject_id, measure_time, sep = "_")  # 重新构建 sample_id
   )
 
 sample_info_fixed <- sample_info_fixed %>%
@@ -132,6 +132,13 @@ daily_workout_data <- create_mass_dataset(
   variable_info = variable_info
 )
 
+daily_workout_data@sample_info$measure_time <-
+  as.POSIXct(daily_workout_data@sample_info$measure_time, tz = "Asia/Shanghai")
+
+daily_workout_data <-
+  daily_workout_data %>%
+  activate_mass_dataset(what = "sample_info") %>%
+  dplyr::arrange(subject_id, measure_time)
 
 
 dir.create("3_data_analysis/1_data_preparation/wearable_data/6_daily_workout", recursive = TRUE)

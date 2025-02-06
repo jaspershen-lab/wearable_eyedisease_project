@@ -57,7 +57,7 @@ sleep_data <-
       subject_data$subject_id <- subject_id
       
       colnames(subject_data) <- c(
-        "data_time",
+        "measure_time",
         "sleep_start_time",
         "sleep_end_time",
         "light_sleep_duration",
@@ -75,7 +75,7 @@ sleep_data <-
         subject_data %>%
         dplyr::select(
           subject_id,
-          data_time,
+          measure_time,
           sleep_start_time,
           sleep_end_time,
           light_sleep_duration,
@@ -86,9 +86,9 @@ sleep_data <-
           daytime_sleep_duration,
           sleep_score
         ) %>%
-        dplyr::mutate(sample_id = paste(subject_id, data_time, sep = "_")) %>%
+        dplyr::mutate(sample_id = paste(subject_id, measure_time, sep = "_")) %>%
         dplyr::mutate(
-          data_time = as.POSIXct(data_time, format = "%Y-%m-%d %H:%M:%S"),
+          measure_time = as.POSIXct(measure_time, format = "%Y-%m-%d %H:%M:%S"),
           sleep_start_time = as.POSIXct(sleep_start_time, format = "%Y-%m-%d %H:%M:%S"),
           sleep_end_time = as.POSIXct(sleep_end_time, format = "%Y-%m-%d %H:%M:%S")
         ) %>%
@@ -103,7 +103,7 @@ sleep_data <-
 # Visualization example - you can modify this based on what you want to visualize
 sleep_data[[2]] %>%
   head(1000) %>%
-  ggplot(aes(data_time, total_sleep_duration)) +
+  ggplot(aes(measure_time, total_sleep_duration)) +
   geom_line() +
   labs(title = "Total Sleep Duration Over Time",
        x = "Date",
@@ -118,7 +118,7 @@ sleep_data <-
 # Create sample info
 sample_info <-
   sleep_data %>%
-  dplyr::select(sample_id, subject_id, data_time, sleep_start_time, sleep_end_time)
+  dplyr::select(sample_id, subject_id, measure_time, sleep_start_time, sleep_end_time)
 
 # Create expression data with all numeric sleep metrics
 expression_data <-
@@ -154,16 +154,25 @@ sample_info$class <- "Subject"
 
 # Create mass dataset
 library(massdataset)
-sleep_data_mass <-
+sleep_data <-
   create_mass_dataset(
     expression_data = expression_data,
     sample_info = sample_info,
     variable_info = variable_info
   )
 
+sleep_data@sample_info$measure_time <-
+  as.POSIXct(sleep_data@sample_info$measure_time, tz = "Asia/Shanghai")
+
+sleep_data <-
+  sleep_data %>%
+  activate_mass_dataset(what = "sample_info") %>%
+  dplyr::arrange(subject_id, measure_time)
+
+
 # Create directory and save data
 dir.create("3_data_analysis/1_data_preparation/wearable_data/7_sleep", recursive = TRUE)
-save(sleep_data_mass, 
+save(sleep_data, 
      file = "3_data_analysis/1_data_preparation/wearable_data/7_sleep/sleep_data.rda", 
      compress = "xz")
 

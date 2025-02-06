@@ -119,5 +119,13 @@ daily_workout_details_data <-
   activate_mass_dataset(what = "sample_info") %>%
   dplyr::arrange(subject_id, measure_time)
 
+daily_workout_details_data@sample_info$measure_time <-
+  as.POSIXct(daily_workout_details_data@sample_info$measure_time, tz = "Asia/Shanghai")
+
+daily_workout_details_data <-
+  daily_workout_details_data %>%
+  activate_mass_dataset(what = "sample_info") %>%
+  dplyr::arrange(subject_id, measure_time)
+
 dir.create("3_data_analysis/1_data_preparation/wearable_data/5_daily_workout_details", recursive = TRUE)
 save(daily_workout_details_data, file = "3_data_analysis/1_data_preparation/wearable_data/5_daily_workout_details/daily_workout_details_data.rda", compress = "xz")
