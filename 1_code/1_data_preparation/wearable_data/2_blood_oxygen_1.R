@@ -127,5 +127,13 @@ blood_oxygen_data <-
     variable_info = variable_info
   )
 
+blood_oxygen_data@sample_info$measure_time <-
+  as.POSIXct(blood_oxygen_data@sample_info$measure_time, tz = "Asia/Shanghai")
+
+blood_oxygen_data <-
+  blood_oxygen_data %>%
+  activate_mass_dataset(what = "sample_info") %>%
+  dplyr::arrange(subject_id, measure_time)
+
 dir.create("3_data_analysis/1_data_preparation/wearable_data/2_blood_oxygen", recursive = TRUE)
 save(blood_oxygen_data, file = "3_data_analysis/1_data_preparation/wearable_data/2_blood_oxygen/blood_oxygen_data.rda", compress = "xz")
