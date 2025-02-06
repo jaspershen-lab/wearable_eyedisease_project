@@ -10,9 +10,11 @@ library(zoo)
 library(rpart)
 library(randomForest)
 library(caret)
-
+library(tidyverse)
+library(lubridate)
 
 ###read data
+
 load(
   "3_data_analysis/1_data_preparation/wearable_data/1_heart_rate/heart_rate_data.rda"
 )
@@ -104,3 +106,5 @@ heart_rate_data@sample_info <-
 
 
 save(heart_rate_data, file = "heart_rate_data_RHR.rda")
+
+
