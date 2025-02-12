@@ -8,8 +8,8 @@ library(readxl)
 
 ###mental health combine
 data_mental <- read_excel("2_data/mental questionnaire/mental_health_2.xlsx")
-data_baseline <- read_excel("2_data/baseline questionnaire/baseline_questionnaire_2.xlsx")
-data_va <- read_excel("2_data/va iop/va_iop_3.xlsx")
+data_baseline <- read_excel("2_data/baseline questionnaire/baseline_questionnaire_3.xlsx")
+data_va <- read_excel("2_data/va iop/va_iop_4.xlsx")
 
 ###create working directory
 if (!dir.exists(
@@ -26,29 +26,35 @@ setwd(
   "2_data/analysis_data/"
 )
 
-# 按 id 和 Time_to_submit_answers 排序
+# 1. 按ID和时间排序
 data_mental <- data_mental %>%
   arrange(ID, Time_to_submit_answers)
 
-# 为每个 id 的回答添加编号
+# 2. 为每个ID的回答添加编号
 data_mental <- data_mental %>%
   group_by(ID) %>%
-  mutate(answer_instance = row_number()) %>%
+  mutate(visit_number = row_number()) %>%
   ungroup()
 
-# 修改 PHQ-9 和 GAD-7 变量名以包含回答编号
+# 3. 转换为长格式并添加访问编号
 data_mental_long <- data_mental %>%
   pivot_longer(
-    cols = starts_with("phq9_") | starts_with("gad7_")|starts_with("depression_diagnosed") | starts_with("anxiety_diagnosed"), 
-    names_to = "question", 
+    cols = starts_with("phq9_") | starts_with("gad7_") |
+      starts_with("depression_diagnosed") | starts_with("anxiety_diagnosed"),
+    names_to = "question",
     values_to = "response"
   ) %>%
-  mutate(question = paste0(question, "_", answer_instance))
+  mutate(question = paste0(question, "_visit", visit_number))
 
-# 转换为宽格式
+# 4. 转换回宽格式，只用ID作为标识符
 data_mental_wide <- data_mental_long %>%
-  dplyr::select(-answer_instance) %>%
-  pivot_wider(names_from = question, values_from = response)
+  dplyr::select(-visit_number) %>%
+  pivot_wider(
+    id_cols = ID,  # 只使用ID作为标识符
+    names_from = question,
+    values_from = response
+  )
+  
 
 write.csv(data_mental_wide, "mental_health_transformed.csv", row.names = FALSE)
 
@@ -65,4 +71,11 @@ data_merged <- data_baseline %>%
 
 head(data_merged)
 
+names(data_merged)[names(data_merged) == "surger_eye_1"] <- "surgery_eye_1"
+names(data_merged)[names(data_merged) == "surger_eye_2"] <- "surgery_eye_2"
+names(data_merged)[names(data_merged) == "gender.x"] <- "gender"
+names(data_merged)[names(data_merged) == "age.x"] <- "age"
+
+
 write.csv(data_merged, "baseline_info.csv", row.names = FALSE)
+
