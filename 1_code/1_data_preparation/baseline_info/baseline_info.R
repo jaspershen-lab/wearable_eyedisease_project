@@ -9,7 +9,7 @@ library(readxl)
 ###mental health combine
 data_mental <- read_excel("2_data/mental questionnaire/mental_health_2.xlsx")
 data_baseline <- read_excel("2_data/baseline questionnaire/baseline_questionnaire_3.xlsx")
-data_va <- read_excel("2_data/va iop/va_iop_4.xlsx")
+data_va <- read_excel("2_data/va iop/va_iop_5.xlsx")
 
 ###create working directory
 if (!dir.exists(

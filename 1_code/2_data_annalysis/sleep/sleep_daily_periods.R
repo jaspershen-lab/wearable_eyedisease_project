@@ -93,21 +93,20 @@ calculate_daily_sleep <- function(data, baseline_info) {
         total_sleep = sum(total_sleep, na.rm = TRUE),
         daytime_sleep = sum(daytime_sleep, na.rm = TRUE),
         sleep_score = mean(sleep_score, na.rm = TRUE),
-        # 添加睡眠时长的统计量
-        median_sleep_duration = median(sleep_duration, na.rm = TRUE),
-        mean_sleep_duration = mean(sleep_duration, na.rm = TRUE),
-        min_sleep_duration = min(sleep_duration, na.rm = TRUE),
-        max_sleep_duration = max(sleep_duration, na.rm = TRUE),
-        sd_sleep_duration = sd(sleep_duration, na.rm = TRUE),
-        n_measudreaments = n(),
-        .groups = "drop"
+      #   # 添加睡眠时长的统计量
+      #   median_sleep_duration = median(sleep_duration, na.rm = TRUE),
+      #   mean_sleep_duration = mean(sleep_duration, na.rm = TRUE),
+      #   min_sleep_duration = min(sleep_duration, na.rm = TRUE),
+      #   max_sleep_duration = max(sleep_duration, na.rm = TRUE),
+      #   sd_sleep_duration = sd(sleep_duration, na.rm = TRUE),
+      #   n_measudreaments = n(),
+      #   .groups = "drop"
       )
   }
   
   # Calculate statistics
   daily_stats <- calculate_daily_stats(process_sleep_data())
   
-  # Create wide format
   create_wide_format <- function(daily_stats) {
     metrics <- c(
       "light_sleep",
@@ -116,12 +115,7 @@ calculate_daily_sleep <- function(data, baseline_info) {
       "awake",
       "total_sleep",
       "daytime_sleep",
-      "sleep_score",
-      "median_sleep_duration",
-      "mean_sleep_duration",
-      "min_sleep_duration",
-      "max_sleep_duration",
-      "sd_sleep_duration"
+      "sleep_score"
     )
     
     result <- daily_stats %>%
@@ -178,7 +172,7 @@ calculate_daily_sleep_summary <- function(data) {
   summary_stats <- data.frame(
     column = time_cols,
     day = as.numeric(str_extract(time_cols, "-?\\d+")),
-    metric = str_extract(time_cols, "(light_sleep|deep_sleep|dream_sleep|awake|total_sleep|daytime_sleep|sleep_score|median_sleep_duration|mean_sleep_duration|min_sleep_duration|max_sleep_duration|sd_sleep_duration)")
+    metric = str_extract(time_cols, "(light_sleep|deep_sleep|dream_sleep|awake|total_sleep|daytime_sleep|sleep_score)")
   ) %>%
     mutate(valid_count = sapply(data[time_cols], function(x) sum(!is.na(x))))
   
@@ -196,7 +190,7 @@ calculate_daily_sleep_counts <- function(data) {
   # Create result dataframe
   result <- data.frame(
     day = as.numeric(str_extract(names(counts), "-?\\d+")),
-    metric = str_extract(names(counts), "(light_sleep|deep_sleep|dream_sleep|awake|total_sleep|daytime_sleep|sleep_score|median_sleep_duration|mean_sleep_duration|min_sleep_duration|max_sleep_duration|sd_sleep_duration)"),
+    metric = str_extract(names(counts), "(light_sleep|deep_sleep|dream_sleep|awake|total_sleep|daytime_sleep|sleep_score)"),
     valid_count = counts
   ) %>%
     arrange(day, metric)

@@ -1,6 +1,7 @@
 library(tidyverse)
 library(tidymass)
 library(r4projects)
+library(moments)  # 添加moments包用于计算偏度和峰度
 setwd(get_project_wd())
 rm(list = ls())
 library(lubridate)
@@ -76,6 +77,8 @@ calculate_daily_blood_oxygen <- function(data, baseline_info) {
         daily_bo_sd = sd(blood_oxygen),
         daily_bo_cv = (sd(blood_oxygen) / mean(blood_oxygen)) * 100, # CV as percentage
         daily_bo_iqr = IQR(blood_oxygen),
+        daily_bo_skew = skewness(blood_oxygen),  # 添加偏度计算
+        daily_bo_kurt = kurtosis(blood_oxygen),  # 添加峰度计算
         n_measurements = n(),
         .groups = "drop"
       )
@@ -89,7 +92,7 @@ calculate_daily_blood_oxygen <- function(data, baseline_info) {
     stats_list <- list()
     
     # List of statistics to process
-    stat_cols <- c("mean", "min", "max","median", "sd", "cv", "iqr")
+    stat_cols <- c("mean", "min", "max","median", "sd", "cv", "iqr", "skew", "kurt")
     
     for(stat in stat_cols) {
       col_name <- paste0("daily_bo_", stat)
@@ -150,7 +153,7 @@ calculate_daily_bo_summary <- function(data) {
   summary_stats <- data.frame(
     column = time_cols,
     day = as.numeric(str_extract(time_cols, "-?\\d+")),
-    stat_type = str_extract(time_cols, "(mean|min|max|sd|cv|iqr)")
+    stat_type = str_extract(time_cols, "(mean|min|max|sd|cv|iqr|skew|kurt)")
   ) %>%
     mutate(valid_count = sapply(data[time_cols], function(x) sum(!is.na(x))))
   
@@ -168,9 +171,10 @@ calculate_daily_bo_counts <- function(data) {
   # Create result dataframe
   result <- data.frame(
     day = as.numeric(str_extract(names(counts), "-?\\d+")),
+    stat_type = str_extract(names(counts), "(mean|min|max|median|sd|cv|iqr|skew|kurt)"),  # 添加新统计量
     valid_count = counts
   ) %>%
-    arrange(day)
+    arrange(day, stat_type)
   
   return(result)
 }
