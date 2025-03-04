@@ -1,6 +1,7 @@
 library(tidyverse)
 library(tidymass)
 library(r4projects)
+library(moments)  # 添加moments包用于计算偏度和峰度
 setwd(get_project_wd())
 rm(list = ls())
 library(lubridate)
@@ -80,6 +81,8 @@ calculate_daily_rhr <- function(data, baseline_info) {
         daily_rhr_sd = sd(heart_rate),
         daily_rhr_cv = (sd(heart_rate) / mean(heart_rate)) * 100, # CV as percentage
         daily_rhr_iqr = IQR(heart_rate),
+        daily_rhr_skew = skewness(heart_rate),  # 添加偏度计算
+        daily_rhr_kurt = kurtosis(heart_rate),  # 添加峰度计算
         n_measurements = n(),
         .groups = "drop"
       )
@@ -94,7 +97,7 @@ calculate_daily_rhr <- function(data, baseline_info) {
     stats_list <- list()
     
     # List of statistics to process
-    stat_cols <- c("mean", "min", "max","median", "sd", "cv", "iqr")
+    stat_cols <- c("mean", "min", "max","median", "sd", "cv", "iqr", "skew", "kurt")  # 更新统计指标列表
     
     for(stat in stat_cols) {
       col_name <- paste0("daily_rhr_", stat)
@@ -157,7 +160,7 @@ calculate_daily_summary <- function(data) {
   summary_stats <- data.frame(
     column = time_cols,
     day = as.numeric(str_extract(time_cols, "-?\\d+")),
-    stat_type = str_extract(time_cols, "(mean|min|max|sd|cv|iqr)"),
+    stat_type = str_extract(time_cols, "(mean|min|max|sd|cv|iqr|skew|kurt)"),  # 更新正则表达式以匹配新增的统计量
     rhr_type = str_extract(time_cols, "rhr_\\d+")
   ) %>%
     mutate(valid_count = sapply(data[time_cols], function(x) sum(!is.na(x))))
@@ -182,10 +185,11 @@ calculate_daily_counts <- function(data) {
   # Create result dataframe
   result <- data.frame(
     day = as.numeric(str_extract(names(counts), "-?\\d+")),
+    stat_type = str_extract(names(counts), "(mean|min|max|median|sd|cv|iqr|skew|kurt)"),  # 添加新统计量
     rhr_type = str_extract(names(counts), "rhr_\\d+"),
     valid_count = counts
   ) %>%
-    arrange(day, rhr_type)
+    arrange(day, stat_type, rhr_type)
   
   return(result)
 }
@@ -193,4 +197,3 @@ calculate_daily_counts <- function(data) {
 daily_counts <- calculate_daily_counts(daily_rhr_result)
 
 print(daily_counts)
-

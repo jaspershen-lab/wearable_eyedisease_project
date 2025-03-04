@@ -27,7 +27,7 @@ baseline_info_processed <- baseline_info %>%
   dplyr::select(ID, surgery_time_1)
 
 
- # Function to calculate RHR for a specific label
+# Function to calculate RHR for a specific label
 calculate_rhr_by_label <- function(data, label_value) {
   # Get sample info with the specific label
   filtered_sample_info <- data@sample_info %>%
@@ -52,100 +52,121 @@ calculate_rhr_by_label <- function(data, label_value) {
 rhr_label_1 <- calculate_rhr_by_label(heart_rate_data, "<1")
 rhr_label_50 <- calculate_rhr_by_label(heart_rate_data, "<50")
 
-# Function to process RHR data with time periods
+# Function to process RHR data with time periods - UPDATED with additional statistics
 process_rhr_data <- function(rhr_data, label_suffix) {
-  # 首先计算基本的时间信息
+  # Calculate basic time information
   base_data <- rhr_data %>%
     left_join(baseline_info_processed, by = c("subject_id" = "ID")) %>%
     mutate(
       hours_to_surgery = as.numeric(difftime(surgery_time_1, timestamp, units = "hours"))
     )
   
-  # 分别计算每个时间窗口的数据
+  # Calculate data for pre-surgery 3d window
   pre_3d <- base_data %>%
     filter(hours_to_surgery >= 0 & hours_to_surgery < 72) %>%
     group_by(subject_id) %>%
     summarise(
-      mean_hr_3d = mean(heart_rate),
-      n_3d = n(),
-      sd_3d = sd(heart_rate),
+      mean_hr = mean(heart_rate),
+      min_hr = min(heart_rate),
+      max_hr = max(heart_rate),
+      median_hr = median(heart_rate),
+      q1_hr = quantile(heart_rate, 0.25),
+      q3_hr = quantile(heart_rate, 0.75),
+      iqr_hr = IQR(heart_rate),
+      sd_hr = sd(heart_rate),
+      n_measurements = n(),
       .groups = "drop"
-    )
+    ) %>%
+    mutate(time_period = "pre_surgery_3d")
   
-  pre_7d <- base_data %>%
+  # Calculate data for pre-surgery 3d to 7d window
+  pre_3d_to_7d <- base_data %>%
+    filter(hours_to_surgery >= 72 & hours_to_surgery < 168) %>%
+    group_by(subject_id) %>%
+    summarise(
+      mean_hr = mean(heart_rate),
+      min_hr = min(heart_rate),
+      max_hr = max(heart_rate),
+      median_hr = median(heart_rate),
+      q1_hr = quantile(heart_rate, 0.25),
+      q3_hr = quantile(heart_rate, 0.75),
+      iqr_hr = IQR(heart_rate),
+      sd_hr = sd(heart_rate),
+      n_measurements = n(),
+      .groups = "drop"
+    ) %>%
+    mutate(time_period = "pre_surgery_3d_to_7d")
+  
+  # Calculate data for pre-surgery 7d all window
+  pre_7d_all <- base_data %>%
     filter(hours_to_surgery >= 0 & hours_to_surgery < 168) %>%
     group_by(subject_id) %>%
     summarise(
-      mean_hr_7d = mean(heart_rate),
-      n_7d = n(),
-      sd_7d = sd(heart_rate),
+      mean_hr = mean(heart_rate),
+      min_hr = min(heart_rate),
+      max_hr = max(heart_rate),
+      median_hr = median(heart_rate),
+      q1_hr = quantile(heart_rate, 0.25),
+      q3_hr = quantile(heart_rate, 0.75),
+      iqr_hr = IQR(heart_rate),
+      sd_hr = sd(heart_rate),
+      n_measurements = n(),
       .groups = "drop"
-    )
+    ) %>%
+    mutate(time_period = "pre_surgery_7d_all")
   
+  # Calculate data for all pre-surgery data
   pre_all <- base_data %>%
     filter(hours_to_surgery >= 0) %>%
     group_by(subject_id) %>%
     summarise(
-      mean_hr_all = mean(heart_rate),
-      n_all = n(),
-      sd_all = sd(heart_rate),
+      mean_hr = mean(heart_rate),
+      min_hr = min(heart_rate),
+      max_hr = max(heart_rate),
+      median_hr = median(heart_rate),
+      q1_hr = quantile(heart_rate, 0.25),
+      q3_hr = quantile(heart_rate, 0.75),
+      iqr_hr = IQR(heart_rate),
+      sd_hr = sd(heart_rate),
+      n_measurements = n(),
       .groups = "drop"
-    )
+    ) %>%
+    mutate(time_period = "pre_surgery_all")
   
-  # 合并所有时间窗口的数据
-  combined_pre <- pre_3d %>%
-    full_join(pre_7d, by = "subject_id") %>%
-    full_join(pre_all, by = "subject_id")
-  
-  # 转换为长格式
-  result <- combined_pre %>%
-    pivot_longer(
-      cols = -subject_id,
-      names_to = c(".value", "window"),
-      names_pattern = "(.+)_(.+)",
-      values_drop_na = FALSE
-    ) %>%
-    mutate(
-      time_period = case_when(
-        window == "3d" ~ "pre_surgery_3d",
-        window == "7d" ~ "pre_surgery_7d",
-        window == "all" ~ "pre_surgery_all"
-      )
-    ) %>%
-    dplyr::select(
-      subject_id,
-      time_period,
-      n_measurements = n,
-      mean_hr = mean_hr,
-      sd_hr = sd
-    ) %>%
+  # Combine all pre-surgery data
+  result <- bind_rows(pre_3d, pre_3d_to_7d, pre_7d_all, pre_all) %>%
     mutate(label = label_suffix)
   
-  # 添加术后时间窗口的数据
+  # Calculate data for post-surgery time windows
   post_data <- base_data %>%
     filter(hours_to_surgery < 0) %>%
     mutate(
       time_period = case_when(
         hours_to_surgery >= -168 ~ "post_surgery_7d",
-        hours_to_surgery >= -720 & hours_to_surgery < -168 ~ "post_surgery_30d",
+        hours_to_surgery >= -720 & hours_to_surgery < -168 ~ "post_surgery_7d_to_30d", # 修改为统一格式
         hours_to_surgery < -720 ~ "post_surgery_over_30d"
       )
     ) %>%
     group_by(subject_id, time_period) %>%
     summarise(
-      n_measurements = n(),
       mean_hr = mean(heart_rate),
+      min_hr = min(heart_rate),
+      max_hr = max(heart_rate),
+      median_hr = median(heart_rate),
+      q1_hr = quantile(heart_rate, 0.25),
+      q3_hr = quantile(heart_rate, 0.75),
+      iqr_hr = IQR(heart_rate),
       sd_hr = sd(heart_rate),
+      n_measurements = n(),
       .groups = "drop"
     ) %>%
     mutate(label = label_suffix)
   
-  # 合并术前和术后数据
+  # Combine pre and post surgery data
   bind_rows(result, post_data)
 }
 
-
-# Process both datasets
+# Process both datasets with the updated function
 rhr_summary_1 <- process_rhr_data(rhr_label_1, "steps_1")
 rhr_summary_50 <- process_rhr_data(rhr_label_50, "steps_50")
 
@@ -153,17 +174,14 @@ rhr_summary_50 <- process_rhr_data(rhr_label_50, "steps_50")
 combined_rhr_summary <- bind_rows(rhr_summary_1, rhr_summary_50) %>%
   mutate(
     label_time = paste(label, time_period, sep = "_")
-  ) %>%
-  dplyr::select(subject_id, label_time, mean_hr, sd_hr, n_measurements 
-                  )
+  )
 
-
-# Create wide format table with surgery date
+# Create wide format table with surgery date - now with additional statistics
 time_period_rhr_results <- combined_rhr_summary %>%
-  dplyr::select(subject_id, label_time, mean_hr) %>%
+  dplyr::select(subject_id, label_time, mean_hr, median_hr, min_hr, max_hr, iqr_hr, sd_hr, n_measurements) %>%
   pivot_wider(
     names_from = label_time,
-    values_from = mean_hr,
+    values_from = c(mean_hr, median_hr, min_hr, max_hr, iqr_hr, sd_hr, n_measurements),
     names_prefix = "rhr_"
   ) %>%
   # Add surgery date
@@ -176,13 +194,16 @@ time_period_rhr_results <- combined_rhr_summary %>%
   # Reorder columns to put surgery_date at the beginning
   dplyr::select(subject_id, surgery_date, everything())
 
-# Add summary statistics
+# Add updated summary statistics including all metrics
 time_period_rhr_summary_stats <- combined_rhr_summary %>%
   group_by(label_time) %>%
   summarise(
     mean_rhr = mean(mean_hr, na.rm = TRUE),
     sd_rhr = sd(mean_hr, na.rm = TRUE),
-    median_rhr = median(mean_hr, na.rm = TRUE),
+    median_rhr = median(median_hr, na.rm = TRUE),
+    min_rhr = min(min_hr, na.rm = TRUE),
+    max_rhr = max(max_hr, na.rm = TRUE),
+    mean_iqr = mean(iqr_hr, na.rm = TRUE),
     n_subjects = n(),
     .groups = "drop"
   )
@@ -191,7 +212,151 @@ time_period_rhr_summary_stats <- combined_rhr_summary %>%
 save(time_period_rhr_results, file = "time_period_rhr_results.rda", compress = "xz")
 save(time_period_rhr_summary_stats, file = "time_period_rhr_summary_stats.rda", compress = "xz")
 
+# Also save the detailed statistics summary
+summary_stats_table <- combined_rhr_summary %>%
+  group_by(label_time) %>%
+  summarise(
+    mean_rhr = mean(mean_hr, na.rm = TRUE),
+    median_rhr = median(median_hr, na.rm = TRUE),
+    min_rhr = min(min_hr, na.rm = TRUE),
+    max_rhr = max(max_hr, na.rm = TRUE),
+    iqr_rhr = mean(iqr_hr, na.rm = TRUE),
+    sd_rhr = mean(sd_hr, na.rm = TRUE),
+    n_subjects = n(),
+    .groups = "drop"
+  )
 
+save(summary_stats_table, file = "time_period_rhr_detailed_stats.rda", compress = "xz")
+
+# Updated function to plot RHR patterns with additional statistics
+plot_rhr_patterns <- function(combined_rhr_summary) {
+  # Process data
+  plot_data <- combined_rhr_summary %>%
+    mutate(
+      steps = ifelse(grepl("steps_1", label_time), "1", "50"),
+      time_period = case_when(
+        grepl("pre_surgery_3d_to_7d", label_time) ~ "Pre 3d to 7d",  # 放在前面避免被下面的模式匹配到
+        grepl("pre_surgery_3d", label_time) ~ "Pre 3d",
+        grepl("pre_surgery_7d_all", label_time) ~ "Pre 7d all",
+        grepl("pre_surgery_all", label_time) ~ "Pre all",
+        grepl("post_surgery_7d$", label_time) ~ "Post 7d", # 使用正则表达式结尾匹配，避免匹配到7d_to_30d
+        grepl("post_surgery_7d_to_30d", label_time) ~ "Post 7d to 30d", # 修改标签
+        grepl("post_surgery_over_30d", label_time) ~ "Post >30d",
+        TRUE ~ "Other"  # 添加一个默认值以捕获任何其他情况
+      )
+    ) %>%
+    # Calculate average statistics for each time period
+    group_by(steps, time_period) %>%
+    summarise(
+      mean_rhr = mean(mean_hr, na.rm = TRUE),
+      median_rhr = mean(median_hr, na.rm = TRUE),
+      min_rhr = mean(min_hr, na.rm = TRUE),
+      max_rhr = mean(max_hr, na.rm = TRUE),
+      iqr_rhr = mean(iqr_hr, na.rm = TRUE),
+      sd_rhr = mean(sd_hr, na.rm = TRUE),
+      n = n(),
+      .groups = 'drop'
+    )
+  
+  # Set time period order
+  plot_data$time_period <- factor(plot_data$time_period,
+                                  levels = c("Pre all", "Pre 7d all", "Pre 3d to 7d", "Pre 3d",
+                                             "Post 7d", "Post 7d to 30d", "Post >30d")) # 修改顺序和标签
+  
+  # Calculate overall median
+  median_rhr <- median(combined_rhr_summary$median_hr, na.rm = TRUE)
+  
+  # Create plot for mean RHR
+  p_mean <- ggplot(plot_data, aes(x = time_period, y = mean_rhr, 
+                                  color = steps, group = steps)) +
+    geom_line(size = 1) +
+    geom_point(size = 3, alpha = 0.7) +
+    geom_hline(yintercept = median_rhr, linetype = "dashed", 
+               color = "red", alpha = 0.7) +
+    annotate("text", x = 6, y = median_rhr, 
+             label = "Overall Median RHR", hjust = 1, vjust = -0.5, 
+             color = "red") +
+    scale_y_continuous(limits = c(65, 85), breaks = seq(65, 85, 5)) +
+    scale_color_manual(
+      values = c("1" = "steelblue", "50" = "#FF9999"),
+      name = "Max. steps",
+      labels = c("≤1", "≤50")
+    ) +
+    labs(title = "Perioperative Mean RHR Patterns",
+         x = "Time Period",
+         y = "Mean RHR (bpm)") +
+    theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.grid.minor = element_blank(),
+      legend.position = "top",
+      legend.title = element_text(size = 12),
+      legend.text = element_text(size = 10)
+    )
+  
+  # Create plot for median RHR
+  p_median <- ggplot(plot_data, aes(x = time_period, y = median_rhr, 
+                                    color = steps, group = steps)) +
+    geom_line(size = 1) +
+    geom_point(size = 3, alpha = 0.7) +
+    scale_y_continuous(limits = c(65, 85), breaks = seq(65, 85, 5)) +
+    scale_color_manual(
+      values = c("1" = "steelblue", "50" = "#FF9999"),
+      name = "Max. steps",
+      labels = c("≤1", "≤50")
+    ) +
+    labs(title = "Perioperative Median RHR Patterns",
+         x = "Time Period",
+         y = "Median RHR (bpm)") +
+    theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.grid.minor = element_blank(),
+      legend.position = "top",
+      legend.title = element_text(size = 12),
+      legend.text = element_text(size = 10)
+    )
+  
+  # Create a summary table with all metrics
+  summary_table <- plot_data %>%
+    dplyr::select(steps, time_period, mean_rhr, median_rhr, min_rhr, max_rhr, iqr_rhr, sd_rhr, n) %>%
+    mutate(across(where(is.numeric), ~round(., 1)))
+  
+  return(list(mean_plot = p_mean, median_plot = p_median, summary = summary_table))
+}
+
+# Create and save the plots
+rhr_plots <- plot_rhr_patterns(combined_rhr_summary)
+rhr_plots
+
+
+# Save mean RHR plot
+ggsave(
+  "perioperative_mean_rhr_patterns.pdf",
+  plot = rhr_plots$mean_plot,
+  width = 10,
+  height = 6,
+  dpi = 300
+)
+
+# Save median RHR plot
+ggsave(
+  "perioperative_median_rhr_patterns.pdf",
+  plot = rhr_plots$median_plot,
+  width = 10,
+  height = 6,
+  dpi = 300
+)
+
+# Create summary stats object and save it
+rhr_detailed_summary <- rhr_plots$summary
+save(rhr_detailed_summary, file = "rhr_detailed_summary.rda", compress = "xz")
+
+# Print summary table
+print("RHR Statistics Summary by Time Period and Activity Level:")
+print(rhr_plots$summary)
 
 #######plot
 # Function to calculate daily pattern for steps <= 1
@@ -426,87 +591,3 @@ ggsave(
   height = 4,
   dpi = 300
 )
-
-
-###########
-# Plot RHR patterns for different time periods
-plot_rhr_patterns <- function(combined_rhr_summary) {
-  # 处理数据
-  plot_data <- combined_rhr_summary %>%
-    mutate(
-      steps = ifelse(grepl("steps_1", label_time), "1", "50"),
-      time_period = case_when(
-        grepl("pre_surgery_3d", label_time) ~ "Pre 3d",
-        grepl("pre_surgery_7d", label_time) ~ "Pre 7d",
-        grepl("pre_surgery_all", label_time) ~ "Pre all",
-        grepl("post_surgery_7d", label_time) ~ "Post 7d",
-        grepl("post_surgery_30d", label_time) ~ "Post 30d",
-        grepl("post_surgery_over_30d", label_time) ~ "Post >30d"
-      )
-    ) %>%
-    # 计算每个时间段的平均值
-    group_by(steps, time_period) %>%
-    summarise(
-      mean_rhr = mean(mean_hr, na.rm = TRUE),
-      sd_rhr = mean(sd_hr, na.rm = TRUE),
-      n = n(),
-      .groups = 'drop'
-    )
-  
-  # 设置时间段的顺序
-  plot_data$time_period <- factor(plot_data$time_period,
-                                  levels = c("Pre all", "Pre 7d", "Pre 3d",
-                                             "Post 7d", "Post 30d", "Post >30d"))
-  
-  # 计算总体中位数
-  median_rhr <- median(combined_rhr_summary$mean_hr, na.rm = TRUE)
-  
-  # 创建图形
-  p <- ggplot(plot_data, aes(x = time_period, y = mean_rhr, 
-                             color = steps, group = steps)) +
-    # 添加线条和点
-    geom_line(size = 1) +
-    geom_point(size = 3, alpha = 0.7) +
-    # 添加误差条
-    # geom_errorbar(aes(ymin = mean_rhr - sd_rhr, 
-    #                   ymax = mean_rhr + sd_rhr),
-    #               width = 0.2, alpha = 0.5) +
-    # 添加中位数参考线
-    geom_hline(yintercept = median_rhr, linetype = "dashed", 
-               color = "red", alpha = 0.7) +
-    annotate("text", x = 6, y = median_rhr, 
-             label = "Median RHR", hjust = 1, vjust = -0.5, 
-             color = "red") +
-    # 设置坐标轴
-    scale_y_continuous(limits = c(65, 85), breaks = seq(65, 85, 5)) +
-    # 设置颜色
-    scale_color_manual(
-      values = c("1" = "steelblue", "50" = "#FF9999"),
-      name = "Max. steps",
-      labels = c("≤1", "≤50")
-    ) +
-    # 添加标签
-    labs(title = "Perioperative RHR Patterns",
-         x = "Time Period",
-         y = "Mean RHR (bpm)") +
-    # 设置主题
-    theme_bw() +
-    theme(
-      plot.title = element_text(hjust = 0.5, size = 14),
-      axis.text.x = element_text(angle = 45, hjust = 1),
-      panel.grid.minor = element_blank(),
-      legend.position = "top",
-      legend.title = element_text(size = 12),
-      legend.text = element_text(size = 10)
-    )
-  
-  # 打印数据汇总
-  print("Data summary:")
-  print(plot_data)
-  
-  return(p)
-}
-
-# 创建并保存图形
-p_patterns <- plot_rhr_patterns(combined_rhr_summary)
-p_patterns

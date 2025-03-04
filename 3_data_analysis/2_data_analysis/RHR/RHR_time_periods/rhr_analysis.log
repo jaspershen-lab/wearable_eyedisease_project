@@ -1,0 +1,13 @@
+INFO [2025-02-17 10:45:28] Running analysis...
+INFO [2025-02-17 10:45:29] Starting daily RHR calculation
+INFO [2025-02-17 10:45:29] Baseline data validation summary:
+INFO [2025-02-17 10:45:29] Processed 49 valid subjects out of 49 total
+INFO [2025-02-17 10:45:29] Processing heart rate data for label <1
+INFO [2025-02-17 10:45:45] Data quality summary:
+INFO [2025-02-17 10:45:45] Filtered out 16882 records (0.71%)
+INFO [2025-02-17 10:45:48] Daily statistics summary:
+INFO [2025-02-17 10:45:48] Processing heart rate data for label <50
+INFO [2025-02-17 10:45:53] Data quality summary:
+INFO [2025-02-17 10:45:53] Filtered out 8764 records (1.63%)
+INFO [2025-02-17 10:45:53] Daily statistics summary:
+WARN [2025-02-17 10:45:54] Warning during analysis: NAs introduced by coercion
