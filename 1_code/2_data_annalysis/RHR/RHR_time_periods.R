@@ -53,6 +53,9 @@ rhr_label_1 <- calculate_rhr_by_label(heart_rate_data, "<1")
 rhr_label_50 <- calculate_rhr_by_label(heart_rate_data, "<50")
 
 # Function to process RHR data with time periods - UPDATED with additional statistics
+###############修改后的函数 process_rhr_data
+# 添加了两个新的时间窗：术后第30天前3天和术后前一周
+# 修改后的process_rhr_data函数
 process_rhr_data <- function(rhr_data, label_suffix) {
   # Calculate basic time information
   base_data <- rhr_data %>%
@@ -137,13 +140,67 @@ process_rhr_data <- function(rhr_data, label_suffix) {
   result <- bind_rows(pre_3d, pre_3d_to_7d, pre_7d_all, pre_all) %>%
     mutate(label = label_suffix)
   
-  # Calculate data for post-surgery time windows
+  # 计算术后第30天前3天的时间窗 (day 27-30, hours -720 to -648)
+  post_30d_3d <- base_data %>%
+    filter(hours_to_surgery < 0 & hours_to_surgery >= -720 & hours_to_surgery > -792) %>%
+    group_by(subject_id) %>%
+    summarise(
+      mean_hr = mean(heart_rate),
+      min_hr = min(heart_rate),
+      max_hr = max(heart_rate),
+      median_hr = median(heart_rate),
+      q1_hr = quantile(heart_rate, 0.25),
+      q3_hr = quantile(heart_rate, 0.75),
+      iqr_hr = IQR(heart_rate),
+      sd_hr = sd(heart_rate),
+      n_measurements = n(),
+      .groups = "drop"
+    ) %>%
+    mutate(time_period = "post_surgery_day27_to_30")
+  
+  # 计算术后第30天前一周的时间窗 (day 23-30, hours -720 to -552)
+  post_30d_1w <- base_data %>%
+    filter(hours_to_surgery < 0 & hours_to_surgery >= -720 & hours_to_surgery > -720+168) %>%
+    group_by(subject_id) %>%
+    summarise(
+      mean_hr = mean(heart_rate),
+      min_hr = min(heart_rate),
+      max_hr = max(heart_rate),
+      median_hr = median(heart_rate),
+      q1_hr = quantile(heart_rate, 0.25),
+      q3_hr = quantile(heart_rate, 0.75),
+      iqr_hr = IQR(heart_rate),
+      sd_hr = sd(heart_rate),
+      n_measurements = n(),
+      .groups = "drop"
+    ) %>%
+    mutate(time_period = "post_surgery_day23_to_30")
+  
+  # 计算术后前一周的时间窗（前7天，hours 0 to -168）
+  post_1w <- base_data %>%
+    filter(hours_to_surgery < 0 & hours_to_surgery >= -168) %>%
+    group_by(subject_id) %>%
+    summarise(
+      mean_hr = mean(heart_rate),
+      min_hr = min(heart_rate),
+      max_hr = max(heart_rate),
+      median_hr = median(heart_rate),
+      q1_hr = quantile(heart_rate, 0.25),
+      q3_hr = quantile(heart_rate, 0.75),
+      iqr_hr = IQR(heart_rate),
+      sd_hr = sd(heart_rate),
+      n_measurements = n(),
+      .groups = "drop"
+    ) %>%
+    mutate(time_period = "post_surgery_1w")
+  
+  # 现有的术后7天、7-30天、>30天窗口计算
   post_data <- base_data %>%
     filter(hours_to_surgery < 0) %>%
     mutate(
       time_period = case_when(
         hours_to_surgery >= -168 ~ "post_surgery_7d",
-        hours_to_surgery >= -720 & hours_to_surgery < -168 ~ "post_surgery_7d_to_30d", # 修改为统一格式
+        hours_to_surgery >= -720 & hours_to_surgery < -168 ~ "post_surgery_7d_to_30d",
         hours_to_surgery < -720 ~ "post_surgery_over_30d"
       )
     ) %>%
@@ -162,87 +219,36 @@ process_rhr_data <- function(rhr_data, label_suffix) {
     ) %>%
     mutate(label = label_suffix)
   
-  # Combine pre and post surgery data
-  bind_rows(result, post_data)
+  # 合并所有结果，包括新增的时间窗
+  all_results <- bind_rows(
+    result, 
+    post_30d_3d %>% mutate(label = label_suffix),
+    post_30d_1w %>% mutate(label = label_suffix), 
+    post_1w %>% mutate(label = label_suffix),
+    post_data
+  )
+  
+  return(all_results)
 }
 
-# Process both datasets with the updated function
-rhr_summary_1 <- process_rhr_data(rhr_label_1, "steps_1")
-rhr_summary_50 <- process_rhr_data(rhr_label_50, "steps_50")
-
-# Combine the results
-combined_rhr_summary <- bind_rows(rhr_summary_1, rhr_summary_50) %>%
-  mutate(
-    label_time = paste(label, time_period, sep = "_")
-  )
-
-# Create wide format table with surgery date - now with additional statistics
-time_period_rhr_results <- combined_rhr_summary %>%
-  dplyr::select(subject_id, label_time, mean_hr, median_hr, min_hr, max_hr, iqr_hr, sd_hr, n_measurements) %>%
-  pivot_wider(
-    names_from = label_time,
-    values_from = c(mean_hr, median_hr, min_hr, max_hr, iqr_hr, sd_hr, n_measurements),
-    names_prefix = "rhr_"
-  ) %>%
-  # Add surgery date
-  left_join(
-    baseline_info_processed %>%
-      mutate(surgery_date = format(surgery_time_1, "%Y-%m-%d")) %>%
-      dplyr::select(ID, surgery_date),
-    by = c("subject_id" = "ID")
-  ) %>%
-  # Reorder columns to put surgery_date at the beginning
-  dplyr::select(subject_id, surgery_date, everything())
-
-# Add updated summary statistics including all metrics
-time_period_rhr_summary_stats <- combined_rhr_summary %>%
-  group_by(label_time) %>%
-  summarise(
-    mean_rhr = mean(mean_hr, na.rm = TRUE),
-    sd_rhr = sd(mean_hr, na.rm = TRUE),
-    median_rhr = median(median_hr, na.rm = TRUE),
-    min_rhr = min(min_hr, na.rm = TRUE),
-    max_rhr = max(max_hr, na.rm = TRUE),
-    mean_iqr = mean(iqr_hr, na.rm = TRUE),
-    n_subjects = n(),
-    .groups = "drop"
-  )
-
-# Save results
-save(time_period_rhr_results, file = "time_period_rhr_results.rda", compress = "xz")
-save(time_period_rhr_summary_stats, file = "time_period_rhr_summary_stats.rda", compress = "xz")
-
-# Also save the detailed statistics summary
-summary_stats_table <- combined_rhr_summary %>%
-  group_by(label_time) %>%
-  summarise(
-    mean_rhr = mean(mean_hr, na.rm = TRUE),
-    median_rhr = median(median_hr, na.rm = TRUE),
-    min_rhr = min(min_hr, na.rm = TRUE),
-    max_rhr = max(max_hr, na.rm = TRUE),
-    iqr_rhr = mean(iqr_hr, na.rm = TRUE),
-    sd_rhr = mean(sd_hr, na.rm = TRUE),
-    n_subjects = n(),
-    .groups = "drop"
-  )
-
-save(summary_stats_table, file = "time_period_rhr_detailed_stats.rda", compress = "xz")
-
-# Updated function to plot RHR patterns with additional statistics
+# 更新绘图函数，添加新的时间窗
 plot_rhr_patterns <- function(combined_rhr_summary) {
   # Process data
   plot_data <- combined_rhr_summary %>%
     mutate(
       steps = ifelse(grepl("steps_1", label_time), "1", "50"),
       time_period = case_when(
-        grepl("pre_surgery_3d_to_7d", label_time) ~ "Pre 3d to 7d",  # 放在前面避免被下面的模式匹配到
+        grepl("pre_surgery_3d_to_7d", label_time) ~ "Pre 3d to 7d",
         grepl("pre_surgery_3d", label_time) ~ "Pre 3d",
         grepl("pre_surgery_7d_all", label_time) ~ "Pre 7d all",
         grepl("pre_surgery_all", label_time) ~ "Pre all",
-        grepl("post_surgery_7d$", label_time) ~ "Post 7d", # 使用正则表达式结尾匹配，避免匹配到7d_to_30d
-        grepl("post_surgery_7d_to_30d", label_time) ~ "Post 7d to 30d", # 修改标签
+        grepl("post_surgery_day27_to_30", label_time) ~ "Post day 27-30", # 新增的时间窗
+        grepl("post_surgery_day23_to_30", label_time) ~ "Post day 23-30", # 新增的时间窗
+        grepl("post_surgery_1w", label_time) ~ "Post 1w",                # 新增的时间窗
+        grepl("post_surgery_7d$", label_time) ~ "Post 7d",               # 使用正则表达式结尾匹配
+        grepl("post_surgery_7d_to_30d", label_time) ~ "Post 7d to 30d",
         grepl("post_surgery_over_30d", label_time) ~ "Post >30d",
-        TRUE ~ "Other"  # 添加一个默认值以捕获任何其他情况
+        TRUE ~ "Other"
       )
     ) %>%
     # Calculate average statistics for each time period
@@ -258,10 +264,10 @@ plot_rhr_patterns <- function(combined_rhr_summary) {
       .groups = 'drop'
     )
   
-  # Set time period order
+  # 设置时间窗口顺序，包括新增的时间窗
   plot_data$time_period <- factor(plot_data$time_period,
                                   levels = c("Pre all", "Pre 7d all", "Pre 3d to 7d", "Pre 3d",
-                                             "Post 7d", "Post 7d to 30d", "Post >30d")) # 修改顺序和标签
+                                             "Post 1w", "Post 7d", "Post 7d to 30d", "Post day 23-30", "Post day 27-30", "Post >30d"))
   
   # Calculate overall median
   median_rhr <- median(combined_rhr_summary$median_hr, na.rm = TRUE)
@@ -327,7 +333,18 @@ plot_rhr_patterns <- function(combined_rhr_summary) {
   return(list(mean_plot = p_mean, median_plot = p_median, summary = summary_table))
 }
 
-# Create and save the plots
+# 重新运行计算combined_rhr_summary的相关代码
+# Process both datasets with the updated function
+rhr_summary_1 <- process_rhr_data(rhr_label_1, "steps_1")
+rhr_summary_50 <- process_rhr_data(rhr_label_50, "steps_50")
+
+# Combine the results
+combined_rhr_summary <- bind_rows(rhr_summary_1, rhr_summary_50) %>%
+  mutate(
+    label_time = paste(label, time_period, sep = "_")
+  )
+
+# 然后创建和保存图表
 rhr_plots <- plot_rhr_patterns(combined_rhr_summary)
 rhr_plots
 
@@ -591,3 +608,73 @@ ggsave(
   height = 4,
   dpi = 300
 )
+
+
+#####列名修改
+create_wide_format_rhr <- function(combined_rhr_summary) {
+  # 创建基本数据框，包含所有唯一的subject_id
+  subject_ids <- unique(combined_rhr_summary$subject_id)
+  result <- data.frame(subject_id = subject_ids)
+  
+  # 尝试从baseline_info获取手术日期
+  # 如果baseline_info存在且可用
+  if(exists("baseline_info_processed")) {
+    surgery_dates <- baseline_info_processed %>%
+      mutate(surgery_date = format(surgery_time_1, "%Y-%m-%d")) %>%
+      dplyr::select(ID, surgery_date)
+    
+    result <- result %>%
+      left_join(surgery_dates, by = c("subject_id" = "ID"))
+  } else {
+    # 如果无法获取手术日期，添加空列
+    result$surgery_date <- NA
+  }
+  
+  # 遍历每个统计量和时间窗口的组合，创建宽格式数据
+  stat_types <- c("mean", "median", "min", "max", "iqr", "sd", "n_measurements")
+  
+  for(row in 1:nrow(combined_rhr_summary)) {
+    subj <- combined_rhr_summary$subject_id[row]
+    time_period <- combined_rhr_summary$time_period[row]
+    label <- combined_rhr_summary$label[row]
+    steps_val <- sub("steps_", "", label)
+    
+    # 对于每个统计量
+    for(stat in stat_types) {
+      if(stat == "n_measurements") {
+        # 直接使用n_measurements列
+        val <- combined_rhr_summary$n_measurements[row]
+        col_name <- paste0(time_period, "_", stat, "_steps_", steps_val)
+      } else {
+        # 使用hr后缀列，但在列名中添加rhr
+        hr_col <- paste0(stat, "_hr")
+        if(hr_col %in% names(combined_rhr_summary)) {
+          val <- combined_rhr_summary[[hr_col]][row]
+          # 新的列名格式，在统计类型后添加_rhr
+          col_name <- paste0(time_period, "_", stat, "_rhr_steps_", steps_val)
+          
+          # 更新结果数据框
+          result[result$subject_id == subj, col_name] <- val
+        }
+      }
+    }
+  }
+  
+  return(result)
+}
+
+
+# 查看combined_rhr_summary的结构，以便调试
+str(combined_rhr_summary)
+
+# 创建并保存宽格式RHR数据
+time_period_rhr_results <- create_wide_format_rhr(combined_rhr_summary)
+
+# 验证列名格式
+cat("新的RHR列名格式示例:\n")
+print(names(time_period_rhr_results)[1:10])
+
+# 保存结果
+save(time_period_rhr_results, 
+     file = "time_period_rhr_results.rda", 
+     compress = "xz")

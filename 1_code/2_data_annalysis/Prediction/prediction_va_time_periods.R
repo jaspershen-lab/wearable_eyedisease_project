@@ -10,20 +10,20 @@ setwd(get_project_wd())
 rm(list = ls())
 
 
-# load("3_data_analysis/2_data_analysis/Prediction/model_data_final/model_data_final.rda")
-load("3_data_analysis/2_data_analysis/Prediction/model_data_final/complete_data.rda")
+load("3_data_analysis/2_data_analysis/Prediction/model_data_final_time_periods/model_data_final_3d.rda")
+load("3_data_analysis/2_data_analysis/Prediction/model_data_final_time_periods/complete_data_3d.rda")
 
 
 #===============================================================================
 # 1. LASSO Feature Selection
 #===============================================================================
 # Select features
-feature_cols <- setdiff(colnames(complete_data), 
+feature_cols <- setdiff(colnames(model_data_final), 
                         c("vision_improvement", "vision_improved"))
 
 # Prepare data for LASSO
-x <- as.matrix(complete_data[, feature_cols])
-y <- as.numeric(complete_data$vision_improvement)
+x <- as.matrix(model_data_final[, feature_cols])
+y <- as.numeric(model_data_final$vision_improvement)
 
 # Fit LASSO model
 model_lasso <- glmnet(x, y, nlambda=100, alpha=1)
@@ -82,12 +82,12 @@ print(feature_opt)
 selected_features <- selected_features[selected_features != "(Intercept)"]
 
 # Prepare data for regression
-model_data <- complete_data[, c(selected_features, "vision_improvement")]
+model_data <- model_data_final[, c(selected_features, "vision_improvement")]
 
 # Set up 5-fold cross-validation control
 ctrl <- trainControl(
   method = "cv",
-  number = 10,
+  number = 5,
   savePredictions = "final",
   summaryFunction = defaultSummary
 )
@@ -129,6 +129,22 @@ xgb_model <- train(
   trControl = ctrl,
   metric = "RMSE",
   tuneLength = 5
+)
+
+# 设置LASSO的lambda参数网格
+lasso_grid <- expand.grid(
+  alpha = 1,    # alpha=1 for LASSO
+  lambda = seq(0.001, 0.1, length.out = 10)  # lambda参数网格
+)
+
+set.seed(123)
+lasso_model <- train(
+  vision_improvement ~ .,
+  data = model_data,
+  method = "glmnet",
+  trControl = ctrl,
+  tuneGrid = lasso_grid,
+  metric = "RMSE"
 )
 
 
@@ -178,6 +194,15 @@ xgb_performance <- xgb_model$pred %>%
     R2 = cor(obs, pred)^2
   )
 
+# 计算LASSO模型的指标
+lasso_performance <- lasso_model$pred %>%
+  group_by(Resample) %>%
+  summarise(
+    RMSE = sqrt(mean((obs - pred)^2)),
+    MAE = mean(abs(obs - pred)),
+    R2 = cor(obs, pred)^2
+  )
+
 # Calculate metrics for enet
 enet_performance <- enet_model$pred %>%
   group_by(Resample) %>%
@@ -213,6 +238,14 @@ xgb_overall <- summarise(xgb_performance,
                          R2_mean = mean(R2),
                          R2_sd = sd(R2))
 
+lasso_overall <- summarise(lasso_performance,
+                           RMSE_mean = mean(RMSE),
+                           RMSE_sd = sd(RMSE),
+                           MAE_mean = mean(MAE),
+                           MAE_sd = sd(MAE),
+                           R2_mean = mean(R2),
+                           R2_sd = sd(R2))
+
 enet_overall <- summarise(enet_performance,
                          RMSE_mean = mean(RMSE),
                          RMSE_sd = sd(RMSE),
@@ -224,6 +257,7 @@ enet_overall <- summarise(enet_performance,
 print(lm_overall)
 print(rf_overall)
 print(xgb_overall)
+print(lasso_overall)
 print(enet_overall)
 
 
@@ -352,6 +386,29 @@ xgb_plot <- ggplot(xgb_model$pred, aes(x = obs, y = pred)) +
     panel.grid.minor = element_blank()
   )
 
+# LASSO plot
+lasso_r2 <- paste0("R² = ", round(lasso_overall$R2_mean, 3),
+                   " (±", round(lasso_overall$R2_sd, 3), ")")
+
+lasso_plot <- ggplot(lasso_model$pred, aes(x = obs, y = pred)) +
+  geom_point(alpha = 0.5, color = "forestgreen") +  # 使用不同于XGBoost的颜色
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  geom_smooth(method = "lm", color = "blue", 
+              fill = "lightblue", alpha = 0.2, 
+              se = TRUE, level = 0.95) +
+  scale_x_continuous(limits = c(0, 1)) +
+  scale_y_continuous(limits = c(0, 1)) +
+  labs(
+    x = "Observed Vision Improvement",
+    y = "Predicted Vision Improvement",
+    title = paste0("LASSO\n", lasso_r2)
+  ) +
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    panel.grid.minor = element_blank()
+  )
+
 # Elastic Net Plot
 enet_r2 <- paste0("R² = ", round(enet_overall$R2_mean, 3),
                   " (±", round(enet_overall$R2_sd, 3), ")")
@@ -378,6 +435,7 @@ enet_plot <- ggplot(enet_model$pred, aes(x = obs, y = pred)) +
 print(lm_plot)
 print(rf_plot)
 print(xgb_plot)
+print(lasso_plot)
 print(enet_plot)
 
 
@@ -388,8 +446,8 @@ print(enet_plot)
 # 4. Classification Models
 #===============================================================================
 # Prepare data for classification
-complete_data_class <- complete_data[, c(selected_features, "vision_improved")]
-complete_data_class$vision_improved <- factor(complete_data_class$vision_improved,
+model_data_final_class <- model_data_final[, c(selected_features, "vision_improved")]
+model_data_final_class$vision_improved <- factor(model_data_final_class$vision_improved,
                                            levels = c("0", "1"),
                                            labels = c("No", "Yes"))
 
@@ -397,8 +455,8 @@ complete_data_class$vision_improved <- factor(complete_data_class$vision_improve
 ctrl_class <- trainControl(
   method = "cv",
   number = 5,
+  classProbs = TRUE, 
   savePredictions = "final",
-  classProbs = TRUE,
   summaryFunction = twoClassSummary
 )
 
@@ -406,7 +464,7 @@ ctrl_class <- trainControl(
 set.seed(123)
 logit_model <- train(
   vision_improved ~ .,
-  data = complete_data_class,
+  data = model_data_final_class,
   method = "glm",
   family = "binomial",
   trControl = ctrl_class,
@@ -417,7 +475,7 @@ logit_model <- train(
 set.seed(123)
 rf_class_model <- train(
   vision_improved ~ .,
-  data = complete_data_class,
+  data = model_data_final_class,
   method = "rf",
   trControl = ctrl_class,
   metric = "ROC",
@@ -428,18 +486,30 @@ rf_class_model <- train(
 set.seed(123)
 xgb_class_model <- train(
   vision_improved ~ .,
-  data = complete_data_class,
+  data = model_data_final_class,
   method = "xgbTree",
   trControl = ctrl_class,
   metric = "ROC",
   tuneLength = 5
 )
 
+# Train Lasso Classification
+set.seed(123)
+lasso_class_model <- train(
+  vision_improved ~ .,
+  data = model_data_final_class,
+  method = "glmnet",    # glmnet包含Lasso、Ridge和Elastic Net
+  trControl = ctrl_class,
+  tuneGrid = expand.grid(alpha = 1, lambda = seq(0.001, 0.1, by = 0.001)),  # alpha=1是Lasso
+  metric = "ROC",
+  family = "binomial"   # 用于二分类
+)
+
 # Train Elastic Net Classification
 set.seed(123)
 enet_class_model <- train(
   vision_improved ~ .,
-  data = complete_data_class,
+  data = model_data_final_class,
   method = "glmnet",
   trControl = ctrl_class,
   metric = "ROC",
@@ -481,6 +551,16 @@ xgb_class_performance <- xgb_class_model$pred %>%
     AUC = as.numeric(roc(obs, Yes)$auc)
   )
 
+# Calculate metrics for Lasso
+lasso_class_performance <- lasso_class_model$pred %>%
+  group_by(Resample) %>%
+  summarise(
+    Accuracy = mean(pred == obs),
+    Sensitivity = sum(pred == "Yes" & obs == "Yes") / sum(obs == "Yes"),
+    Specificity = sum(pred == "No" & obs == "No") / sum(obs == "No"),
+    AUC = as.numeric(roc(obs, Yes)$auc)
+  )
+
 # Calculate metrics for Elastic Net
 enet_class_performance <- enet_class_model$pred %>%
   group_by(Resample) %>%
@@ -499,6 +579,8 @@ print("Random Forest:")
 print(summary(rf_class_performance))
 print("XGBoost:")
 print(summary(xgb_class_performance))
+print("Lasso:")
+print(summary(lasso_class_performance))
 print("Elastic Net:")
 print(summary(enet_class_performance))
 
@@ -506,7 +588,7 @@ print(summary(enet_class_performance))
 # 6. Visualizations
 #===============================================================================
 
-
+par(mfrow=c(1,1)) 
 # Classification Models - ROC Curves
 # Set up the plot
 plot(0, 0, type="n", 
@@ -563,6 +645,20 @@ plot.roc(
   add = TRUE
 )
 
+# Plot ROC curve for XGBoost
+plot.roc(
+  lasso_class_model$pred$obs,
+  lasso_class_model$pred$Yes,
+  col = "#777750",
+  percent = TRUE,
+  lwd = 2,
+  print.auc = TRUE,
+  print.auc.cex = 1,
+  print.auc.pattern = "Lasso: %.1f%%",
+  print.auc.y = 35,
+  add = TRUE
+)
+
 # Add Elastic Net ROC curve
 plot.roc(
   enet_class_model$pred$obs,
@@ -573,14 +669,14 @@ plot.roc(
   print.auc = TRUE,
   print.auc.cex = 1,
   print.auc.pattern = "Elastic Net: %.1f%%",
-  print.auc.y = 25,
+  print.auc.y = 30,
   add = TRUE
 )
 
 # Add legend
 legend("bottomright", 
-       legend = c("Logistic Regression", "Random Forest", "XGBoost", "Elastic Net"),
-       col = c("#A31621", "#2694ab", "#4CAF50","#FFA500"),
+       legend = c("Logistic Regression", "Random Forest", "XGBoost", "Elastic Net","Lasso"),
+       col = c("#A31621", "#2694ab", "#4CAF50","#FFA500","#777750"),
        lwd = 2)
 
 
