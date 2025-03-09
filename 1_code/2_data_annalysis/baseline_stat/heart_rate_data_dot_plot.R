@@ -87,16 +87,16 @@ create_hr_coverage_heatmap <- function(hourly_coverage) {
                alpha = 0.7) +
     # 分别设置color和fill的渐变
     scale_color_gradient2(
-      low = "#FFF8D5",
-      mid = "#EED18A",
-      high = "#FAAF00",
+      low = "#f0ead2",
+      mid = "#dde5b4",
+      high = "#adc178",
       midpoint = 12,
       name = "Hours with\nData"
     ) +
     scale_fill_gradient2(
-      low = "#FFF8D5",
-      mid = "#EED18A",
-      high = "#FAAF00",
+      low = "#f0ead2",
+      mid = "#dde5b4",
+      high = "#adc178",
       midpoint = 12,
       name = "Hours with\nData"
     ) +
@@ -138,6 +138,165 @@ ggsave(filename = "heart_rate_data_dot_plot.pdf",plot = p,width=8,height = 7)
 
 
 
+# Using patchwork for perfectly aligned plots with matching axes
+library(patchwork)
+library(grid)
+library(ggplot2)
+
+create_perfect_alignment_plot <- function(hourly_coverage) {
+  # Sort subject IDs numerically 
+  hourly_coverage$subject_id <- factor(
+    hourly_coverage$subject_id,
+    levels = rev(unique(hourly_coverage$subject_id)[order(as.numeric(gsub("SH0*", "", unique(hourly_coverage$subject_id))))])
+  )
+  
+  # Calculate summary data for the additional plots
+  # Daily totals for each day (for top bar chart)
+  daily_totals <- hourly_coverage %>%
+    group_by(day_point) %>%
+    summarise(daily_hours = sum(hours_covered), .groups = "drop")
+  
+  # Total hours per subject across all days (for right bar chart)
+  subject_totals <- hourly_coverage %>%
+    group_by(subject_id) %>%
+    summarise(total_hours = sum(hours_covered), .groups = "drop")
+  
+  # Get the range of days and unique subject IDs for consistent axis limits
+  day_range <- range(hourly_coverage$day_point)
+  unique_subjects <- levels(hourly_coverage$subject_id)
+  
+  # Define shared theme elements for consistency
+  base_theme <- theme_bw() +
+    theme(
+      panel.grid = element_blank(),
+      plot.background = element_rect(fill = "white", color = NA),
+      panel.background = element_rect(fill = "white", color = NA)
+    )
+  
+  # 1. Create main heatmap with exact dimensions and fixed plot ratio
+  p_main <- ggplot(hourly_coverage, aes(x = day_point, y = subject_id)) +
+    geom_point(aes(size = hours_covered, 
+                  color = hours_covered,
+                  fill = hours_covered),
+              shape = 16,
+              alpha = 0.7) +
+    scale_color_gradient2(
+      low = "#f0ead2",
+      mid = "#dde5b4",
+      high = "#adc178",
+      midpoint = 12,
+      name = "Hours with\nData"
+    ) +
+    scale_fill_gradient2(
+      low = "#f0ead2",
+      mid = "#dde5b4",
+      high = "#adc178",
+      midpoint = 12,
+      name = "Hours with\nData"
+    ) +
+    scale_size(
+      range = c(0.1, 4),
+      limits = c(0, 24),
+      name = "Hours with\nData"
+    ) +
+    # Set exact limits to match side plots - critical for alignment
+    scale_x_continuous(limits = c(day_range[1], day_range[2]), 
+                       breaks = seq(-5, 30, by = 5),
+                       expand = c(0.01, 0.01)) +  # Tiny expansion for padding
+    base_theme +
+    theme(
+      panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+      axis.text.y = element_text(size = 8),
+      axis.text.x = element_text(angle = 0),
+      legend.position = "right"
+    ) +
+    labs(
+      title = "Heart Rate Data Coverage Pattern",
+      x = "Days Relative to Surgery",
+      y = "Subject ID"
+    )
+  
+  # 2. Create top bar chart with EXACTLY matching x-axis
+  max_daily_hours <- max(daily_totals$daily_hours) * 1.05  # Add small padding
+  p_top <- ggplot(daily_totals, aes(x = day_point, y = daily_hours)) +
+    geom_col(fill = "#d9d0b4") +
+    # Match the x-axis exactly with main plot - critical for alignment
+    scale_x_continuous(limits = c(day_range[1], day_range[2]), 
+                       expand = c(0.01, 0.01)) +  # Must match main plot exactly
+    scale_y_continuous(limits = c(0, max_daily_hours),
+                       expand = c(0, 0)) +
+    base_theme +
+    theme(
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.text.y = element_text(size = 7),
+      panel.border = element_rect(color = "black", fill = NA, size = 0.3)
+    ) +
+    labs(y = "Daily\nHours")
+  
+  # 3. Create right bar chart with EXACTLY matching y-axis
+  max_total_hours <- max(subject_totals$total_hours) * 1.05  # Small padding
+  p_right <- ggplot(subject_totals, aes(y = subject_id, x = total_hours)) +
+    geom_col(fill = "#d9d0b4") +
+    # Set y-axis to exactly match main plot - critical for alignment
+    scale_y_discrete(limits = unique_subjects,
+                    expand = c(0.01, 0.01)) +  # Must match main plot exactly
+    scale_x_continuous(limits = c(0, max_total_hours),
+                       expand = c(0, 0)) +
+    base_theme +
+    theme(
+      axis.title.y = element_blank(),
+      axis.text.y = element_blank(),
+      axis.ticks.y = element_blank(),
+      axis.text.x = element_text(size = 7),
+      panel.border = element_rect(color = "black", fill = NA, size = 0.3)
+    ) +
+    labs(x = "Total Hours")
+  
+  # 4. Create empty plot for top-right corner
+  p_empty <- ggplot() + 
+    theme_void() +
+    theme(
+      plot.background = element_rect(fill = "white", color = NA)
+    )
+  
+  # Use a fixed design with synchronized y-axis
+  # The key to equal y-axis is aligning plots exactly and using fixed aspect ratios
+  combined_plot <- (p_top | p_empty) / (p_main | p_right) +
+    plot_layout(
+      widths = c(4, 1),     # Main plot is 4x wider than right sidebar
+      heights = c(1, 5),    # Increase main plot height proportion for better y-axis matching
+      guides = "collect"    # Collect all legends
+    ) &
+    theme(plot.margin = unit(c(0, 0, 0, 0), "mm"))  # Remove outer margins
+  
+  return(combined_plot)
+}
+
+# Create the combined plot with perfect alignment
+combined_plot <- create_perfect_alignment_plot(hourly_coverage)
+print(combined_plot)
+
+# Save the plot with better dimensions for perfect alignment
+ggsave(filename = "heart_rate_data_perfectly_aligned.pdf", 
+       plot = combined_plot, 
+       width = 14,       # Wider format for better visualization
+       height = 11,      # Taller format to allow y-axis to match
+       dpi = 300)        # Higher resolution
+
+# Save as PNG for immediate viewing
+ggsave(filename = "heart_rate_data_perfectly_aligned.png", 
+       plot = combined_plot, 
+       width = 14, 
+       height = 11, 
+       dpi = 300)
+
+
+
+
+
+
 # Create histogram of participants with data per day
 participants_per_day <- hourly_coverage %>%
   filter(hours_covered > 0) %>%
@@ -148,7 +307,7 @@ participants_per_day <- hourly_coverage %>%
 
 # Create the histogram plot
 p_histogram <- ggplot(participants_per_day, aes(x = day_point, y = participant_count)) +
-  geom_bar(stat = "identity", fill = "#FAAF00", color = "black", alpha = 0.7) +
+  geom_bar(stat = "identity", fill = "#d9d0b4", color = "black", alpha = 0.7) +
   theme_bw() +
   labs(
     title = "Number of Participants with Wearable Data per Day",
@@ -212,7 +371,7 @@ write.csv(presurgery_days, "presurgery_wearable_days.csv", row.names = FALSE)
 
 # 创建术前佩戴天数的柱状图
 p_presurgery <- ggplot(presurgery_days, aes(x = subject_id, y = presurgery_days_worn)) +
-  geom_bar(stat = "identity", fill = "#FAAF00", color = "black", alpha = 0.7) +
+  geom_bar(stat = "identity", fill = "#d9d0b4", color = "black", alpha = 0.7) +
   theme_bw() +
   labs(
     title = "presurgery_wearable_days",
@@ -248,205 +407,205 @@ write.csv(presurgery_summary, "presurgery_days_summary.csv", row.names = FALSE)
 
 
 
-# 基于已有的hourly_coverage数据，筛选高质量参与者
-
-# 定义函数来评估参与者数据质量
-evaluate_participant_quality <- function(hourly_coverage) {
-  
-  # 计算每个参与者的数据质量指标
-  participant_quality <- hourly_coverage %>%
-    group_by(subject_id) %>%
-    summarise(
-      # 1. 总体覆盖天数（有任何数据的天数）
-      total_days_with_data = sum(hours_covered > 0),
-      
-      # 2. 术前覆盖天数
-      presurgery_days = sum(day_point < 0 & hours_covered > 0),
-      
-      # 3. 术后覆盖天数
-      postsurgery_days = sum(day_point >= 0 & hours_covered > 0),
-      
-      # 4. 高质量天数（每天至少12小时数据）
-      high_quality_days = sum(hours_covered >= 12),
-      
-      # 5. 术前高质量天数
-      presurgery_high_quality = sum(day_point < 0 & hours_covered >= 12),
-      
-      # 6. 术后高质量天数
-      postsurgery_high_quality = sum(day_point >= 0 & hours_covered >= 12),
-      
-      # 7. 平均每天覆盖小时数
-      mean_hours_per_day = mean(hours_covered),
-      
-      # 8. 连续性指标 - 最长连续监测天数（有一定数据，如至少6小时）
-      max_consecutive_days = {
-        # 找出有数据的天数（至少6小时）
-        days_with_data <- day_point[hours_covered >= 6]
-        calculate_max_consecutive_days(days_with_data)
-      },
-      
-      # 9. 整体数据完整率（总记录小时数/理论最大小时数）
-      data_completeness = sum(hours_covered) / (n() * 24),
-      
-      .groups = "drop"
-    )
-  
-  return(participant_quality)
-}
-
-# 辅助函数：计算最长连续监测天数
-calculate_max_consecutive_days <- function(days_data) {
-  # 确保天数已排序
-  days_data <- sort(days_data)
-  
-  if (length(days_data) == 0) {
-    return(0)
-  }
-  
-  # 计算连续天数
-  gaps <- diff(days_data)
-  # 找出所有间隔为1的位置（连续的天数）
-  breaks <- which(gaps != 1)
-  
-  # 计算每段连续天数的长度
-  if (length(breaks) == 0) {
-    # 如果没有断点，则所有天数都是连续的
-    max_consecutive <- length(days_data)
-  } else {
-    # 添加起始点和终止点
-    breaks_extended <- c(0, breaks, length(days_data))
-    lengths <- diff(breaks_extended)
-    max_consecutive <- max(lengths)
-  }
-  
-  return(max_consecutive)
-}
-
-# 筛选高质量参与者
-select_high_quality_participants <- function(participant_quality, criteria = NULL) {
-  if (is.null(criteria)) {
-    # 默认筛选标准
-    criteria <- list(
-      min_total_days = 20,            # 至少20天有数据
-      min_presurgery_days = 3,        # 术前至少3天有数据
-      min_postsurgery_days = 10,      # 术后至少10天有数据
-      min_high_quality_days = 15,     # 至少15天为高质量数据(>=12小时)
-      min_consecutive_days = 7,       # 至少有7天连续监测
-      min_data_completeness = 0.4     # 整体完整率至少40%
-    )
-  }
-  
-  # 应用筛选标准
-  high_quality_participants <- participant_quality %>%
-    filter(
-      total_days_with_data >= criteria$min_total_days,
-      presurgery_days >= criteria$min_presurgery_days,
-      postsurgery_days >= criteria$min_postsurgery_days,
-      high_quality_days >= criteria$min_high_quality_days,
-      max_consecutive_days >= criteria$min_consecutive_days,
-      data_completeness >= criteria$min_data_completeness
-    ) %>%
-    # 按总体质量排序
-    arrange(desc(total_days_with_data * data_completeness))
-  
-  return(high_quality_participants)
-}
-
-# 执行筛选
-participant_quality <- evaluate_participant_quality(hourly_coverage)
-high_quality_participants <- select_high_quality_participants(participant_quality)
-
-# 打印筛选结果
-print(high_quality_participants)
-
-# 将结果保存到CSV文件
-write.csv(participant_quality, "participant_quality_metrics.csv", row.names = FALSE)
-write.csv(high_quality_participants, "high_quality_participants.csv", row.names = FALSE)
-
-# 创建数据质量可视化
-# 1. 参与者数据完整率柱状图
-p_completeness <- ggplot(participant_quality, aes(x = reorder(subject_id, -data_completeness), 
-                                                  y = data_completeness * 100)) +
-  geom_bar(stat = "identity", fill = "#FAAF00", color = "black", alpha = 0.7) +
-  geom_hline(yintercept = 40, linetype = "dashed", color = "red") +  # 40%阈值线
-  theme_bw() +
-  labs(
-    title = "Participant data integrity rate",
-    x = "Subject ID",
-    y = "Data integrity rate (%)"
-  ) +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
-    panel.grid.minor = element_blank()
-  )
-
-# 2. 高质量参与者与所有参与者对比
-comparison_data <- participant_quality %>%
-  mutate(is_high_quality = subject_id %in% high_quality_participants$subject_id) %>%
-  group_by(is_high_quality) %>%
-  summarise(
-    avg_days = mean(total_days_with_data),
-    avg_completeness = mean(data_completeness) * 100,
-    avg_high_quality = mean(high_quality_days),
-    .groups = "drop"
-  ) %>%
-  pivot_longer(cols = c(avg_days, avg_completeness, avg_high_quality),
-               names_to = "metric", values_to = "value") %>%
-  mutate(
-    group = ifelse(is_high_quality, "High quality participants", "All participants"),
-    metric = case_when(
-      metric == "avg_days" ~ "Average monitoring days",
-      metric == "avg_completeness" ~ "Average integrity (%)",
-      metric == "avg_high_quality" ~ "Average high quality days"
-    )
-  )
-
-p_comparison <- ggplot(comparison_data, aes(x = metric, y = value, fill = group)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  theme_bw() +
-  labs(
-    title = "High quality participants vs All participants",
-    x = NULL,
-    y = "Value",
-    fill = NULL
-  ) +
-  theme(
-    legend.position = "top",
-    panel.grid.minor = element_blank()
-  ) +
-  scale_fill_manual(values = c("High quality participants" = "#FAAF00", "All participants" = "#A9A9A9"))
-
-# 打印图表
-print(p_completeness)
-print(p_comparison)
-
-# 保存图表
-ggsave("participant_data_completeness.pdf", plot = p_completeness, width = 10, height = 6)
-ggsave("quality_comparison.pdf", plot = p_comparison, width = 8, height = 6)
-
-# 创建高质量参与者热图
-high_quality_coverage <- hourly_coverage %>%
-  filter(subject_id %in% high_quality_participants$subject_id)
-
-p_hq_heatmap <- create_hr_coverage_heatmap(high_quality_coverage)
-print(p_hq_heatmap)
-ggsave("high_quality_participants_heatmap.pdf", plot = p_hq_heatmap, width = 8, height = 7)
-
-# 返回筛选结果摘要
-summary_results <- data.frame(
-  total_participants = length(unique(hourly_coverage$subject_id)),
-  high_quality_count = nrow(high_quality_participants),
-  percentage = nrow(high_quality_participants) / length(unique(hourly_coverage$subject_id)) * 100
-)
-
-print(summary_results)
-
-
+# # 基于已有的hourly_coverage数据，筛选高质量参与者
+# 
+# # 定义函数来评估参与者数据质量
+# evaluate_participant_quality <- function(hourly_coverage) {
+#   
+#   # 计算每个参与者的数据质量指标
+#   participant_quality <- hourly_coverage %>%
+#     group_by(subject_id) %>%
+#     summarise(
+#       # 1. 总体覆盖天数（有任何数据的天数）
+#       total_days_with_data = sum(hours_covered > 0),
+#       
+#       # 2. 术前覆盖天数
+#       presurgery_days = sum(day_point < 0 & hours_covered > 0),
+#       
+#       # 3. 术后覆盖天数
+#       postsurgery_days = sum(day_point >= 0 & hours_covered > 0),
+#       
+#       # 4. 高质量天数（每天至少12小时数据）
+#       high_quality_days = sum(hours_covered >= 12),
+#       
+#       # 5. 术前高质量天数
+#       presurgery_high_quality = sum(day_point < 0 & hours_covered >= 12),
+#       
+#       # 6. 术后高质量天数
+#       postsurgery_high_quality = sum(day_point >= 0 & hours_covered >= 12),
+#       
+#       # 7. 平均每天覆盖小时数
+#       mean_hours_per_day = mean(hours_covered),
+#       
+#       # 8. 连续性指标 - 最长连续监测天数（有一定数据，如至少6小时）
+#       max_consecutive_days = {
+#         # 找出有数据的天数（至少6小时）
+#         days_with_data <- day_point[hours_covered >= 6]
+#         calculate_max_consecutive_days(days_with_data)
+#       },
+#       
+#       # 9. 整体数据完整率（总记录小时数/理论最大小时数）
+#       data_completeness = sum(hours_covered) / (n() * 24),
+#       
+#       .groups = "drop"
+#     )
+#   
+#   return(participant_quality)
+# }
+# 
+# # 辅助函数：计算最长连续监测天数
+# calculate_max_consecutive_days <- function(days_data) {
+#   # 确保天数已排序
+#   days_data <- sort(days_data)
+#   
+#   if (length(days_data) == 0) {
+#     return(0)
+#   }
+#   
+#   # 计算连续天数
+#   gaps <- diff(days_data)
+#   # 找出所有间隔为1的位置（连续的天数）
+#   breaks <- which(gaps != 1)
+#   
+#   # 计算每段连续天数的长度
+#   if (length(breaks) == 0) {
+#     # 如果没有断点，则所有天数都是连续的
+#     max_consecutive <- length(days_data)
+#   } else {
+#     # 添加起始点和终止点
+#     breaks_extended <- c(0, breaks, length(days_data))
+#     lengths <- diff(breaks_extended)
+#     max_consecutive <- max(lengths)
+#   }
+#   
+#   return(max_consecutive)
+# }
+# 
+# # 筛选高质量参与者
+# select_high_quality_participants <- function(participant_quality, criteria = NULL) {
+#   if (is.null(criteria)) {
+#     # 默认筛选标准
+#     criteria <- list(
+#       min_total_days = 20,            # 至少20天有数据
+#       min_presurgery_days = 3,        # 术前至少3天有数据
+#       min_postsurgery_days = 10,      # 术后至少10天有数据
+#       min_high_quality_days = 15,     # 至少15天为高质量数据(>=12小时)
+#       min_consecutive_days = 7,       # 至少有7天连续监测
+#       min_data_completeness = 0.4     # 整体完整率至少40%
+#     )
+#   }
+#   
+#   # 应用筛选标准
+#   high_quality_participants <- participant_quality %>%
+#     filter(
+#       total_days_with_data >= criteria$min_total_days,
+#       presurgery_days >= criteria$min_presurgery_days,
+#       postsurgery_days >= criteria$min_postsurgery_days,
+#       high_quality_days >= criteria$min_high_quality_days,
+#       max_consecutive_days >= criteria$min_consecutive_days,
+#       data_completeness >= criteria$min_data_completeness
+#     ) %>%
+#     # 按总体质量排序
+#     arrange(desc(total_days_with_data * data_completeness))
+#   
+#   return(high_quality_participants)
+# }
+# 
+# # 执行筛选
+# participant_quality <- evaluate_participant_quality(hourly_coverage)
+# high_quality_participants <- select_high_quality_participants(participant_quality)
+# 
+# # 打印筛选结果
+# print(high_quality_participants)
+# 
+# # 将结果保存到CSV文件
+# write.csv(participant_quality, "participant_quality_metrics.csv", row.names = FALSE)
+# write.csv(high_quality_participants, "high_quality_participants.csv", row.names = FALSE)
+# 
+# # 创建数据质量可视化
+# # 1. 参与者数据完整率柱状图
+# p_completeness <- ggplot(participant_quality, aes(x = reorder(subject_id, -data_completeness), 
+#                                                   y = data_completeness * 100)) +
+#   geom_bar(stat = "identity", fill = "#FAAF00", color = "black", alpha = 0.7) +
+#   geom_hline(yintercept = 40, linetype = "dashed", color = "red") +  # 40%阈值线
+#   theme_bw() +
+#   labs(
+#     title = "Participant data integrity rate",
+#     x = "Subject ID",
+#     y = "Data integrity rate (%)"
+#   ) +
+#   theme(
+#     axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+#     panel.grid.minor = element_blank()
+#   )
+# 
+# # 2. 高质量参与者与所有参与者对比
+# comparison_data <- participant_quality %>%
+#   mutate(is_high_quality = subject_id %in% high_quality_participants$subject_id) %>%
+#   group_by(is_high_quality) %>%
+#   summarise(
+#     avg_days = mean(total_days_with_data),
+#     avg_completeness = mean(data_completeness) * 100,
+#     avg_high_quality = mean(high_quality_days),
+#     .groups = "drop"
+#   ) %>%
+#   pivot_longer(cols = c(avg_days, avg_completeness, avg_high_quality),
+#                names_to = "metric", values_to = "value") %>%
+#   mutate(
+#     group = ifelse(is_high_quality, "High quality participants", "All participants"),
+#     metric = case_when(
+#       metric == "avg_days" ~ "Average monitoring days",
+#       metric == "avg_completeness" ~ "Average integrity (%)",
+#       metric == "avg_high_quality" ~ "Average high quality days"
+#     )
+#   )
+# 
+# p_comparison <- ggplot(comparison_data, aes(x = metric, y = value, fill = group)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   theme_bw() +
+#   labs(
+#     title = "High quality participants vs All participants",
+#     x = NULL,
+#     y = "Value",
+#     fill = NULL
+#   ) +
+#   theme(
+#     legend.position = "top",
+#     panel.grid.minor = element_blank()
+#   ) +
+#   scale_fill_manual(values = c("High quality participants" = "#FAAF00", "All participants" = "#A9A9A9"))
+# 
+# # 打印图表
+# print(p_completeness)
+# print(p_comparison)
+# 
+# # 保存图表
+# ggsave("participant_data_completeness.pdf", plot = p_completeness, width = 10, height = 6)
+# ggsave("quality_comparison.pdf", plot = p_comparison, width = 8, height = 6)
+# 
+# # 创建高质量参与者热图
+# high_quality_coverage <- hourly_coverage %>%
+#   filter(subject_id %in% high_quality_participants$subject_id)
+# 
+# p_hq_heatmap <- create_hr_coverage_heatmap(high_quality_coverage)
+# print(p_hq_heatmap)
+# ggsave("high_quality_participants_heatmap.pdf", plot = p_hq_heatmap, width = 8, height = 7)
+# 
+# # 返回筛选结果摘要
+# summary_results <- data.frame(
+#   total_participants = length(unique(hourly_coverage$subject_id)),
+#   high_quality_count = nrow(high_quality_participants),
+#   percentage = nrow(high_quality_participants) / length(unique(hourly_coverage$subject_id)) * 100
+# )
+# 
+# print(summary_results)
 
 
 
-# 函数用于计算术前时间段覆盖统计
-analyze_presurgery_time_period_coverage <- function(heart_rate_data, baseline_info) {
+
+
+# 修改函数用于计算术前7天到术后30天的时间段覆盖统计
+analyze_extended_time_period_coverage <- function(heart_rate_data, baseline_info) {
   # 获取心率数据
   hr_df <- heart_rate_data@sample_info %>%
     as.data.frame()
@@ -474,10 +633,10 @@ analyze_presurgery_time_period_coverage <- function(heart_rate_data, baseline_in
         TRUE ~ "nighttime"  # 覆盖 18-23 和 0-5 小时
       )
     ) %>%
-    # 仅筛选术前10天
+    # 修改为术前7天到术后30天
     filter(
-      day_point >= -10,
-      day_point < 0
+      day_point >= -7,
+      day_point <= 30
     ) %>%
     # 计算每个时间段的小时覆盖率
     group_by(subject_id, day_point, time_period) %>%
@@ -488,7 +647,7 @@ analyze_presurgery_time_period_coverage <- function(heart_rate_data, baseline_in
   
   # 创建完整的网格，包含所有主题-天-时间段组合
   all_subjects <- unique(hr_df$subject_id)
-  all_days <- seq(-10, -1)
+  all_days <- seq(-7, 30)  # 修改为-7到30
   all_periods <- c("daytime", "nighttime")
   complete_grid <- expand.grid(
     subject_id = all_subjects,
@@ -552,17 +711,14 @@ analyze_presurgery_time_period_coverage <- function(heart_rate_data, baseline_in
 }
 
 # 执行分析
-presurgery_results <- analyze_presurgery_time_period_coverage(heart_rate_data, baseline_info)
-
-# 打印每天满足条件的参与者数量
-print(presurgery_results$daily_participant_count)
+extended_results <- analyze_extended_time_period_coverage(heart_rate_data, baseline_info)
 
 # 保存结果
-write.csv(presurgery_results$daily_participant_count, "presurgery_daily_time_coverage_count.csv", row.names = FALSE)
-write.csv(presurgery_results$participant_day_count, "presurgery_participant_time_coverage.csv", row.names = FALSE)
+write.csv(extended_results$daily_participant_count, "extended_daily_time_coverage_count.csv", row.names = FALSE)
+write.csv(extended_results$participant_day_count, "extended_participant_time_coverage.csv", row.names = FALSE)
 
-# 创建每天满足条件参与者数量的柱状图
-create_daily_participant_count_plot <- function(daily_participant_count) {
+# 修改创建柱状图函数以适应新的时间范围
+create_extended_participant_count_plot <- function(daily_participant_count) {
   # 将数据转换为长格式用于ggplot绘图
   plot_data <- daily_participant_count %>%
     dplyr::select(day_point, participants_with_daytime, participants_with_nighttime, participants_with_both) %>%
@@ -589,13 +745,13 @@ create_daily_participant_count_plot <- function(daily_participant_count) {
               position = position_dodge(width = 0.8), 
               vjust = -0.5, 
               size = 3) +
-    scale_fill_manual(values = c("Daytime ≥ 6h" = "#FFD580", 
-                                 "Nighttime ≥ 6h" = "#4682B4", 
-                                 "Both periods ≥ 6h" = "#FAAF00")) +
+    scale_fill_manual(values = c("Daytime ≥ 6h" = "#d6eadf", 
+                                 "Nighttime ≥ 6h" = "#eac4d5", 
+                                 "Both periods ≥ 6h" = "#95b8d1")) +
     theme_bw() +
     labs(
       title = "Number of Participants Meeting Time Period Coverage Thresholds",
-      subtitle = "Pre-surgery days (-10 to -1)",
+      subtitle = "From 7 days before to 30 days after surgery",
       x = "Days Relative to Surgery",
       y = "Number of Participants",
       fill = "Coverage Type"
@@ -605,48 +761,38 @@ create_daily_participant_count_plot <- function(daily_participant_count) {
       axis.text.x = element_text(angle = 0),
       legend.position = "top"
     ) +
-    scale_x_continuous(breaks = seq(-10, -1)) +
+    scale_x_continuous(breaks = seq(-5, 30, by = 5)) +  # 更新刻度以匹配更大的范围
     scale_y_continuous(limits = c(0, max(daily_participant_count$total_participants) * 1.1))
   
   return(p)
 }
 
-# 创建百分比柱状图
-create_daily_percentage_plot <- function(daily_participant_count) {
+# 修改百分比柱状图
+create_extended_percentage_plot <- function(daily_participant_count) {
   p <- ggplot(daily_participant_count, aes(x = day_point, y = percentage_with_both)) +
-    geom_bar(stat = "identity", fill = "#FAAF00", width = 0.7) +
+    geom_bar(stat = "identity", fill = "#95b8d1", width = 0.7) +
     geom_text(aes(label = sprintf("%.1f%%", percentage_with_both)), 
               vjust = -0.5, 
-              size = 3) +
+              size = 2.5) +  # 减小字体大小以适应更多的条形
     theme_bw() +
     labs(
       title = "Percentage of Participants with ≥6 Hours in Both Time Periods",
-      subtitle = "Pre-surgery days (-10 to -1)",
+      subtitle = "From 7 days before to 30 days after surgery",
       x = "Days Relative to Surgery",
       y = "Percentage of Participants"
     ) +
     theme(
       panel.grid.minor = element_blank(),
-      axis.text.x = element_text(angle = 0)
+      axis.text.x = element_text(angle = 45, hjust = 1)  # 旋转标签以适应更多数据点
     ) +
-    scale_x_continuous(breaks = seq(-10, -1)) +
+    scale_x_continuous(breaks = seq(-5, 30, by = 5)) +  # 更新刻度以匹配更大的范围
     scale_y_continuous(limits = c(0, 100))
   
   return(p)
 }
 
-# 生成并保存图表
-p_count <- create_daily_participant_count_plot(presurgery_results$daily_participant_count)
-p_percentage <- create_daily_percentage_plot(presurgery_results$daily_participant_count)
-
-print(p_count)
-print(p_percentage)
-
-ggsave("presurgery_daily_participant_count.pdf", plot = p_count, width = 10, height = 6)
-ggsave("presurgery_daily_percentage.pdf", plot = p_percentage, width = 10, height = 6)
-
-# 创建热图展示每个参与者的数据覆盖情况
-create_presurgery_heatmap <- function(daily_coverage_status) {
+# 修改热图函数以适应新的时间范围
+create_extended_heatmap <- function(daily_coverage_status) {
   # 准备热图数据
   heatmap_data <- daily_coverage_status %>%
     mutate(
@@ -671,9 +817,9 @@ create_presurgery_heatmap <- function(daily_coverage_status) {
   p <- ggplot(heatmap_data, aes(x = day_point, y = subject_id, fill = coverage_status)) +
     geom_tile(color = "white", size = 0.3) +
     scale_fill_manual(values = c(
-      "Both ≥ 6h" = "#FAAF00",
-      "Only Daytime ≥ 6h" = "#FFD580",
-      "Only Nighttime ≥ 6h" = "#4682B4",
+      "Both ≥ 6h" = "#95b8d1",
+      "Only Daytime ≥ 6h" = "#d6eadf",
+      "Only Nighttime ≥ 6h" = "#eac4d5",
       "Neither ≥ 6h" = "#F5F5F5"
     )) +
     theme_minimal() +
@@ -684,29 +830,151 @@ create_presurgery_heatmap <- function(daily_coverage_status) {
       plot.title = element_text(hjust = 0.5)
     ) +
     labs(
-      title = "Presurgery Time Period Coverage Status by Participant",
+      title = "Time Period Coverage Status by Participant",
+      subtitle = "From 7 days before to 30 days after surgery",
       x = "Days Relative to Surgery",
       y = "Subject ID",
       fill = "Coverage Status"
     ) +
-    scale_x_continuous(breaks = seq(-10, -1))
+    scale_x_continuous(breaks = seq(-5, 30, by = 5))  # 更新刻度以匹配更大的范围
   
   return(p)
 }
 
-# 生成并保存热图
-p_heatmap <- create_presurgery_heatmap(presurgery_results$daily_coverage_status)
-print(p_heatmap)
-ggsave("presurgery_coverage_heatmap.pdf", plot = p_heatmap, width = 10, height = 12)
+# 生成并保存图表
+p_extended_count <- create_extended_participant_count_plot(extended_results$daily_participant_count)
+p_extended_percentage <- create_extended_percentage_plot(extended_results$daily_participant_count)
+p_extended_heatmap <- create_extended_heatmap(extended_results$daily_coverage_status)
 
-# 总结统计
-summary_stats <- presurgery_results$daily_participant_count %>%
+print(p_extended_count)
+print(p_extended_percentage)
+print(p_extended_heatmap)
+
+# 保存图表
+ggsave("extended_daily_participant_count.pdf", plot = p_extended_count, width = 12, height = 6)
+ggsave("extended_daily_percentage.pdf", plot = p_extended_percentage, width = 12, height = 6)
+ggsave("extended_coverage_heatmap.pdf", plot = p_extended_heatmap, width = 12, height = 10)
+
+# 计算术前和术后的统计摘要
+period_summary <- extended_results$daily_participant_count %>%
+  mutate(period = ifelse(day_point < 0, "Pre-surgery", "Post-surgery")) %>%
+  group_by(period) %>%
   summarise(
     avg_participants_with_both = mean(participants_with_both),
     max_participants_with_both = max(participants_with_both),
     min_participants_with_both = min(participants_with_both),
     avg_percentage_with_both = mean(percentage_with_both),
+    days_count = n(),
     .groups = "drop"
   )
 
-print(summary_stats)
+# 总体统计
+overall_summary <- extended_results$daily_participant_count %>%
+  summarise(
+    avg_participants_with_both = mean(participants_with_both),
+    max_participants_with_both = max(participants_with_both),
+    min_participants_with_both = min(participants_with_both),
+    avg_percentage_with_both = mean(percentage_with_both),
+    days_count = n(),
+    .groups = "drop"
+  ) %>%
+  mutate(period = "Overall")
+
+# 合并统计信息
+combined_summary <- bind_rows(period_summary, overall_summary)
+print(combined_summary)
+write.csv(combined_summary, "extended_time_period_summary.csv", row.names = FALSE)
+
+# 创建术前与术后的比较柱状图
+create_period_comparison_plot <- function(daily_participant_count) {
+  # 计算术前和术后的平均值
+  period_data <- daily_participant_count %>%
+    mutate(period = ifelse(day_point < 0, "Pre-surgery (-7 to -1)", "Post-surgery (0 to 30)")) %>%
+    group_by(period) %>%
+    summarise(
+      avg_total = mean(total_participants),
+      avg_daytime = mean(participants_with_daytime),
+      avg_nighttime = mean(participants_with_nighttime),
+      avg_both = mean(participants_with_both),
+      avg_percentage = mean(percentage_with_both),
+      .groups = "drop"
+    ) %>%
+    # 将数据转换为长格式用于绘图
+    pivot_longer(
+      cols = starts_with("avg_"),
+      names_to = "metric",
+      values_to = "value"
+    ) %>%
+    # 调整标签
+    mutate(
+      metric = case_when(
+        metric == "avg_total" ~ "Total participants",
+        metric == "avg_daytime" ~ "Daytime ≥ 6h",
+        metric == "avg_nighttime" ~ "Nighttime ≥ 6h",
+        metric == "avg_both" ~ "Both periods ≥ 6h",
+        metric == "avg_percentage" ~ "% with both periods ≥ 6h"
+      ),
+      # 设置因子顺序
+      metric = factor(metric, levels = c("Total participants", "Daytime ≥ 6h", 
+                                         "Nighttime ≥ 6h", "Both periods ≥ 6h",
+                                         "% with both periods ≥ 6h")),
+      period = factor(period, levels = c("Pre-surgery (-7 to -1)", "Post-surgery (0 to 30)"))
+    )
+  
+  # 分离百分比数据，因为它使用不同的y轴刻度
+  count_data <- period_data %>% filter(metric != "% with both periods ≥ 6h")
+  percentage_data <- period_data %>% filter(metric == "% with both periods ≥ 6h")
+  
+  # 创建计数比较图
+  p_count <- ggplot(count_data, aes(x = metric, y = value, fill = period)) +
+    geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.7) +
+    geom_text(aes(label = sprintf("%.1f", value)), 
+              position = position_dodge(width = 0.8), 
+              vjust = -0.5, 
+              size = 3) +
+    scale_fill_manual(values = c("Pre-surgery (-7 to -1)" = "#809bce", 
+                                 "Post-surgery (0 to 30)" = "#b8e0d4")) +
+    theme_bw() +
+    labs(
+      title = "Average Participant Counts by Time Period",
+      x = NULL,
+      y = "Average Number of Participants",
+      fill = "Period"
+    ) +
+    theme(
+      panel.grid.minor = element_blank(),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      legend.position = "top"
+    )
+  
+  # 创建百分比比较图
+  p_percentage <- ggplot(percentage_data, aes(x = period, y = value, fill = period)) +
+    geom_bar(stat = "identity", width = 0.7) +
+    geom_text(aes(label = sprintf("%.1f%%", value)), 
+              vjust = -0.5, 
+              size = 3) +
+    scale_fill_manual(values = c("Pre-surgery (-7 to -1)" = "#809bce", 
+                                 "Post-surgery (0 to 30)" = "#b8e0d4")) +
+    theme_bw() +
+    labs(
+      title = "Average Percentage of Participants with Both Time Periods ≥ 6h",
+      x = NULL,
+      y = "Percentage"
+    ) +
+    theme(
+      panel.grid.minor = element_blank(),
+      legend.position = "none"
+    ) +
+    scale_y_continuous(limits = c(0, 100))
+  
+  return(list(p_count = p_count, p_percentage = p_percentage))
+}
+
+# 生成比较图表
+comparison_plots <- create_period_comparison_plot(extended_results$daily_participant_count)
+print(comparison_plots$p_count)
+print(comparison_plots$p_percentage)
+
+# 保存比较图表
+ggsave("period_count_comparison.pdf", plot = comparison_plots$p_count, width = 10, height = 6)
+ggsave("period_percentage_comparison.pdf", plot = comparison_plots$p_percentage, width = 8, height = 6)
