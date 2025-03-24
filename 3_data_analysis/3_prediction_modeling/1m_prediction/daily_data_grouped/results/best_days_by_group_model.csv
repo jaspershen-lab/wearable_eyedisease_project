@@ -1,0 +1,11 @@
+"Group","Model","Day","R2_mean","RMSE_mean","SampleSize"
+"Diabetes Surgery 1","LASSO","Day -4",0.872940605935707,0.162418264991344,9
+"Diabetes Surgery 1","XGBoost","Day 19",0.76528865772003,0.0868136423507478,6
+"Diabetes Surgery 1","Elastic Net","Day 5",0.683673409988808,0.108623039958786,11
+"Diabetes Surgery 1","Random Forest","Day 20",0.62751135676618,0.267724379047573,7
+"Diabetes Surgery 1","Linear Regression","Day 18",0.523589702441898,2.45176559394838,7
+"No Diabetes Surgery 0","Linear Regression","Day -6",0.961273806892423,1.21171951020288,6
+"No Diabetes Surgery 0","Random Forest","Day -7",0.889108910464422,0.186103947208722,5
+"No Diabetes Surgery 0","LASSO","Day 10",0.884143414021223,0.0896395852550685,12
+"No Diabetes Surgery 0","Elastic Net","Day 10",0.873933308665571,0.0930265039243469,12
+"No Diabetes Surgery 0","XGBoost","Day -5",0.591849278492606,0.187477106819444,9

@@ -3,9 +3,10 @@
 "pre_surgery_3d_to_7d",4,16,40
 "pre_surgery_7d_all",7,16,47
 "pre_surgery_all",30,24,45
-"post_surgery_1w",8,24,43
-"post_surgery_7d",8,24,43
-"post_surgery_7d_to_30d",23,24,47
+"post_surgery_1to3d",3,8,43
+"post_surgery_4to6d",3,8,42
+"post_surgery_6d",7,16,43
+"post_surgery_7d_to_30d",24,24,47
 "post_surgery_day23_to_30",8,24,45
 "post_surgery_day27_to_30",4,16,41
 "post_surgery_over_30d",30,24,43

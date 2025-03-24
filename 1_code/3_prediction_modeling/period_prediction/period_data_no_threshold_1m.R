@@ -52,7 +52,7 @@ disease_data <- baseline_info %>%
       TRUE ~ NA_real_
     )
   ) %>%
-  dplyr::select(ID, cataract_2, dm_2, hypertension_2, season, season_factor, month)
+  dplyr::select(ID, cataract_2, dm_2, hypertension_2, season, season_factor, month,bmi)
 
 # Create vision dataset
 vision_data <- baseline_info %>%

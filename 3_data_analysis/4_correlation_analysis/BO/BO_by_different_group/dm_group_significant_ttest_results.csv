@@ -1,0 +1,3 @@
+"day","stat_type","p_value","significant","p_adjusted","significant_adjusted"
+22,"mean",0.000828508922129078,TRUE,0.031483339040905,TRUE
+4,"skew",0.000765158716652448,TRUE,0.029076031232793,TRUE

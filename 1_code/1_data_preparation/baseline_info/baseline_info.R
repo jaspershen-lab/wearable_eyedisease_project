@@ -10,6 +10,7 @@ library(readxl)
 data_mental <- read_excel("2_data/mental questionnaire/mental_health_2.xlsx")
 data_baseline <- read_excel("2_data/baseline questionnaire/baseline_questionnaire_3.xlsx")
 data_va <- read_excel("2_data/va iop/va_iop_5.xlsx")
+data_bmi <- read_excel("2_data/baseline questionnaire/bmi_data.xlsx")
 
 ###create working directory
 if (!dir.exists(
@@ -77,5 +78,17 @@ names(data_merged)[names(data_merged) == "gender.x"] <- "gender"
 names(data_merged)[names(data_merged) == "age.x"] <- "age"
 
 
-write.csv(data_merged, "baseline_info.csv", row.names = FALSE)
 
+# Calculate BMI
+data_bmi <- data_bmi %>%
+  mutate(bmi = weight / ((height/100)^2))
+
+# Read the previously saved merged data
+data_merged <- read.csv("baseline_info.csv")
+
+# Merge the BMI data with the existing merged data
+data_merged <- data_merged %>%
+  left_join(data_bmi, by = "ID")
+
+# Save the updated merged data
+write.csv(data_merged, "baseline_info.csv", row.names = FALSE)

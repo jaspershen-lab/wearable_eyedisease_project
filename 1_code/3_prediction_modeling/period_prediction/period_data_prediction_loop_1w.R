@@ -19,7 +19,8 @@ time_windows <- c(
   "pre_3d_7d", 
   "pre_7d_all", 
   "pre_all", 
-  "post_1w"
+  "post_4to6d",
+  "post_6d"
 )
 
 # Load time window datasets
@@ -44,7 +45,8 @@ get_feature_prefix <- function(window_label) {
     "pre_3d_7d" = "pre_surgery_3d_to_7d", 
     "pre_7d_all" = "pre_surgery_7d_all", 
     "pre_all" = "pre_surgery_all", 
-    "post_1w" = "post_surgery_1w"
+    "post_4to6d" = "post_surgery_4to6d",
+    "post_6d"= "post_surgery_6d"
   )
   
   prefix <- window_prefix_map[[window_label]]
@@ -384,7 +386,8 @@ window_order <- c(
   "pre_3d_7d", 
   "pre_7d_all", 
   "pre_all", 
-  "post_1w"
+  "post_4to6d",
+  "post_6d"
 )
 
 # Check if all windows are actually present in our data
@@ -449,7 +452,7 @@ line_plot <- ggplot(all_results, aes(x = Window, y = R2_mean, color = Model, gro
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank()
   )
-
+line_plot
 # Save line plot
 ggsave(file.path(output_dir, "prediction_performance_line.pdf"), line_plot, width = 10, height = 7)
 
@@ -493,7 +496,7 @@ if(length(unique(heatmap_data$Window)) > 1) {
 } else {
   cat("Not enough unique windows for a meaningful heatmap.\n")
 }
-
+heatmap_plot
 # Create and save summary bar plot
 summary_plot <- ggplot(best_windows, aes(x = reorder(Model, -R2_mean), y = R2_mean)) +
   geom_bar(stat = "identity", fill = "steelblue") +

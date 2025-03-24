@@ -1,0 +1,3 @@
+"Metric","Group_Period_Interaction_P","NonDM_Cat_Diff","NonDM_Cat_P","DM_Cat_Diff","DM_Cat_P","DM_PPV_Diff","DM_PPV_P"
+"Total Sleep","0.742","1.9","0.930","15.7","0.627","-15.0","0.549"
+"Deep Sleep","0.541","-8.0","0.199","-1.0","0.913","2.2","0.758"

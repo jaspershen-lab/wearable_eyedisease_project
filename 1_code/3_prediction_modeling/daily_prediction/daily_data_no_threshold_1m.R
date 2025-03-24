@@ -15,6 +15,7 @@ load("3_data_analysis/1_data_preparation/wearable_data/1_heart_rate/heart_rate_d
 load("3_data_analysis/2_data_analysis/RHR/RHR_time_periods/daily_rhr_result.rda")
 load("3_data_analysis/2_data_analysis/bo/bo_time_periods/daily_bo_result.rda")
 load("3_data_analysis/2_data_analysis/steps/steps_time_periods/daily_steps_result_assigned.rda")
+load("3_data_analysis/2_data_analysis/sleep/sleep_time_periods/daily_sleep_result.rda")
 
 # Load baseline info for disease and vision data
 baseline_info <- read.csv("2_data/analysis_data/baseline_info.csv")
@@ -53,7 +54,7 @@ disease_data <- baseline_info %>%
       TRUE ~ NA_real_
     )
   ) %>%
-  dplyr::select(ID, cataract_2, dm_2, hypertension_2, season, season_factor, month)
+  dplyr::select(ID, cataract_2, dm_2, hypertension_2, season, season_factor, month,bmi)
 
 # Create vision dataset with both 1-week and 1-month post-surgery data
 vision_data <- baseline_info %>%
@@ -310,6 +311,7 @@ prepare_day_dataset <- function(day_point,
                                 rhr_data = daily_rhr_result, 
                                 bo_data = daily_bo_result,
                                 steps_data = daily_steps_result_assigned,
+                                sleep_data=daily_sleep_result,
                                 daily_coverage_status,
                                 disease_data,
                                 vision_data,
@@ -350,10 +352,24 @@ prepare_day_dataset <- function(day_point,
     # Rename columns to remove day prefix for clarity
     rename_with(~ gsub(paste0("day_", day_point, "_"), "", .), starts_with(paste0("day_", day_point, "_")))
   
+  # Extract Sleep metrics for the day
+  sleep_columns <- names(sleep_data) %>%
+    grep(paste0("day_", day_point, "_"), ., value = TRUE)
+  
+  if(length(sleep_columns) > 0) {
+    sleep_day_data <- sleep_data %>%
+      dplyr::select(subject_id, all_of(sleep_columns)) %>%
+      # Rename columns to remove day prefix for clarity
+      rename_with(~ gsub(paste0("day_", day_point, "_"), "", .), starts_with(paste0("day_", day_point, "_")))
+  } else {
+    sleep_day_data <- data.frame(subject_id = rhr_day_data$subject_id)
+  }
+  
   # Combine all data
   combined_data <- rhr_day_data %>%
     left_join(bo_day_data, by = "subject_id") %>%
     left_join(steps_day_data, by = "subject_id") %>%
+    left_join(sleep_day_data, by = "subject_id") %>%
     # Join with disease data
     left_join(disease_data, by = c("subject_id" = "ID")) %>%
     # Join with vision data (includes both 1-week and 1-month)
@@ -389,6 +405,7 @@ for(day in all_days) {
     rhr_data = daily_rhr_result,
     bo_data = daily_bo_result,
     steps_data = daily_steps_result,
+    sleep_data=daily_sleep_result,
     daily_coverage_status = daily_coverage_status,
     disease_data = disease_data,
     vision_data = vision_data,
@@ -462,7 +479,7 @@ prepare_for_modeling <- function(dataset, outcome_type = "continuous") {
 
 # Step 10: Export each day's dataset to CSV for further analysis - updated paths for 1-month prediction
 # Create directory if it doesn't exist
-output_dir <- "3_data_analysis/3_prediction_modeling/monthly_prediction/daily_data/1m"
+output_dir <- "3_data_analysis/3_prediction_modeling/1m_prediction/daily_data"
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
 # First check the structure of each day_datasets element

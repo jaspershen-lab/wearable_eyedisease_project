@@ -1,0 +1,58 @@
+Analysis Summary Report
+====================
+
+Date: 2025-03-18 
+Total participants analyzed: 49 
+Participants with diabetes: 26 
+Participants without diabetes: 23 
+Days analyzed: -7 to 30 (relative to surgery)
+RHR metrics analyzed: mean, min, max, median, sd, cv, iqr, skew, kurt 
+RHR types analyzed: rhr_1, rhr_50 
+
+Significant Findings Summary
+--------------------------
+
+Total significant findings (FDR-adjusted): 231 
+
+cv (rhr_1): 30 significant days
+  Mean effect size (Cohen's d):  0.98 
+  Days with significant differences:  -6, -5, -3, -1, 0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 29, 30 
+
+cv (rhr_50): 6 significant days
+  Mean effect size (Cohen's d):  1 
+  Days with significant differences:  0, 13, 14, 16, 19, 22 
+
+max (rhr_50): 2 significant days
+  Mean effect size (Cohen's d):  1.18 
+  Days with significant differences:  24, 25 
+
+mean (rhr_1): 35 significant days
+  Mean effect size (Cohen's d):  1.15 
+  Days with significant differences:  -7, -6, -5, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 
+
+mean (rhr_50): 32 significant days
+  Mean effect size (Cohen's d):  0.97 
+  Days with significant differences:  -6, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 
+
+median (rhr_1): 36 significant days
+  Mean effect size (Cohen's d):  1.14 
+  Days with significant differences:  -7, -6, -5, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 
+
+median (rhr_50): 27 significant days
+  Mean effect size (Cohen's d):  0.96 
+  Days with significant differences:  -2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 
+
+min (rhr_1): 34 significant days
+  Mean effect size (Cohen's d):  1.03 
+  Days with significant differences:  -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 
+
+min (rhr_50): 29 significant days
+  Mean effect size (Cohen's d):  1 
+  Days with significant differences:  -6, -3, -2, -1, 0, 1, 2, 3, 4, 5, 7, 9, 11, 12, 13, 14, 17, 18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 29, 30 
+
+Top 5 Strongest Effects:
+1. min (rhr_1), Day 30, Cohen's d = 1.61, p = 0.000369
+2. median (rhr_1), Day 4, Cohen's d = 1.53, p = 0.000269
+3. median (rhr_1), Day 5, Cohen's d = 1.52, p = 0.000269
+4. mean (rhr_1), Day 4, Cohen's d = 1.51, p = 0.000578
+5. min (rhr_50), Day 14, Cohen's d = 1.43, p = 0.00205
