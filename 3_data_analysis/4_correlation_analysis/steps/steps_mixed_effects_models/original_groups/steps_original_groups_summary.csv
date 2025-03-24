@@ -1,0 +1,3 @@
+"Metric","Interaction_P","No_Diabetes_Surgery0_Pre_Post_Diff","No_Diabetes_Surgery0_P","Diabetes_Surgery0_Pre_Post_Diff","Diabetes_Surgery0_P","Diabetes_Surgery1_Pre_Post_Diff","Diabetes_Surgery1_P"
+"total","0.180","947.7","0.038*","108.1","0.870","-256.7","0.592"
+"max","0.189","8.7","0.003**","1.4","0.749","1.8","0.568"

@@ -52,7 +52,7 @@ disease_data <- baseline_info %>%
       TRUE ~ NA_real_
     )
   ) %>%
-  dplyr::select(ID, cataract_2, dm_2, hypertension_2, season, season_factor, month)
+  dplyr::select(ID, cataract_2, dm_2, hypertension_2, season, season_factor, month,bmi)
 
 # Create vision dataset
 vision_data <- baseline_info %>%
@@ -185,9 +185,10 @@ time_periods <- list(
   "pre_surgery_3d_to_7d" = c(-7, -4),      # 术前3-7天
   "pre_surgery_7d_all" = c(-7, -1),        # 术前全部7天
   "pre_surgery_all" = c(-30, -1),          # 术前所有数据(假设最多30天)
-  "post_surgery_1w" = c(0, 7),             # 术后第1周
-  "post_surgery_7d" = c(0, 7),             # 术后7天
-  "post_surgery_7d_to_30d" = c(8, 30),     # 术后7-30天
+  "post_surgery_1to3d" = c(1, 3),          # 术后1-3天
+  "post_surgery_4to6d" = c(4, 6),          # 新增：术后4-6天
+  "post_surgery_6d" = c(0, 6),             # 术后6天（原来的7天改为6天）
+  "post_surgery_7d_to_30d" = c(7, 30),     # 术后7-30天
   "post_surgery_day23_to_30" = c(23, 30),  # 术后23-30天
   "post_surgery_day27_to_30" = c(27, 30),  # 术后27-30天
   "post_surgery_over_30d" = c(31, 60)      # 术后>30天(假设最多60天)
@@ -338,10 +339,12 @@ extract_period_columns <- function(data, period_name) {
         cols <- grep("pre.*7d.*all", names(data), value = TRUE)
       } else if(grepl("pre_surgery_all", period_name)) {
         cols <- grep("pre.*all", names(data), value = TRUE)
-      } else if(grepl("post_surgery_1w", period_name)) {
-        cols <- grep("post.*1w", names(data), value = TRUE)
-      } else if(grepl("post_surgery_7d$", period_name)) {
-        cols <- grep("post.*7d$", names(data), value = TRUE)
+      } else if(grepl("post_surgery_1to3d", period_name)) {
+        cols <- grep("post.*1to3d", names(data), value = TRUE)
+      } else if(grepl("post_surgery_4to6d", period_name)) {
+        cols <- grep("post.*4to6d", names(data), value = TRUE)
+      } else if(grepl("post_surgery_6d", period_name)) {
+        cols <- grep("post.*6d$", names(data), value = TRUE)
       } else if(grepl("post_surgery_7d_to_30d", period_name)) {
         cols <- grep("post.*7d.*30d", names(data), value = TRUE)
       } else if(grepl("post_surgery_day23_to_30", period_name)) {

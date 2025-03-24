@@ -13,19 +13,19 @@ library(VIM)
 setwd(get_project_wd())
 rm(list = ls())
 
-day_prior_1 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_6_data.csv")
-day_prior_2 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_-2_data.csv")
-day_prior_3 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_-3_data.csv")
-day_prior_4 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_-4_data.csv")
-day_prior_5 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_-5_data.csv")
-day_prior_6 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_-6_data.csv")
-day_prior_7 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_-7_data.csv")
-day_post_1 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_1_data.csv")
-day_post_2 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_2_data.csv")
-day_post_3 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_3_data.csv")
-day_post_4 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_4_data.csv")
-day_post_5 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_5_data.csv")
-day_post_6 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_6_data.csv")
+day_prior_1 <- read_csv("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/day_6_data.csv")
+day_prior_2 <- read_csv("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/day_-2_data.csv")
+day_prior_3 <- read_csv("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/day_-3_data.csv")
+day_prior_4 <- read_csv("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/day_-4_data.csv")
+day_prior_5 <- read_csv("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/day_-5_data.csv")
+day_prior_6 <- read_csv("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/day_-6_data.csv")
+day_prior_7 <- read_csv("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/day_-7_data.csv")
+day_post_1 <- read_csv("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/day_1_data.csv")
+day_post_2 <- read_csv("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/day_2_data.csv")
+day_post_3 <- read_csv("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/day_3_data.csv")
+day_post_4 <- read_csv("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/day_4_data.csv")
+day_post_5 <- read_csv("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/day_5_data.csv")
+day_post_6 <- read_csv("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/day_6_data.csv")
 
 # Function to process data from a specific day
 analyze_day_data <- function(day_data, day_label) {
@@ -41,8 +41,10 @@ analyze_day_data <- function(day_data, day_label) {
       mean_bo, min_bo, max_bo, median_bo, sd_bo, iqr_bo, skew_bo, kurt_bo,
       # Steps features
       steps_total, steps_mean, steps_max,
+      # sleep feature
+      total_sleep,deep_sleep,
       # Demographics and medical history
-      age, gender, cataract_2, dm_2, hypertension_2, pre_vision,
+      age, gender, cataract_2, dm_2, hypertension_2, pre_vision, season,
       # Target variable
       vision_improvement
     )
@@ -84,8 +86,10 @@ analyze_day_data <- function(day_data, day_label) {
     "mean_bo", "min_bo", "max_bo", "median_bo", "sd_bo", "iqr_bo", 
     # Steps features
     "steps_total", "steps_mean", "steps_max",
+    # sleep feature
+    "total_sleep","deep_sleep",
     # Demographics and medical history
-    "age", "gender", "cataract_2", "dm_2", "hypertension_2", "pre_vision"
+    "age", "gender", "cataract_2", "dm_2", "hypertension_2", "pre_vision","season"
   )
   
   # Prepare data for LASSO
@@ -99,7 +103,7 @@ analyze_day_data <- function(day_data, day_label) {
   }
   
   # 为分类变量创建模型矩阵
-  categorical_vars <- c("gender", "dm_2", "cataract_2", "hypertension_2")
+  categorical_vars <- c("gender", "dm_2", "cataract_2", "hypertension_2","season")
   categorical_in_model <- intersect(categorical_vars, available_features)
   
   # Add debugging code here, right before the model matrix creation
@@ -150,7 +154,7 @@ analyze_day_data <- function(day_data, day_label) {
   
   # 准备用于训练的特征集
   # 需要将model.matrix产生的哑变量名转换回原始特征名
-  categorical_vars <- c("gender", "dm_2", "cataract_2", "hypertension_2")
+  categorical_vars <- c("gender", "dm_2", "cataract_2", "hypertension_2","season")
   
   # 添加检查：如果LASSO没有选出任何特征，则使用所有可用特征
   if(length(lasso_selected_features) == 0) {
@@ -332,12 +336,12 @@ for (day_info in day_files) {
   day_data <- NULL
   
   tryCatch({
-    day_data <- read_csv(paste0("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/", day_info$file), 
+    day_data <- read_csv(paste0("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/", day_info$file), 
                          show_col_types = FALSE)
     
     # 处理分类变量
     # 明确指定哪些是分类变量
-    categorical_vars <- c("gender", "dm_2", "cataract_2", "hypertension_2", "vision_improved")
+    categorical_vars <- c("gender", "dm_2", "cataract_2", "hypertension_2", "vision_improved","season")
     
     # 将分类变量转换为因子
     for(col in intersect(categorical_vars, names(day_data))) {
@@ -405,7 +409,7 @@ for (day_info in day_files) {
 
 #####save results
 # 设置输出目录
-output_dir <- "3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/1w"
+output_dir <- "3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/results"
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
 # 首先定义日期顺序
@@ -414,6 +418,7 @@ day_order <- c("Day -7", "Day -6", "Day -5", "Day -4", "Day -3", "Day -2", "Day 
 
 # 确保Day是有序因子
 all_results$Day <- factor(all_results$Day, levels = day_order, ordered = TRUE)
+all_results
 
 # 保存全部结果数据
 write.csv(all_results, file.path(output_dir, "all_model_results.csv"), row.names = FALSE)

@@ -54,7 +54,7 @@ disease_data <- baseline_info %>%
       TRUE ~ NA_real_
     )
   ) %>%
-  dplyr::select(ID, cataract_2, dm_2, hypertension_2, season, season_factor, month)
+  dplyr::select(ID, cataract_2, dm_2, hypertension_2, season, season_factor, month, bmi)
 
 # Create vision dataset
 vision_data <- baseline_info %>%
@@ -426,7 +426,7 @@ prepare_for_modeling <- function(dataset, outcome_type = "continuous") {
 
 # Step 10: Export each day's dataset to CSV for further analysis
 # Create directory if it doesn't exist
-output_dir <- "3_data_analysis/3_prediction_modeling/daily_prediction/daily_data"
+output_dir <- "3_data_analysis/3_prediction_modeling/1w_prediction/daily_data"
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
 # 首先检查每个day_datasets元素的结构

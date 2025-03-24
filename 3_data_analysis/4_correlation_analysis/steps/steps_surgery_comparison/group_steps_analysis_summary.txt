@@ -1,0 +1,15 @@
+Analysis Summary Report
+====================
+
+Date: 2025-03-18 
+Total participants analyzed: 39 
+Participants in Diabetes_Surgery1 group: 16 
+Participants in No_Diabetes_Surgery0 group: 23 
+Days analyzed: -7 to 30 (relative to surgery)
+Steps metrics analyzed: total, mean, max, median 
+
+Significant Findings Summary
+--------------------------
+
+Total significant findings (FDR-adjusted): 0 
+

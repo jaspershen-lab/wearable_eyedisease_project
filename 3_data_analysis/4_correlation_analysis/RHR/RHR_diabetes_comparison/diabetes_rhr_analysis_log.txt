@@ -1,0 +1,227 @@
+Starting diabetes RHR analysis...
+Current time:  2025-03-11 12:54:30 
+
+Preparing diabetes-RHR data...
+带有糖尿病状态的参与者数量:  49 
+患有糖尿病的参与者数量:  26 
+无糖尿病的参与者数量:  23 
+拥有完整数据的最终参与者数量:  49 
+Reshaping data to long format...
+Long data summary:
+Total observations:  55490 
+Unique days:  101 
+Unique statistical metrics:  mean, min, max, median, sd, cv, iqr, skew, kurt 
+Unique RHR types:  rhr_1, rhr_50 
+
+Running statistical comparisons between diabetes groups...
+Creating summary of significant findings...
+Found  370  statistically significant differences (FDR-adjusted)
+
+Running longitudinal analysis...
+  Analyzing  mean   rhr_1 ...
+Note: D.f. calculations have been disabled because the number of observations exceeds 3000.
+To enable adjustments, add the argument 'pbkrtest.limit = 3107' (or larger)
+[or, globally, 'set emm_options(pbkrtest.limit = 3107)' or larger];
+but be warned that this may result in large computation time and memory use.
+Note: D.f. calculations have been disabled because the number of observations exceeds 3000.
+To enable adjustments, add the argument 'lmerTest.limit = 3107' (or larger)
+[or, globally, 'set emm_options(lmerTest.limit = 3107)' or larger];
+but be warned that this may result in large computation time and memory use.
+NOTE: Results may be misleading due to involvement in interactions
+    Fixed effects:
+                Estimate  Std. Error    t value
+(Intercept) 78.786757332 9.053310673  8.7025355
+dm_2         6.761049910 2.756395865  2.4528588
+day         -0.004822991 0.005033586 -0.9581621
+age         -0.193399590 0.133109388 -1.4529373
+gender       1.798415793 2.665157215  0.6747879
+dm_2:day     0.026178707 0.007475576  3.5018982
+    Estimated marginal means:
+ dm_2 emmean   SE  df asymp.LCL asymp.UCL
+    0   67.4 1.93 Inf      63.6      71.2
+    1   75.0 1.82 Inf      71.4      78.6
+
+Results are averaged over the levels of: gender 
+Degrees-of-freedom method: asymptotic 
+Confidence level used: 0.95 
+    Contrasts:
+ contrast      estimate   SE  df z.ratio p.value
+ dm_20 - dm_21    -7.62 2.75 Inf  -2.774  0.0055
+
+Results are averaged over the levels of: gender 
+Degrees-of-freedom method: asymptotic 
+
+  Analyzing  mean   rhr_50 ...
+Note: D.f. calculations have been disabled because the number of observations exceeds 3000.
+To enable adjustments, add the argument 'pbkrtest.limit = 3063' (or larger)
+[or, globally, 'set emm_options(pbkrtest.limit = 3063)' or larger];
+but be warned that this may result in large computation time and memory use.
+Note: D.f. calculations have been disabled because the number of observations exceeds 3000.
+To enable adjustments, add the argument 'lmerTest.limit = 3063' (or larger)
+[or, globally, 'set emm_options(lmerTest.limit = 3063)' or larger];
+but be warned that this may result in large computation time and memory use.
+NOTE: Results may be misleading due to involvement in interactions
+    Fixed effects:
+                Estimate  Std. Error      t value
+(Intercept) 85.219476904 8.679859096  9.818071464
+dm_2         5.403566826 2.642769383  2.044660749
+day         -0.004462766 0.004876380 -0.915180164
+age         -0.125759553 0.127619294 -0.985427429
+gender       0.006935746 2.555281647  0.002714279
+dm_2:day     0.017578726 0.007221245  2.434306934
+    Estimated marginal means:
+ dm_2 emmean   SE  df asymp.LCL asymp.UCL
+    0   77.2 1.85 Inf      73.5      80.8
+    1   83.2 1.75 Inf      79.7      86.6
+
+Results are averaged over the levels of: gender 
+Degrees-of-freedom method: asymptotic 
+Confidence level used: 0.95 
+    Contrasts:
+ contrast      estimate   SE  df z.ratio p.value
+ dm_20 - dm_21    -5.98 2.64 Inf  -2.269  0.0232
+
+Results are averaged over the levels of: gender 
+Degrees-of-freedom method: asymptotic 
+
+  Analyzing  sd   rhr_1 ...
+Note: D.f. calculations have been disabled because the number of observations exceeds 3000.
+To enable adjustments, add the argument 'pbkrtest.limit = 3101' (or larger)
+[or, globally, 'set emm_options(pbkrtest.limit = 3101)' or larger];
+but be warned that this may result in large computation time and memory use.
+Note: D.f. calculations have been disabled because the number of observations exceeds 3000.
+To enable adjustments, add the argument 'lmerTest.limit = 3101' (or larger)
+[or, globally, 'set emm_options(lmerTest.limit = 3101)' or larger];
+but be warned that this may result in large computation time and memory use.
+NOTE: Results may be misleading due to involvement in interactions
+    Fixed effects:
+                Estimate  Std. Error    t value
+(Intercept)  9.612724353 1.737747045  5.5317167
+dm_2        -1.383156237 0.535717263 -2.5818773
+day         -0.002671478 0.002376711 -1.1240231
+age         -0.016201890 0.025530609 -0.6346065
+gender       0.207508863 0.508599630  0.4080004
+dm_2:day     0.003348814 0.003524968  0.9500269
+    Estimated marginal means:
+ dm_2 emmean    SE  df asymp.LCL asymp.UCL
+    0   8.61 0.370 Inf      7.89      9.33
+    1   7.34 0.349 Inf      6.65      8.02
+
+Results are averaged over the levels of: gender 
+Degrees-of-freedom method: asymptotic 
+Confidence level used: 0.95 
+    Contrasts:
+ contrast      estimate    SE  df z.ratio p.value
+ dm_20 - dm_21     1.27 0.527 Inf   2.418  0.0156
+
+Results are averaged over the levels of: gender 
+Degrees-of-freedom method: asymptotic 
+
+  Analyzing  cv   rhr_1 ...
+Note: D.f. calculations have been disabled because the number of observations exceeds 3000.
+To enable adjustments, add the argument 'pbkrtest.limit = 3101' (or larger)
+[or, globally, 'set emm_options(pbkrtest.limit = 3101)' or larger];
+but be warned that this may result in large computation time and memory use.
+Note: D.f. calculations have been disabled because the number of observations exceeds 3000.
+To enable adjustments, add the argument 'lmerTest.limit = 3101' (or larger)
+[or, globally, 'set emm_options(lmerTest.limit = 3101)' or larger];
+but be warned that this may result in large computation time and memory use.
+NOTE: Results may be misleading due to involvement in interactions
+    Fixed effects:
+                Estimate  Std. Error     t value
+(Intercept) 13.471703343 2.872851083  4.68931488
+dm_2        -3.234065731 0.880464958 -3.67313395
+day         -0.002871932 0.003074888 -0.93399577
+age         -0.005442832 0.042221694 -0.12891079
+gender       0.063428870 0.842961349  0.07524529
+dm_2:day     0.002935464 0.004564752  0.64307194
+    Estimated marginal means:
+ dm_2 emmean    SE  df asymp.LCL asymp.UCL
+    0  13.07 0.612 Inf      11.9      14.3
+    1   9.93 0.578 Inf       8.8      11.1
+
+Results are averaged over the levels of: gender 
+Degrees-of-freedom method: asymptotic 
+Confidence level used: 0.95 
+    Contrasts:
+ contrast      estimate    SE  df z.ratio p.value
+ dm_20 - dm_21     3.14 0.871 Inf   3.601  0.0003
+
+Results are averaged over the levels of: gender 
+Degrees-of-freedom method: asymptotic 
+
+
+Creating visualizations...
+  Creating dashboard for  Mean RHR ...
+    Dashboard saved as  rhr_mean_rhr_1_diabetes_dashboard.png 
+  Creating dashboard for  Mean RHR (50% threshold) ...
+    Dashboard saved as  rhr_mean_rhr_50_diabetes_dashboard.png 
+  Creating dashboard for  RHR Variability (SD) ...
+    Dashboard saved as  rhr_sd_rhr_1_diabetes_dashboard.png 
+  Creating dashboard for  RHR Coefficient of Variation ...
+    Dashboard saved as  rhr_cv_rhr_1_diabetes_dashboard.png 
+
+Saving analysis results...
+
+Creating summary report...
+Analysis Summary Report
+======================
+
+Date:  2025-03-11 
+Total participants analyzed:  49 
+Participants with diabetes:  26 
+Participants without diabetes:  23 
+Days analyzed:  -10  to  90  relative to surgery
+RHR metrics analyzed:  mean, min, max, median, sd, cv, iqr, skew, kurt 
+RHR types analyzed:  rhr_1, rhr_50 
+
+Significant Findings Summary
+--------------------------
+
+Total significant findings (FDR-adjusted):  370 
+
+cv (rhr_1): 48 significant days
+  Mean effect size (Cohen's d):  1.05 
+  Days with significant differences:  -6, -5, -3, -1, 0, 1, 2, 3, 4, 5, 6, 8, 9, 12, 13, 14, 15, 16, 17, 18, 21, 22, 25, 26, 27, 29, 30, 31, 32, 33, 34, 37, 39, 40, 42, 43, 45, 46, 47, 48, 49, 50, 51, 53, 54, 55, 64, 78 
+
+cv (rhr_50): 4 significant days
+  Mean effect size (Cohen's d):  1.09 
+  Days with significant differences:  13, 14, 19, 39 
+
+max (rhr_50): 3 significant days
+  Mean effect size (Cohen's d):  1.36 
+  Days with significant differences:  24, 25, 66 
+
+mean (rhr_1): 71 significant days
+  Mean effect size (Cohen's d):  1.18 
+  Days with significant differences:  -7, -6, -5, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 52, 54, 55, 56, 57, 59, 60, 62, 63, 64, 65, 66, 67, 70, 77, 80, 83 
+
+mean (rhr_50): 28 significant days
+  Mean effect size (Cohen's d):  1.09 
+  Days with significant differences:  -2, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 18, 19, 20, 21, 23, 24, 25, 26, 28, 29, 30, 32, 33, 36, 56, 66, 67 
+
+median (rhr_1): 70 significant days
+  Mean effect size (Cohen's d):  1.18 
+  Days with significant differences:  -7, -6, -5, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 52, 55, 56, 57, 59, 60, 62, 63, 64, 65, 66, 67, 70, 77, 80, 83 
+
+median (rhr_50): 26 significant days
+  Mean effect size (Cohen's d):  1.06 
+  Days with significant differences:  -2, 2, 3, 4, 6, 7, 8, 9, 11, 12, 18, 19, 20, 21, 24, 25, 26, 28, 29, 30, 32, 33, 56, 60, 66, 67 
+
+min (rhr_1): 73 significant days
+  Mean effect size (Cohen's d):  1.11 
+  Days with significant differences:  -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 43, 44, 45, 46, 47, 50, 53, 55, 56, 57, 59, 60, 61, 62, 63, 64, 65, 66, 67, 69, 70, 71, 77, 80, 81, 84, 85, 86 
+
+min (rhr_50): 47 significant days
+  Mean effect size (Cohen's d):  1.06 
+  Days with significant differences:  -3, -2, -1, 0, 1, 2, 3, 4, 5, 7, 9, 11, 12, 13, 14, 18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 30, 32, 33, 34, 36, 38, 39, 41, 42, 44, 46, 52, 54, 56, 57, 61, 62, 65, 66, 67, 76, 86 
+
+Top 5 Strongest Effects:
+1. median (rhr_1), Day 66, Cohen's d = 2.07, p = 0.00146
+2. min (rhr_1), Day 67, Cohen's d = 2.02, p = 0.00386
+3. mean (rhr_1), Day 67, Cohen's d = 2.02, p = 0.00138
+4. mean (rhr_1), Day 66, Cohen's d = 1.96, p = 0.00206
+5. median (rhr_1), Day 67, Cohen's d = 1.86, p = 0.00242
+
+Analysis completed at:  2025-03-11 12:54:45 
+Results saved to:  /public1/zijing/zijing_project/wearable_eyedisease_project/3_data_analysis/4_correlation_analysis/RHR/RHR_diabetes_comparison 

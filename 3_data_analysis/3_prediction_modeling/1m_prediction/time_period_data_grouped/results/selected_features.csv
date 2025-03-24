@@ -1,0 +1,15 @@
+"Day","Group","Features","FeatureCount"
+"post_7d","Diabetes Surgery 1","post_surgery_7d_bo_sd|post_surgery_7d_steps_total|age|gender|pre_vision|season|vision_improvement_1w",7
+"post_7d","No Diabetes Surgery 0","post_surgery_7d_steps_total|gender|pre_vision|season|bmi|vision_improvement_1w",6
+"post_7d_30d","Diabetes Surgery 1","season|vision_improvement_1w",2
+"post_7d_30d","No Diabetes Surgery 0","post_surgery_7d_to_30d_min_rhr_steps_1|post_surgery_7d_to_30d_max_rhr_steps_1|post_surgery_7d_to_30d_sd_rhr_steps_1|post_surgery_7d_to_30d_bo_sd|pre_vision|season|bmi|vision_improvement_1w",8
+"post_day23_30","Diabetes Surgery 1","season|vision_improvement_1w",2
+"post_day23_30","No Diabetes Surgery 0","post_surgery_day23_to_30_min_rhr_steps_1|post_surgery_day23_to_30_max_rhr_steps_1|post_surgery_day23_to_30_sd_rhr_steps_1|pre_vision|vision_improvement_1w",5
+"post_day27_30","Diabetes Surgery 1","post_surgery_day27_to_30_min_rhr_steps_1|season|vision_improvement_1w",3
+"post_day27_30","No Diabetes Surgery 0","post_surgery_day27_to_30_mean_rhr_steps_1|post_surgery_day27_to_30_min_rhr_steps_1|post_surgery_day27_to_30_max_rhr_steps_1|post_surgery_day27_to_30_sd_rhr_steps_1|post_surgery_day27_to_30_bo_mean|post_surgery_day27_to_30_bo_sd|post_surgery_day27_to_30_steps_total|post_surgery_day27_to_30_steps_max|age|gender|pre_vision|season|bmi|vision_improvement_1w",14
+"pre_3d","Diabetes Surgery 1","pre_surgery_3d_steps_total|season|vision_improvement_1w",3
+"pre_3d","No Diabetes Surgery 0","pre_vision|vision_improvement_1w",2
+"pre_3d_7d","Diabetes Surgery 1","pre_surgery_3d_to_7d_mean_rhr_steps_1|pre_surgery_3d_to_7d_min_rhr_steps_1|pre_surgery_3d_to_7d_max_rhr_steps_1|pre_surgery_3d_to_7d_sd_rhr_steps_1|pre_surgery_3d_to_7d_bo_mean|pre_surgery_3d_to_7d_steps_max|age|pre_vision|season|bmi|vision_improvement_1w",11
+"pre_3d_7d","No Diabetes Surgery 0","pre_surgery_3d_to_7d_mean_rhr_steps_1|pre_surgery_3d_to_7d_min_rhr_steps_1|pre_surgery_3d_to_7d_max_rhr_steps_1|pre_surgery_3d_to_7d_sd_rhr_steps_1|pre_surgery_3d_to_7d_bo_mean|pre_surgery_3d_to_7d_bo_sd|pre_surgery_3d_to_7d_steps_total|pre_surgery_3d_to_7d_steps_max|age|gender|pre_vision|season|bmi|vision_improvement_1w",14
+"pre_7d_all","Diabetes Surgery 1","pre_surgery_7d_all_max_rhr_steps_1|pre_surgery_7d_all_sd_rhr_steps_1|pre_surgery_7d_all_steps_total|pre_vision|season|vision_improvement_1w",6
+"pre_7d_all","No Diabetes Surgery 0","pre_surgery_7d_all_mean_rhr_steps_1|pre_surgery_7d_all_min_rhr_steps_1|pre_surgery_7d_all_bo_sd|gender|pre_vision|season|vision_improvement_1w",7
