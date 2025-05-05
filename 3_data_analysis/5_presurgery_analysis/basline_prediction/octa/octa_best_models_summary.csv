@@ -1,0 +1,5 @@
+"OCTA_Variable","Category","Group","R_Squared","Adjusted_R_Squared","RMSE","MAE","Significant_Predictors"
+"Thickness_RNFL_0_6_T0","Thickness","Diabetic",0.717031417016949,0.511236083938367,12.3523305692227,8.5728716097564,"mean_bo, bmi"
+"Thickness_GCL.IPL_0_6_T0","Thickness","Non-diabetic",0.886221133540538,0.756188143301152,2.80049727808401,2.23692103743428,"mean_hr, mean_rhr, total_sleep, age"
+"VD_NerveFiber_0_6_T0","Bloodflow","Diabetic",0.737450627451816,0.527411129413268,1.1438976498541,1.03551986690461,"mean_bo, bmi"
+"VD_SVP_0_6_T0","Bloodflow","Non-diabetic",0.741988534040834,0.447118287230359,1.48803461052854,1.26427443287629,"mean_hr, mean_rhr, total_sleep, age"

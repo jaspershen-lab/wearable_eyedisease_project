@@ -18,6 +18,9 @@ load("3_data_analysis/2_data_analysis/bo/bo_time_periods/daily_bo_result.rda")
 load("3_data_analysis/2_data_analysis/steps/steps_time_periods/daily_steps_result_assigned.rda")
 load("3_data_analysis/2_data_analysis/sleep/sleep_time_periods/daily_sleep_result.rda")
 
+# 加载心率数据结果 - 新增行
+load("3_data_analysis/2_data_analysis/hr/hr_time_periods/daily_hr_result.rda")
+
 # Load baseline info for disease and vision data
 baseline_info <- read.csv("2_data/analysis_data/baseline_info.csv")
 
@@ -83,13 +86,13 @@ vision_data <- baseline_info %>%
                 vision_improvement, vision_improved, vision_improved_factor,
                 age, gender)
 
-# Process OCTA blood flow data for baseline (T0) - added from second code
+# Process OCTA blood flow data for baseline (T0)
 octa_bloodflow_features <- baseline_info %>%
   filter(!is.na(surgery_eye_1)) %>%
   distinct(ID, surgery_eye_1, .keep_all = TRUE) %>%
   left_join(octa_bloodflow, by = c("ID" = "id"))
 
-# Function to process blood flow data for each patient at baseline (T0) - added from second code
+# Function to process blood flow data for each patient at baseline (T0)
 process_patient_bloodflow <- function(patient_data, time_points = c("T0")) {
   current_eye <- patient_data$surgery_eye_1[1]
   # Use left eye data for left eye surgery, right eye data for right eye and both eyes surgery
@@ -116,14 +119,14 @@ process_patient_bloodflow <- function(patient_data, time_points = c("T0")) {
   return(result)
 }
 
-# Process each patient individually for baseline (T0) - added from second code
+# Process each patient individually for baseline (T0)
 patient_list_bloodflow <- split(octa_bloodflow_features, octa_bloodflow_features$ID)
 processed_data_bloodflow <- purrr::map(patient_list_bloodflow, process_patient_bloodflow)
 
-# Combine results - added from second code
+# Combine results
 octa_bloodflow_features <- bind_rows(processed_data_bloodflow)
 
-# Create blood flow variables subset for baseline (T0) - added from second code
+# Create blood flow variables subset for baseline (T0)
 bloodflow_var_T0 <- octa_bloodflow_features %>%
   dplyr::select(
     ID,  # Keep ID column
@@ -132,13 +135,13 @@ bloodflow_var_T0 <- octa_bloodflow_features %>%
     -matches("PA_PED_0_6_T0")
   )
 
-# Process OCTA thickness data for baseline (T0) - added from second code
+# Process OCTA thickness data for baseline (T0)
 octa_thickness_features <- baseline_info %>%
   filter(!is.na(surgery_eye_1)) %>%
   distinct(ID, surgery_eye_1, .keep_all = TRUE) %>%
   left_join(octa_thickness, by = c("ID" = "id"))
 
-# Function to process thickness data for each patient at baseline (T0) - added from second code
+# Function to process thickness data for each patient at baseline (T0)
 process_patient_thickness <- function(patient_data, time_points = c("T0")) {
   current_eye <- patient_data$surgery_eye_1[1]
   # Use left eye data for left eye surgery, right eye data for right eye and both eyes surgery
@@ -165,14 +168,14 @@ process_patient_thickness <- function(patient_data, time_points = c("T0")) {
   return(result)
 }
 
-# Process each patient individually for baseline (T0) - added from second code
+# Process each patient individually for baseline (T0)
 patient_list_thickness <- split(octa_thickness_features, octa_thickness_features$ID)
 processed_data_thickness <- purrr::map(patient_list_thickness, process_patient_thickness)
 
-# Combine results - added from second code
+# Combine results
 octa_thickness_features <- bind_rows(processed_data_thickness)
 
-# Create thickness variables subset for baseline (T0) - added from second code
+# Create thickness variables subset for baseline (T0)
 thickness_var_T0 <- octa_thickness_features %>%
   dplyr::select(
     ID,  # Keep ID column
@@ -270,17 +273,18 @@ filtered_participants_by_day <- function(daily_coverage_status, target_day) {
 }
 
 # Step 6: Extract metrics for each day and combine with baseline data
-# Modified to include OCTA data
+# Modified to include HR data and OCTA data
 prepare_day_dataset <- function(day_point, 
                                 rhr_data = daily_rhr_result, 
                                 bo_data = daily_bo_result,
-                                steps_data = daily_steps_result_assigned,
-                                sleep_data=daily_sleep_result,
+                                steps_data = daily_steps_result,
+                                sleep_data = daily_sleep_result,
+                                hr_data = daily_hr_result,  # 添加心率数据参数
                                 daily_coverage_status,
                                 disease_data,
                                 vision_data,
-                                bloodflow_var_T0,  # Added OCTA bloodflow
-                                thickness_var_T0) {  # Added OCTA thickness
+                                bloodflow_var_T0,
+                                thickness_var_T0) {
   
   # Get participants with adequate coverage for this day
   valid_participants <- filtered_participants_by_day(daily_coverage_status, day_point)
@@ -325,11 +329,25 @@ prepare_day_dataset <- function(day_point,
     sleep_day_data <- data.frame(subject_id = rhr_day_data$subject_id)
   }
   
+  # 提取心率指标 - 新增部分
+  hr_columns <- names(hr_data) %>%
+    grep(paste0("day_", day_point, "_"), ., value = TRUE)
+  
+  if(length(hr_columns) > 0) {
+    hr_day_data <- hr_data %>%
+      dplyr::select(subject_id, all_of(hr_columns)) %>%
+      # 重命名列以去除日期前缀，提高清晰度
+      rename_with(~ gsub(paste0("day_", day_point, "_"), "", .), starts_with(paste0("day_", day_point, "_")))
+  } else {
+    hr_day_data <- data.frame(subject_id = rhr_day_data$subject_id)
+  }
+  
   # Combine all data
   combined_data <- rhr_day_data %>%
     left_join(bo_day_data, by = "subject_id") %>%
     left_join(steps_day_data, by = "subject_id") %>%
     left_join(sleep_day_data, by = "subject_id") %>%
+    left_join(hr_day_data, by = "subject_id") %>%  # 加入心率数据 - 新增行
     # Join with disease data
     left_join(disease_data, by = c("subject_id" = "ID")) %>%
     # Join with vision data
@@ -357,12 +375,13 @@ for(day in all_days) {
     rhr_data = daily_rhr_result,
     bo_data = daily_bo_result,
     steps_data = daily_steps_result,
-    sleep_data=daily_sleep_result,
+    sleep_data = daily_sleep_result,
+    hr_data = daily_hr_result,  # 添加心率数据 - 新增行
     daily_coverage_status = daily_coverage_status,
     disease_data = disease_data,
     vision_data = vision_data,
-    bloodflow_var_T0 = bloodflow_var_T0,  # Added OCTA bloodflow
-    thickness_var_T0 = thickness_var_T0   # Added OCTA thickness
+    bloodflow_var_T0 = bloodflow_var_T0,
+    thickness_var_T0 = thickness_var_T0
   )
 }
 
@@ -520,6 +539,23 @@ save(day_sample_sizes, file = file.path(output_dir, "vision_prediction_sample_si
 
 cat("Data preparation complete. Datasets saved in", output_dir, "\n")
 
+# 分析特征类型分布 - 新增部分
+if(length(valid_dfs) > 0 && nrow(combined_data) > 0) {
+  # 查看每种数据类型有多少特征
+  feature_types <- sapply(combined_data, function(col) class(col)[1])
+  feature_type_counts <- table(feature_types)
+  cat("\n特征类型分布:\n")
+  print(feature_type_counts)
+  
+  # 分析心率特征
+  hr_features <- grep("_hr_|heart_rate", names(combined_data), value = TRUE)
+  cat("\n包含的心率特征 (", length(hr_features), "):\n")
+  print(hr_features[1:min(20, length(hr_features))])
+  if(length(hr_features) > 20) {
+    cat("...及", length(hr_features) - 20, "个更多特征\n")
+  }
+}
+
 # 检查每个day_datasets元素的结构
 for(day in names(day_datasets)) {
   cat("Day", day, "- Class:", class(day_datasets[[day]]), "\n")
@@ -539,3 +575,10 @@ for(day in names(day_datasets)) {
   }
   cat("\n")
 }
+
+
+
+# 检查SH038的覆盖情况
+daily_coverage_status %>% 
+  filter(subject_id == "SH038") %>%
+  arrange(day_point)

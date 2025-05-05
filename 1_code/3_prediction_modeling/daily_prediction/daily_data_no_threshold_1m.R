@@ -16,6 +16,8 @@ load("3_data_analysis/2_data_analysis/RHR/RHR_time_periods/daily_rhr_result.rda"
 load("3_data_analysis/2_data_analysis/bo/bo_time_periods/daily_bo_result.rda")
 load("3_data_analysis/2_data_analysis/steps/steps_time_periods/daily_steps_result_assigned.rda")
 load("3_data_analysis/2_data_analysis/sleep/sleep_time_periods/daily_sleep_result.rda")
+# 加载心率数据结果 - 新增行
+load("3_data_analysis/2_data_analysis/hr/hr_time_periods/daily_hr_result.rda")
 
 # Load baseline info for disease and vision data
 baseline_info <- read.csv("2_data/analysis_data/baseline_info.csv")
@@ -194,6 +196,7 @@ process_patient_thickness <- function(patient_data, time_points = c("T0", "T1", 
 patient_list_thickness <- split(octa_thickness_features, octa_thickness_features$ID)
 processed_data_thickness <- purrr::map(patient_list_thickness, process_patient_thickness)
 
+
 # Combine results
 octa_thickness_features <- bind_rows(processed_data_thickness)
 
@@ -219,7 +222,7 @@ thickness_var_T2 <- octa_thickness_features %>%
     matches("Thickness_PED_0_6_T2")
   )
 
-# Step 4: Create the daily coverage status dataset with extended range -7 to 29
+# Step 4: Create the daily coverage status dataset with extended range -7 to 30
 # Modified coverage analysis function - only requires total ≥8 hours
 analyze_time_period_coverage <- function(heart_rate_data, baseline_info) {
   
@@ -243,10 +246,10 @@ analyze_time_period_coverage <- function(heart_rate_data, baseline_info) {
       day_point = floor(days_to_surgery),
       hour = lubridate::hour(measure_time)
     ) %>%
-    # Filter to our desired range (-7 to 29 days)
+    # Filter to our desired range (-7 to 30 days)
     filter(
       day_point >= -7,
-      day_point <= 29
+      day_point <= 30
     ) %>%
     # Count distinct hours per subject-day
     group_by(subject_id, day_point) %>%
@@ -257,7 +260,7 @@ analyze_time_period_coverage <- function(heart_rate_data, baseline_info) {
   
   # Create complete grid with all subject-day combinations
   all_subjects <- unique(hr_df$subject_id)
-  all_days <- seq(-7, 29)
+  all_days <- seq(-7, 30)
   complete_grid <- expand.grid(
     subject_id = all_subjects,
     day_point = all_days,
@@ -298,7 +301,7 @@ daily_coverage_count <- daily_coverage_status %>%
 print(daily_coverage_count)
 
 # Step 5: Filter participants based on the coverage criteria
-# For each day from -7 to 29, get the IDs of participants with adequate coverage
+# For each day from -7 to 30, get the IDs of participants with adequate coverage
 filtered_participants_by_day <- function(daily_coverage_status, target_day) {
   daily_coverage_status %>%
     filter(day_point == target_day, meets_threshold == TRUE) %>%
@@ -306,12 +309,13 @@ filtered_participants_by_day <- function(daily_coverage_status, target_day) {
 }
 
 # Step 6: Extract metrics for each day and combine with baseline data
-# Modified function to include OCTA data from both baseline and 1-week
+# Modified function to include HR data and OCTA data from both baseline and 1-week
 prepare_day_dataset <- function(day_point, 
                                 rhr_data = daily_rhr_result, 
                                 bo_data = daily_bo_result,
-                                steps_data = daily_steps_result_assigned,
-                                sleep_data=daily_sleep_result,
+                                steps_data = daily_steps_result,
+                                sleep_data = daily_sleep_result,
+                                hr_data = daily_hr_result,  # 添加心率数据参数
                                 daily_coverage_status,
                                 disease_data,
                                 vision_data,
@@ -365,11 +369,25 @@ prepare_day_dataset <- function(day_point,
     sleep_day_data <- data.frame(subject_id = rhr_day_data$subject_id)
   }
   
+  # 提取HR心率指标 - 新增部分
+  hr_columns <- names(hr_data) %>%
+    grep(paste0("day_", day_point, "_"), ., value = TRUE)
+  
+  if(length(hr_columns) > 0) {
+    hr_day_data <- hr_data %>%
+      dplyr::select(subject_id, all_of(hr_columns)) %>%
+      # 重命名列以去除日期前缀，提高清晰度
+      rename_with(~ gsub(paste0("day_", day_point, "_"), "", .), starts_with(paste0("day_", day_point, "_")))
+  } else {
+    hr_day_data <- data.frame(subject_id = rhr_day_data$subject_id)
+  }
+  
   # Combine all data
   combined_data <- rhr_day_data %>%
     left_join(bo_day_data, by = "subject_id") %>%
     left_join(steps_day_data, by = "subject_id") %>%
     left_join(sleep_day_data, by = "subject_id") %>%
+    left_join(hr_day_data, by = "subject_id") %>%  # 加入心率数据 - 新增行
     # Join with disease data
     left_join(disease_data, by = c("subject_id" = "ID")) %>%
     # Join with vision data (includes both 1-week and 1-month)
@@ -395,8 +413,8 @@ prepare_day_dataset <- function(day_point,
   return(combined_data)
 }
 
-# Step 7: Generate datasets for each day - extend range to -7 to 29
-all_days <- seq(-7, 29)
+# Step 7: Generate datasets for each day - extend range to -7 to 30
+all_days <- seq(-7, 30)
 day_datasets <- list()
 
 for(day in all_days) {
@@ -405,7 +423,8 @@ for(day in all_days) {
     rhr_data = daily_rhr_result,
     bo_data = daily_bo_result,
     steps_data = daily_steps_result,
-    sleep_data=daily_sleep_result,
+    sleep_data = daily_sleep_result,
+    hr_data = daily_hr_result,  # 添加心率数据参数 - 新增行
     daily_coverage_status = daily_coverage_status,
     disease_data = disease_data,
     vision_data = vision_data,
@@ -560,6 +579,14 @@ if(length(valid_dfs) > 0) {
     cat("Exported combined data for all days to", combined_file, "\n")
     cat("  Total observations:", nrow(combined_data), "\n")
     cat("  Number of variables:", ncol(combined_data), "\n\n")
+    
+    # 分析心率特征 - 新增部分
+    hr_features <- grep("_hr_|heart_rate", names(combined_data), value = TRUE)
+    cat("\n包含的心率特征 (", length(hr_features), "):\n")
+    print(hr_features[1:min(20, length(hr_features))])
+    if(length(hr_features) > 20) {
+      cat("...及", length(hr_features) - 20, "个更多特征\n")
+    }
   }, error = function(e) {
     cat("Failed to combine datasets:", e$message, "\n\n")
   })
@@ -586,6 +613,14 @@ for(day in names(day_datasets)) {
       cat("  Has list columns: YES -", names(day_datasets[[day]])[list_cols], "\n")
     } else {
       cat("  Has list columns: NO\n")
+    }
+    
+    # 检查心率数据列 - 新增部分
+    hr_cols <- grep("_hr_|heart_rate", names(day_datasets[[day]]), value = TRUE)
+    if(length(hr_cols) > 0) {
+      cat("  含心率指标数量:", length(hr_cols), "\n")
+    } else {
+      cat("  含心率指标数量: 0\n")
     }
   } else {
     cat("  Is data frame: NO\n")

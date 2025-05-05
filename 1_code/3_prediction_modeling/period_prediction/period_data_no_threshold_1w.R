@@ -316,21 +316,22 @@ filtered_participants_by_period <- function(coverage_status, period_name) {
 
 # Step 7: Extract time period metrics and combine with baseline data
 # 函数来提取给定时间周期的列，考虑自定义的时间窗口命名
+# Function to extract and standardize columns for a given time period
 extract_period_columns <- function(data, period_name) {
-  # 尝试直接匹配
+  # Find columns that match the period pattern
   period_pattern <- paste0("^", period_name, "_")
   cols <- grep(period_pattern, names(data), value = TRUE)
   
-  # 如果找不到匹配的列，尝试其他可能的命名模式
+  # If no columns found, try alternative naming patterns
   if(length(cols) == 0) {
-    # 检查名称格式差异或缩写
+    # Check for name format differences or abbreviations
     simplified_pattern <- gsub("surgery_", "", period_name)
     simplified_pattern <- gsub("_to_", "_", simplified_pattern)
     cols <- grep(simplified_pattern, names(data), value = TRUE)
     
-    # 检查更简单的匹配
+    # Check for simpler matches
     if(length(cols) == 0) {
-      # 尝试匹配主关键词
+      # Try matching key keywords
       if(grepl("pre_surgery_3d$", period_name)) {
         cols <- grep("pre.*3d[^_]", names(data), value = TRUE)
       } else if(grepl("pre_surgery_3d_to_7d", period_name)) {
@@ -360,6 +361,49 @@ extract_period_columns <- function(data, period_name) {
   return(unique(cols))
 }
 
+# Function to standardize column names by removing time period prefixes
+standardize_column_names <- function(data, period_name) {
+  # First get the column names
+  col_names <- names(data)
+  
+  # Create standardized names by removing time period prefixes
+  new_names <- col_names
+  
+  # Build a pattern to match the time period prefixes
+  # These are the common prefixes that appear in the data
+  prefix_patterns <- c(
+    paste0("^", period_name, "_"),
+    "^pre_3d_", 
+    "^pre_3d_to_7d_",
+    "^pre_7d_all_",
+    "^pre_all_",
+    "^post_1to3d_",
+    "^post_4to6d_",
+    "^post_6d_",
+    "^post_7d_to_30d_",
+    "^post_day23_to_30_",
+    "^post_day27_to_30_",
+    "^post_over_30d_"
+  )
+  
+  # Simplified prefixes
+  simplified_period <- gsub("surgery_", "", period_name)
+  simplified_period <- gsub("_to_", "_", simplified_period)
+  prefix_patterns <- c(prefix_patterns, paste0("^", simplified_period, "_"))
+  
+  # Remove prefixes from column names
+  for (pattern in prefix_patterns) {
+    # Apply gsub to each column name to remove the prefix
+    new_names <- gsub(pattern, "", new_names)
+  }
+  
+  # Set the new standardized names
+  names(data) <- new_names
+  
+  return(data)
+}
+
+# Modify the prepare_period_dataset function to use the standardized column names
 prepare_period_dataset <- function(period_name, 
                                    rhr_data = time_period_rhr_results, 
                                    bo_data = bo_time_period_results,
@@ -374,72 +418,80 @@ prepare_period_dataset <- function(period_name,
   # Get participants with adequate coverage for this period
   valid_participants <- filtered_participants_by_period(coverage_status, period_name)
   
-  # 提取各个数据源的相关列
+  # Extract columns for each data source
   rhr_columns <- extract_period_columns(rhr_data, period_name)
   bo_columns <- extract_period_columns(bo_data, period_name)
   steps_columns <- extract_period_columns(steps_data, period_name)
   sleep_columns <- extract_period_columns(sleep_data, period_name)
   
-  # 打印调试信息
+  # Print debug information
   cat("Period:", period_name, "\n")
   cat("  RHR columns found:", length(rhr_columns), "\n")
   cat("  BO columns found:", length(bo_columns), "\n")
   cat("  Steps columns found:", length(steps_columns), "\n")
   cat("  Sleep columns found:", length(sleep_columns), "\n")
   
-  # 提取RHR指标数据
+  # Extract RHR metrics
   if(length(rhr_columns) > 0) {
     rhr_period_data <- rhr_data %>%
       dplyr::select(subject_id, all_of(rhr_columns))
+    # Standardize column names
+    rhr_period_data <- standardize_column_names(rhr_period_data, period_name)
   } else {
-    # 如果没有找到匹配列，创建一个只有subject_id的数据框
+    # If no matching columns, create a dataframe with just subject_id
     rhr_period_data <- data.frame(subject_id = unique(rhr_data$subject_id))
   }
   
-  # 提取BO指标数据
+  # Extract BO metrics
   if(length(bo_columns) > 0) {
     bo_period_data <- bo_data %>%
       dplyr::select(subject_id, all_of(bo_columns))
+    # Standardize column names
+    bo_period_data <- standardize_column_names(bo_period_data, period_name)
   } else {
     bo_period_data <- data.frame(subject_id = unique(bo_data$subject_id))
   }
   
-  # 提取Steps指标数据
+  # Extract Steps metrics
   if(length(steps_columns) > 0) {
     steps_period_data <- steps_data %>%
       dplyr::select(subject_id, all_of(steps_columns))
+    # Standardize column names
+    steps_period_data <- standardize_column_names(steps_period_data, period_name)
   } else {
     steps_period_data <- data.frame(subject_id = unique(steps_data$subject_id))
   }
   
-  # 提取Sleep指标数据
+  # Extract Sleep metrics
   if(length(sleep_columns) > 0) {
     sleep_period_data <- sleep_data %>%
       dplyr::select(subject_id, all_of(sleep_columns))
+    # Standardize column names
+    sleep_period_data <- standardize_column_names(sleep_period_data, period_name)
   } else {
     sleep_period_data <- data.frame(subject_id = unique(sleep_data$subject_id))
   }
   
-  # 合并所有数据
+  # Merge all data
   combined_data <- rhr_period_data %>%
     left_join(bo_period_data, by = "subject_id") %>%
     left_join(steps_period_data, by = "subject_id") %>%
     left_join(sleep_period_data, by = "subject_id") %>%
-    # 与基线疾病数据合并
+    # Merge with baseline disease data
     left_join(disease_data, by = c("subject_id" = "ID")) %>%
-    # 与视力数据合并
+    # Merge with vision data
     left_join(vision_data, by = c("subject_id" = "ID")) %>%
-    # 与OCTA基线血流数据合并
+    # Merge with OCTA baseline blood flow data
     left_join(bloodflow_var_T0, by = c("subject_id" = "ID")) %>%
-    # 与OCTA基线厚度数据合并
+    # Merge with OCTA baseline thickness data
     left_join(thickness_var_T0, by = c("subject_id" = "ID")) %>%
-    # 只包含具有足够覆盖率的参与者
+    # Only include participants with adequate coverage
     filter(subject_id %in% valid_participants)
   
-  # 添加时间周期信息
+  # Add time period information
   combined_data$time_period <- period_name
   
-  # 添加覆盖率相关信息
+  # Add coverage-related information
   if(period_name %in% names(coverage_status)) {
     coverage_data <- coverage_status[[period_name]] %>%
       dplyr::select(subject_id, unique_hours, days_covered, required_threshold)

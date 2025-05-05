@@ -7,6 +7,9 @@ library(ggplot2)
 diabetes_colors <- c("#3182bd", "#e6550d")
 names(diabetes_colors) <- c("Diabetes", "No Diabetes")
 
+dr_colors <- c("#3182bd", "#e6550d")
+names(dr_colors) <- c("DR", "Cataract")
+
 # 非糖尿病白内障vs糖尿病PPV分组颜色
 surgery_colors <- c("#e6550d","#3182bd")
 names(surgery_colors) <- c("No_Diabetes_Cataract", "Diabetes_PPV")

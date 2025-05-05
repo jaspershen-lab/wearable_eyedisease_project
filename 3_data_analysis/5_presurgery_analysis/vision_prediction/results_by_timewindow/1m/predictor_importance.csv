@@ -1,0 +1,5 @@
+"predictor","total_windows","significant_windows","significance_rate","mean_rsquared","mean_coef_abs"
+"mean_bo",7,0,0,0.526289779906485,0.0211641466446435
+"mean_rhr_1",7,0,0,0.523394691520594,0.00446904782784296
+"steps_total",7,0,0,0.556665574241336,1.29604208735501e-05
+"total_sleep",7,0,0,0.535969597327681,0.000227921893529351

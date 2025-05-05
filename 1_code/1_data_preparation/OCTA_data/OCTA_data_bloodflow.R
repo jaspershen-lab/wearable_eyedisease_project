@@ -44,7 +44,7 @@ for(i in 1:length(all_subjects)) {
   
   # Get all 6x6 files for this subject
   all_files <- dir(file.path("2_data/OCTA/OCTA_bloodflow_2/", all_subjects[i]))
-  all_files <- all_files[stringr::str_detect(all_files, "6x6")]
+  all_files <- all_files[stringr::str_detect(all_files, "26x21")]
   
   if(length(all_files) == 0) next
   
@@ -89,12 +89,12 @@ for(i in 1:length(all_subjects)) {
           setNames(c("diameter", "value")) %>%
           mutate(
             diameter = case_when(
-              grepl("0-1", diameter) ~ "0_1",
+              grepl("0-21", diameter) ~ "0_21",
               grepl("0-3", diameter) ~ "0_3",
               grepl("0-6", diameter) ~ "0_6",
-              grepl("1-3", diameter) ~ "1_3",
-              grepl("1-6", diameter) ~ "1_6",
-              grepl("3-6", diameter) ~ "3_6",
+              grepl("0-9", diameter) ~ "0_9",
+              grepl("0-12", diameter) ~ "0_12",
+              grepl("0-15", diameter) ~ "0_15",
               TRUE ~ NA_character_
             ),
             value = as.numeric(as.character(value))

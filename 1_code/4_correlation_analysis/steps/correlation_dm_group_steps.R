@@ -329,7 +329,7 @@ analyze_and_visualize_steps <- function(metric_type) {
     scale_fill_manual(values = diabetes_colors) +
     labs(
       title = paste0("Steps (", metric_type, ") by diabetes group"),
-      subtitle = "Mixed-effects model adjusted for age, gender and BMI",
+      # subtitle = "Mixed-effects model adjusted for age, gender and BMI",
       x = "Days relative to surgery",
       y = paste0("Steps (", metric_type, ")"),
       color = "Group",
@@ -372,7 +372,7 @@ analyze_and_visualize_steps <- function(metric_type) {
       color = "Group"
     ) +
     # Add statistical comparison
-    stat_compare_means(method = "t.test",
+    stat_compare_means(method = "wilcox.test",
                        label.y = max(long_data$value, na.rm = TRUE) * 1.1)
   
   # Save the box plot

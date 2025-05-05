@@ -345,7 +345,7 @@ analyze_and_visualize_sleep <- function(metric_type) {
     scale_fill_manual(values = surgery_colors) +
     labs(
       title = paste0(display_name, " by group (No Diabetes Cataract vs Diabetes PPV)"),
-      subtitle = "Mixed-effects model adjusted for age, gender and BMI",
+      # subtitle = "Mixed-effects model adjusted for age, gender and BMI",
       x = "Days relative to surgery",
       y = paste0(display_name, " (minutes)"),
       color = "Group",
@@ -388,7 +388,7 @@ analyze_and_visualize_sleep <- function(metric_type) {
       color = "Group"
     ) +
     # Add statistical comparison
-    stat_compare_means(method = "t.test",
+    stat_compare_means(method = "wilcox.test",
                        label.y = max(long_data$value, na.rm = TRUE) * 1.1)
   
   # Save the box plot

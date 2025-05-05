@@ -1,12 +1,18 @@
 library(tidyverse)
 library(tidymass)
 library(r4projects)
-setwd(get_project_wd())
+
 library(lubridate)
 library(ComplexHeatmap)
 library(circlize)
 library(grid)
 library(ggplot2)
+library(ggsci)
+
+library(tableone)
+library(knitr)
+
+setwd(get_project_wd())
 rm(list = ls())
 
 # Load data
@@ -16,19 +22,147 @@ baseline_info <- read.csv("2_data/analysis_data/baseline_info.csv")
 # Get unique subject IDs from heart_rate_data
 heart_rate_ids <- unique(heart_rate_data@sample_info$subject_id)
 
-# Filter baseline_info to only include participants with heart rate data
-baseline_info_filtered <- baseline_info %>% 
-  filter(ID %in% heart_rate_ids)
+
 
 # Create output directory
 dir.create("3_data_analysis/2_data_analysis/baseline_stat/demography_analysis", recursive = TRUE, showWarnings = FALSE)
 setwd("3_data_analysis/2_data_analysis/baseline_stat/demography_analysis")
 
 
-library(tidyverse)
-library(circlize)
-library(ggsci)
 
+#####comparison table
+# Add surgery type labels
+baseline_info <- baseline_info %>%
+  mutate(
+    surgery_type = case_when(
+      surgery_1..0.PI.1.other. == 0 ~ "Anterior (Cataract)",
+      surgery_1..0.PI.1.other. == 1 ~ "Posterior (PPV)",
+      TRUE ~ NA_character_
+    )
+  )
+
+# Filter out data with NA surgery type
+baseline_info_filtered <- baseline_info %>%
+  filter(!is.na(surgery_type))
+
+# Step 3: Add surgery type labels
+baseline_info_filtered <- baseline_info_filtered %>%
+  mutate(
+    surgery_type = case_when(
+      surgery_1..0.PI.1.other. == 0 ~ "Anterior (Cataract)",
+      surgery_1..0.PI.1.other. == 1 ~ "Posterior (PPV)",
+      TRUE ~ NA_character_
+    )
+  )
+
+# Filter baseline_info to only include participants with heart rate data
+baseline_info_filtered <- baseline_info %>% 
+  filter(ID %in% heart_rate_ids)
+
+
+# Step 5: Ensure variable types are correct and create derived variables
+baseline_info_filtered <- baseline_info_filtered %>%
+  mutate(
+    # Convert gender to factor
+    gender_factor = factor(gender, levels = c(0, 1), labels = c("Female", "Male")),
+    
+    # Diabetes status
+    dm_2 = case_when(
+      diabetes_history == 1 ~ 1,  # Has diabetes history
+      diabetes_history == 2 ~ 0,  # No diabetes history
+      TRUE ~ NA_real_
+    ),
+    dm_2 = factor(dm_2, levels = c(0, 1), labels = c("No", "Yes")),
+    
+    # Cataract status
+    cataract_2 = case_when(
+      cataract == 1 ~ 0,  # No cataract
+      cataract %in% c(2, 3, 4) ~ 1, # Has cataract
+      TRUE ~ NA_real_
+    ),
+    cataract_2 = factor(cataract_2, levels = c(0, 1), labels = c("No", "Yes")),
+    
+    # Ensure BMI is numeric
+    bmi = as.numeric(bmi),
+    
+    # Ensure age is numeric
+    age = as.numeric(age)
+  )
+
+# Count samples in each group
+n_anterior <- sum(baseline_info_filtered$surgery_type == "Anterior (Cataract)", na.rm=TRUE)
+n_posterior <- sum(baseline_info_filtered$surgery_type == "Posterior (PPV)", na.rm=TRUE)
+
+# Print group counts
+cat("\n============ SAMPLE SIZES ============\n")
+cat("Total participants with heart rate data:", nrow(baseline_info_filtered), "\n")
+cat("Anterior (Cataract) group:", n_anterior, "\n")
+cat("Posterior (PPV) group:", n_posterior, "\n")
+
+# Function to calculate and print statistics for continuous variables
+print_continuous_stats <- function(data, var_name, var) {
+  anterior_data <- data[[var]][data$surgery_type == "Anterior (Cataract)"]
+  posterior_data <- data[[var]][data$surgery_type == "Posterior (PPV)"]
+  
+  # Calculate statistics
+  anterior_mean <- mean(anterior_data, na.rm=TRUE)
+  anterior_sd <- sd(anterior_data, na.rm=TRUE)
+  posterior_mean <- mean(posterior_data, na.rm=TRUE)
+  posterior_sd <- sd(posterior_data, na.rm=TRUE)
+  
+  # Calculate p-value using Wilcoxon test
+  p_value <- wilcox.test(anterior_data, posterior_data)$p.value
+  
+  # Print results
+  cat("\n============", var_name, "============\n")
+  cat("Valid N:", sum(!is.na(data[[var]])), "\n")
+  cat("Anterior (Cataract):", sprintf("%.2f (%.2f)", anterior_mean, anterior_sd), "\n")
+  cat("Posterior (PPV):", sprintf("%.2f (%.2f)", posterior_mean, posterior_sd), "\n")
+  cat("p-value:", ifelse(p_value < 0.001, "<0.001", sprintf("%.3f", p_value)), "\n")
+}
+
+# Function to calculate and print statistics for categorical variables
+print_categorical_stats <- function(data, var_name, var) {
+  tab <- table(data$surgery_type, data[[var]])
+  props <- prop.table(tab, 1) * 100  # Row percentages
+  
+  # Calculate p-value using Chi-square or Fisher's exact test
+  test_result <- if (min(tab) < 5 || ncol(tab) * nrow(tab) < 20) {
+    fisher.test(tab)
+  } else {
+    chisq.test(tab)
+  }
+  p_value <- test_result$p.value
+  
+  # Print results
+  cat("\n============", var_name, "============\n")
+  cat("Valid N:", sum(!is.na(data[[var]])), "\n")
+  cat("p-value:", ifelse(p_value < 0.001, "<0.001", sprintf("%.3f", p_value)), "\n\n")
+  
+  # Print counts and percentages for each level
+  for (level in unique(data[[var]])) {
+    cat(level, ":\n")
+    anterior_count <- tab["Anterior (Cataract)", level]
+    anterior_pct <- props["Anterior (Cataract)", level]
+    posterior_count <- tab["Posterior (PPV)", level]
+    posterior_pct <- props["Posterior (PPV)", level]
+    
+    cat("  Anterior (Cataract):", sprintf("%d (%.1f%%)", anterior_count, anterior_pct), "\n")
+    cat("  Posterior (PPV):", sprintf("%d (%.1f%%)", posterior_count, posterior_pct), "\n\n")
+  }
+}
+
+# Print statistics for each variable
+print_continuous_stats(baseline_info_filtered, "AGE", "age")
+print_continuous_stats(baseline_info_filtered, "BMI", "bmi")
+print_categorical_stats(baseline_info_filtered, "GENDER", "gender_factor")
+print_categorical_stats(baseline_info_filtered, "DIABETES", "dm_2")
+print_categorical_stats(baseline_info_filtered, "CATARACT", "cataract_2")
+
+
+
+
+########绘图
 # # Define cataract and diabetes status
 baseline_info_filtered <- baseline_info_filtered %>%
   mutate(
@@ -41,7 +175,9 @@ baseline_info_filtered <- baseline_info_filtered %>%
       diabetes_history == 1 ~ 1,  # Has diabetes history
       diabetes_history == 2 ~ 0,  # No diabetes history
       TRUE ~ NA_real_
-    )
+    ),
+    # Make sure BMI is numeric
+    bmi = as.numeric(bmi)
   )
 
 # 准备数据框
@@ -57,9 +193,11 @@ df <- baseline_info_filtered %>%
   # 确保因子水平的顺序与数据框一致
   mutate(factors = factor(factors, levels = factors))
 
-# 定义颜色
+# 定义颜色 - 修改为分开的疾病颜色
 gender_colors <- c(Female = "#eac4d5", Male = "#95b8d1")  # 0=female(pink), 1=male(blue)
-disease_colors <- c(No = "#fbf2c4", Yes = "#b8e0d4")      # 0=no(light yellow), 1=yes(light green)
+# 分别为白内障和糖尿病定义不同的颜色方案
+cataract_colors <- c(No = "#fbf2c4", Yes = "#f4a582")      # 0=no(light yellow), 1=yes(orange-red)
+diabetes_colors <- c(No = "#e5f5e0", Yes = "#74c476")      # 0=no(light green), 1=yes(darker green)
 
 # 将数值型转换为颜色标签
 df <- df %>%
@@ -132,15 +270,6 @@ circos.track(
         col = age_color,
         lwd = 3
       )
-      
-      # # 在线条顶端添加小圆点
-      # circos.points(
-      #   x = mean(xlim, na.rm = TRUE),
-      #   y = current_age,
-      #   pch = 16,
-      #   cex = 0.8,
-      #   col = age_color
-      # )
     }
   }
 )
@@ -148,7 +277,7 @@ circos.track(
 # 添加年龄图例
 color_breaks <- seq(age_range[1], age_range[2], length.out = 5)
 color_labels <- round(color_breaks)
-pushViewport(viewport(x = 0.87, y = 0.8, width = 0.2, height = 0.1))
+pushViewport(viewport(x = 0.87, y = 0.85, width = 0.2, height = 0.1))
 color_bar <- colorRampPalette(c("#e0f3db", "#31a354"))(100)
 for(i in 1:100) {
   grid.rect(x = 0.1 + (i-1)*0.8/100, y = 0.5, width = 0.8/100, height = 0.3,
@@ -160,9 +289,76 @@ for(i in 1:5) {
 grid.text("Age", x = 0.5, y = 0.85, just = "center", gp = gpar(fontsize = 10, fontface = "bold"))
 popViewport()
 
+# 绘制第二轨道：BMI
+# 确保BMI是数值型
+df$bmi <- as.numeric(df$bmi)
+bmi_range <- range(df$bmi, na.rm = TRUE)
+temp_value <- df$bmi
 
+circos.track(
+  factors = df$factors,
+  y = temp_value,
+  ylim = c(0.8 * min(temp_value, na.rm = TRUE), 1.1 * max(temp_value, na.rm = TRUE)),
+  bg.border = "black",
+  bg.col = "#FFFFFF",  # 白色背景，使线条更明显
+  track.height = 0.2,
+  panel.fun = function(x, y) {
+    name = get.cell.meta.data("sector.index")
+    i = get.cell.meta.data("sector.numeric.index")
+    xlim = get.cell.meta.data("xlim")
+    ylim = get.cell.meta.data("ylim")
+    
+    # 仅在第一个扇区添加y轴
+    if(i == 1) {
+      circos.yaxis(
+        side = "left",
+        at = c(round(min(temp_value, na.rm = TRUE), 1), 
+               round((min(temp_value, na.rm = TRUE) + max(temp_value, na.rm = TRUE)) / 2, 1), 
+               round(max(temp_value, na.rm = TRUE), 1)),
+        sector.index = get.all.sector.index()[1],
+        labels.cex = 0.6,
+        labels.niceFacing = FALSE
+      )
+    }
+    
+    # 使用颜色渐变表示BMI - 使用不同于年龄的配色方案
+    current_bmi <- temp_value[i]
+    if(!is.na(current_bmi)) {
+      # 计算归一化值用于颜色
+      bmi_normalize <- (current_bmi - bmi_range[1]) / (bmi_range[2] - bmi_range[1])
+      # 确保值在0-1之间
+      bmi_normalize <- max(0, min(1, bmi_normalize))
+      # 使用蓝-紫色系表示BMI
+      bmi_color <- colorRampPalette(c("#c6dbef", "#6baed6", "#2171b5"))(100)[ceiling(bmi_normalize * 99) + 1]
+      
+      # 绘制线条
+      circos.lines(
+        x = c(mean(xlim, na.rm = TRUE), mean(xlim, na.rm = TRUE)),
+        y = c(ylim[1], current_bmi),
+        type = "l",
+        col = bmi_color,
+        lwd = 3
+      )
+    }
+  }
+)
 
-# 绘制第二轨道：性别
+# 添加BMI图例
+color_breaks <- seq(bmi_range[1], bmi_range[2], length.out = 5)
+color_labels <- round(color_breaks, 1)
+pushViewport(viewport(x = 0.87, y = 0.70, width = 0.2, height = 0.1))
+color_bar <- colorRampPalette(c("#c6dbef", "#6baed6", "#2171b5"))(100)
+for(i in 1:100) {
+  grid.rect(x = 0.1 + (i-1)*0.8/100, y = 0.5, width = 0.8/100, height = 0.3,
+            gp = gpar(fill = color_bar[i], col = NA))
+}
+for(i in 1:5) {
+  grid.text(color_labels[i], x = 0.1 + (i-1)*0.8/4, y = 0.2, just = "center", gp = gpar(fontsize = 8))
+}
+grid.text("BMI", x = 0.5, y = 0.85, just = "center", gp = gpar(fontsize = 10, fontface = "bold"))
+popViewport()
+
+# 绘制第三轨道：性别
 circos.track(
   factors = df$factors,
   y = df$y,
@@ -191,7 +387,7 @@ circos.track(
   }
 )
 
-# 绘制第三轨道：白内障状态
+# 绘制第四轨道：白内障状态 (使用新的颜色方案)
 circos.track(
   factors = df$factors,
   y = df$y,
@@ -204,8 +400,8 @@ circos.track(
     xlim = get.cell.meta.data("xlim")
     ylim = get.cell.meta.data("ylim")
     
-    # 获取白内障颜色
-    cataract_col <- disease_colors[df$cataract_label[i]]
+    # 获取白内障颜色 - 使用专门的白内障颜色方案
+    cataract_col <- cataract_colors[df$cataract_label[i]]
     if(is.na(cataract_col)) cataract_col <- "grey"
     
     # 绘制矩形
@@ -220,7 +416,7 @@ circos.track(
   }
 )
 
-# 绘制第四轨道：糖尿病状态
+# 绘制第五轨道：糖尿病状态 (使用新的颜色方案)
 circos.track(
   factors = df$factors,
   y = df$y,
@@ -233,8 +429,8 @@ circos.track(
     xlim = get.cell.meta.data("xlim")
     ylim = get.cell.meta.data("ylim")
     
-    # 获取糖尿病颜色
-    diabetes_col <- disease_colors[df$diabetes_label[i]]
+    # 获取糖尿病颜色 - 使用专门的糖尿病颜色方案
+    diabetes_col <- diabetes_colors[df$diabetes_label[i]]
     if(is.na(diabetes_col)) diabetes_col <- "grey"
     
     # 绘制矩形
@@ -254,36 +450,47 @@ circos.track(
 grid.text(label = nrow(df), x = 0.5, y = 0.5, 
           gp = gpar(fontsize = 24, fontface = "bold"))
 grid.text(label = "Participants", x = 0.5, y = 0.43, 
-          gp = gpar(fontsize = 16))
+          gp = gpar(fontsize = 12))
 
-# 添加图例
+# 添加图例 - 修改为分开的疾病图例
 # 创建图例的函数
 draw_legend <- function() {
   # 创建图例区域
-  pushViewport(viewport(x = 0.87, y = 0.5, width = 0.2, height = 0.5))
+  pushViewport(viewport(x = 0.87, y = 0.4, width = 0.2, height = 0.5))
   
   # 图例标题
   grid.text("Gender:", x = 0.1, y = 0.9, just = "left", gp = gpar(fontsize = 12))
   
   # 性别图例
-  grid.rect(x = 0.15, y = 0.8, width = 0.1, height = 0.05, 
+  grid.rect(x = 0.15, y = 0.82, width = 0.1, height = 0.05, 
             gp = gpar(fill = gender_colors["Female"], col = NA))
-  grid.text("Female", x = 0.3, y = 0.8, just = "left", gp = gpar(fontsize = 10))
+  grid.text("Female", x = 0.3, y = 0.82, just = "left", gp = gpar(fontsize = 10))
   
-  grid.rect(x = 0.15, y = 0.7, width = 0.1, height = 0.05, 
+  grid.rect(x = 0.15, y = 0.74, width = 0.1, height = 0.05, 
             gp = gpar(fill = gender_colors["Male"], col = NA))
-  grid.text("Male", x = 0.3, y = 0.7, just = "left", gp = gpar(fontsize = 10))
+  grid.text("Male", x = 0.3, y = 0.74, just = "left", gp = gpar(fontsize = 10))
   
-  # 疾病状态图例
-  grid.text("Disease Status:", x = 0.1, y = 0.5, just = "left", gp = gpar(fontsize = 12))
+  # 白内障状态图例 - 独立图例
+  grid.text("Cataract:", x = 0.1, y = 0.62, just = "left", gp = gpar(fontsize = 12))
   
-  grid.rect(x = 0.15, y = 0.4, width = 0.1, height = 0.05, 
-            gp = gpar(fill = disease_colors["No"], col = NA))
-  grid.text("No", x = 0.3, y = 0.4, just = "left", gp = gpar(fontsize = 10))
+  grid.rect(x = 0.15, y = 0.54, width = 0.1, height = 0.05, 
+            gp = gpar(fill = cataract_colors["No"], col = NA))
+  grid.text("No", x = 0.3, y = 0.54, just = "left", gp = gpar(fontsize = 10))
   
-  grid.rect(x = 0.15, y = 0.3, width = 0.1, height = 0.05, 
-            gp = gpar(fill = disease_colors["Yes"], col = NA))
-  grid.text("Yes", x = 0.3, y = 0.3, just = "left", gp = gpar(fontsize = 10))
+  grid.rect(x = 0.15, y = 0.46, width = 0.1, height = 0.05, 
+            gp = gpar(fill = cataract_colors["Yes"], col = NA))
+  grid.text("Yes", x = 0.3, y = 0.46, just = "left", gp = gpar(fontsize = 10))
+  
+  # 糖尿病状态图例 - 独立图例
+  grid.text("Diabetes:", x = 0.1, y = 0.34, just = "left", gp = gpar(fontsize = 12))
+  
+  grid.rect(x = 0.15, y = 0.26, width = 0.1, height = 0.05, 
+            gp = gpar(fill = diabetes_colors["No"], col = NA))
+  grid.text("No", x = 0.3, y = 0.26, just = "left", gp = gpar(fontsize = 10))
+  
+  grid.rect(x = 0.15, y = 0.18, width = 0.1, height = 0.05, 
+            gp = gpar(fill = diabetes_colors["Yes"], col = NA))
+  grid.text("Yes", x = 0.3, y = 0.18, just = "left", gp = gpar(fontsize = 10))
   
   popViewport()
 }
@@ -295,9 +502,8 @@ draw_legend()
 circos.clear()
 
 # 保存图表
-dev.copy(pdf, "circular_demography_plot.pdf", width = 14, height = 8)
+dev.copy(pdf, "circular_demography_plot_with_separate_diseases.pdf", width = 14, height = 8)
 dev.off()
-
 
 
 

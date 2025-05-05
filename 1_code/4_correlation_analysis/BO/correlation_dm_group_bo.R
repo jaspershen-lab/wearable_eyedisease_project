@@ -249,7 +249,6 @@ p_trend <- ggplot(avg_data, aes(x = day, y = mean_value, color = dm_group, group
   scale_fill_manual(values = diabetes_colors) +
   labs(
     title = "Mean blood oxygen levels by diabetes group",
-    subtitle = "Mixed-effects model adjusted for age, gender and BMI",
     x = "Days relative to surgery",
     y = "Blood oxygen (mean)"
   ) + theme_bw() + theme(legend.position = "bottom")
@@ -295,7 +294,7 @@ dm_plot <- ggplot(mean_data, aes(x = dm_group, y = value, fill = dm_group)) +
 library(ggpubr)
 
 dm_plot<-dm_plot +
-  stat_compare_means(method = "t.test",
+  stat_compare_means(method = "wilcox.test",
                     label.y = max(mean_data$value, na.rm = TRUE) + 0.5)
 
 

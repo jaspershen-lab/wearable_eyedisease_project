@@ -258,7 +258,7 @@ p_trend <- ggplot(avg_data, aes(x = day, y = mean_value, color = nd_cat_vs_dm_pp
   scale_fill_manual(values = surgery_colors) +
   labs(
     title = "Mean blood oxygen levels by diabetes group",
-    subtitle = "Mixed-effects model adjusted for age, gender and BMI",
+    # subtitle = "Mixed-effects model adjusted for age, gender and BMI",
     x = "Days relative to surgery",
     y = "Blood oxygen (mean)"
   ) + theme_bw() + theme(legend.position = "bottom")
@@ -298,7 +298,7 @@ dm_plot <- ggplot(mean_data, aes(x = nd_cat_vs_dm_ppv, y = value, fill = nd_cat_
 library(ggpubr)
 
 dm_plot<-dm_plot +
-  stat_compare_means(method = "t.test",
+  stat_compare_means(method = "wilcox.test",
                      label.y = max(mean_data$value, na.rm = TRUE) + 0.5)
 
 dm_plot
