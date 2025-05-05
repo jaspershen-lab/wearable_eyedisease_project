@@ -1,0 +1,3 @@
+"Group","OCTA_Variable","R_squared","RMSE"
+"Diabetes","Thickness_RNFL_0_6_T0",0.686333445275775,12.7381361606544
+"No Diabetes","Thickness_GCL.IPL_0_6_T0",0.886221133540538,2.800497278084

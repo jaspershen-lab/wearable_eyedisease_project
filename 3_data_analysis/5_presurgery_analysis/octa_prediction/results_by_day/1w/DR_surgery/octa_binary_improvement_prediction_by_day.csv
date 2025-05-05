@@ -1,0 +1,51 @@
+"day_point","target_var","predictor","auc","sensitivity","specificity","accuracy","sample_size","predictor_coef","predictor_p_value"
+"-4","PA_Choriocapillaris_0_21_binary_improvement","All Predictors",1,1,1,1,10,NA,NA
+"-4","PA_Choriocapillaris_0_21_binary_improvement","mean_rhr_1",0.75,0.5,0.666666666666667,0.6,10,-0.0284361713214344,0.882576815585048
+"-4","PA_Choriocapillaris_0_21_binary_improvement","mean_bo",0.75,0.5,0.666666666666667,0.6,10,-0.781518164340029,0.34486156859968
+"-4","PA_Choriocapillaris_0_21_binary_improvement","steps_total",0.666666666666667,0.5,0.666666666666667,0.6,10,7.00544787288406e-05,0.859716284631651
+"-4","PA_Choriocapillaris_0_21_binary_improvement","total_sleep",0.75,0.75,0.666666666666667,0.7,10,0.0041699462904329,0.471227898483693
+"-4","VD_DCP_0_21_binary_improvement","All Predictors",1,1,1,1,10,NA,NA
+"-4","VD_DCP_0_21_binary_improvement","mean_rhr_1",0.761904761904762,1,0.666666666666667,0.9,10,0.30150627424623,0.359918427871722
+"-4","VD_DCP_0_21_binary_improvement","mean_bo",0.761904761904762,0.857142857142857,0.333333333333333,0.7,10,-0.595633198206675,0.501118058183157
+"-4","VD_DCP_0_21_binary_improvement","steps_total",0.904761904761905,0.857142857142857,0.333333333333333,0.7,10,-0.000412269240028635,0.350010508698201
+"-4","VD_DCP_0_21_binary_improvement","total_sleep",0.80952380952381,1,0.666666666666667,0.9,10,-0.0117527389761284,0.308733706054941
+"-5","Thickness_GCL.IPL_0_21_binary_improvement","All Predictors",1,1,1,1,10,NA,NA
+"-5","Thickness_GCL.IPL_0_21_binary_improvement","mean_rhr_1",0.666666666666667,1,0.333333333333333,0.8,10,0.125576309069002,0.385654916842029
+"-5","Thickness_GCL.IPL_0_21_binary_improvement","mean_bo",0.666666666666667,NA,NA,0.3,10,0.0617155740170203,0.925760782907647
+"-5","Thickness_GCL.IPL_0_21_binary_improvement","steps_total",1,1,1,1,10,0.0438645618904761,0.999323172578626
+"-5","Thickness_GCL.IPL_0_21_binary_improvement","total_sleep",0.857142857142857,0.857142857142857,0.666666666666667,0.8,10,-0.0359402956031145,0.34252300826462
+"-4","Thickness_GCL.IPL_0_21_binary_improvement","All Predictors",1,1,1,1,11,NA,NA
+"-4","Thickness_GCL.IPL_0_21_binary_improvement","mean_rhr_1",0.791666666666667,1,0.333333333333333,0.818181818181818,11,-0.270543108081869,0.242140105509575
+"-4","Thickness_GCL.IPL_0_21_binary_improvement","mean_bo",1,1,1,1,11,5792.86711039726,0.995039761562165
+"-4","Thickness_GCL.IPL_0_21_binary_improvement","steps_total",1,1,1,1,11,0.0635068964257265,0.999304294738417
+"-4","Thickness_GCL.IPL_0_21_binary_improvement","total_sleep",0.583333333333333,NA,NA,0.272727272727273,11,0.00539433209158019,0.538193880306121
+"-3","Thickness_GCL.IPL_0_21_binary_improvement","All Predictors",1,1,1,1,10,NA,NA
+"-3","Thickness_GCL.IPL_0_21_binary_improvement","mean_rhr_1",0.619047619047619,1,0.333333333333333,0.8,10,-0.0663015301943566,0.591501488257799
+"-3","Thickness_GCL.IPL_0_21_binary_improvement","mean_bo",1,1,1,1,10,239.284293281357,0.99908797903555
+"-3","Thickness_GCL.IPL_0_21_binary_improvement","steps_total",0.714285714285714,1,0.333333333333333,0.8,10,5.68076483627606e-05,0.827960260017184
+"-3","Thickness_GCL.IPL_0_21_binary_improvement","total_sleep",0.666666666666667,NA,NA,0.3,10,-0.00161924829614843,0.815528029813602
+"-2","Thickness_GCL.IPL_0_21_binary_improvement","All Predictors",1,1,1,1,10,NA,NA
+"-2","Thickness_GCL.IPL_0_21_binary_improvement","mean_rhr_1",0.904761904761905,0.857142857142857,0.666666666666667,0.8,10,-0.359360788404549,0.241534010654512
+"-2","Thickness_GCL.IPL_0_21_binary_improvement","mean_bo",0.666666666666667,0.857142857142857,0.333333333333333,0.7,10,-0.767290484218445,0.582013055079875
+"-2","Thickness_GCL.IPL_0_21_binary_improvement","steps_total",0.619047619047619,0.857142857142857,0.333333333333333,0.7,10,-4.70270408622691e-05,0.869621354435938
+"-2","Thickness_GCL.IPL_0_21_binary_improvement","total_sleep",0.619047619047619,1,0.333333333333333,0.8,10,0.0021274706686598,0.814540454355136
+"-1","Thickness_GCL.IPL_0_21_binary_improvement","All Predictors",1,1,1,1,10,NA,NA
+"-1","Thickness_GCL.IPL_0_21_binary_improvement","mean_rhr_1",0.761904761904762,1,0.666666666666667,0.9,10,-0.145417472004206,0.299971036187362
+"-1","Thickness_GCL.IPL_0_21_binary_improvement","mean_bo",1,1,1,1,10,305.507912311086,0.999276010443282
+"-1","Thickness_GCL.IPL_0_21_binary_improvement","steps_total",0.619047619047619,0.857142857142857,0,0.6,10,-0.000111535702039923,0.717014233838313
+"-1","Thickness_GCL.IPL_0_21_binary_improvement","total_sleep",1,1,1,1,10,-5.14784135477967,0.998498518679438
+"1","Thickness_GCL.IPL_0_21_binary_improvement","All Predictors",0.761904761904762,1,0.333333333333333,0.8,10,NA,NA
+"1","Thickness_GCL.IPL_0_21_binary_improvement","mean_rhr_1",0.714285714285714,1,0.333333333333333,0.8,10,-0.0910848670560488,0.489039383962638
+"1","Thickness_GCL.IPL_0_21_binary_improvement","mean_bo",0.714285714285714,1,0.333333333333333,0.8,10,0.87119200874517,0.582689478530192
+"1","Thickness_GCL.IPL_0_21_binary_improvement","steps_total",0.714285714285714,1,0.666666666666667,0.9,10,-0.000538263326041865,0.536382507716611
+"1","Thickness_GCL.IPL_0_21_binary_improvement","total_sleep",0.619047619047619,1,0.333333333333333,0.8,10,0.00265954880998039,0.856362158654643
+"2","Thickness_GCL.IPL_0_21_binary_improvement","All Predictors",1,1,1,1,10,NA,NA
+"2","Thickness_GCL.IPL_0_21_binary_improvement","mean_rhr_1",0.666666666666667,1,0.333333333333333,0.8,10,-0.087947923792489,0.498864161512997
+"2","Thickness_GCL.IPL_0_21_binary_improvement","mean_bo",0.666666666666667,1,0.333333333333333,0.8,10,-0.184350424295941,0.842410671228981
+"2","Thickness_GCL.IPL_0_21_binary_improvement","steps_total",0.761904761904762,1,0.333333333333333,0.8,10,-0.000307279223851239,0.254073510995063
+"2","Thickness_GCL.IPL_0_21_binary_improvement","total_sleep",0.5,NA,NA,0.3,10,-3872130472264.13,0
+"3","Thickness_GCL.IPL_0_21_binary_improvement","All Predictors",1,1,1,1,10,NA,NA
+"3","Thickness_GCL.IPL_0_21_binary_improvement","mean_rhr_1",0.571428571428571,1,0.333333333333333,0.8,10,-0.0589375751393331,0.666543703855506
+"3","Thickness_GCL.IPL_0_21_binary_improvement","mean_bo",0.714285714285714,1,0.333333333333333,0.8,10,0.360047153981548,0.767731077815631
+"3","Thickness_GCL.IPL_0_21_binary_improvement","steps_total",1,1,1,1,10,0.0441831113537282,0.999419760116757
+"3","Thickness_GCL.IPL_0_21_binary_improvement","total_sleep",0.666666666666667,0.714285714285714,0,0.5,10,0.00532353514437242,0.499549240865902

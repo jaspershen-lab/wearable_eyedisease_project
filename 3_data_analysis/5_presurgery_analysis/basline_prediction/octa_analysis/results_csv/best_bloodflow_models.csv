@@ -1,0 +1,3 @@
+"Group","OCTA_Variable","R_squared","RMSE"
+"Diabetes","SVD_NerveFiber_0_6_T0",0.645750757147477,1.04424524297722
+"No Diabetes","PA_Vitreous_0_6_T0",0.555586470491037,0.17728160451798

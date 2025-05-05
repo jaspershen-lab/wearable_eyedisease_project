@@ -1,5 +1,0 @@
-INFO [2025-02-17 10:56:11] Processing heart rate data for label <1
-INFO [2025-02-17 10:56:25] Outlier detection results:
-INFO [2025-02-17 10:56:26] Measurement interval analysis by subject:
-INFO [2025-02-17 10:56:27] Data quality summary:
-INFO [2025-02-17 10:56:27] Filtered out 16882 records (0.71%)

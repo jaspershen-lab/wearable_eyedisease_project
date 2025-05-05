@@ -1,0 +1,6 @@
+"time_point","group","predictor","r2","rmse","success_rate"
+"-5","D_Surg1","All Variables",0,1.26881509861892,0.285
+"-5","D_Surg1","Heart Rate",0,1.24520165000476,0.285
+"-5","D_Surg1","Blood Oxygen",0,0.665493941527858,0.285
+"-5","D_Surg1","Steps",0,0.843945476779805,0.285
+"-5","D_Surg1","Sleep",0.00339415264936524,0.913115748873006,0.285

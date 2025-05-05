@@ -1,0 +1,5 @@
+"Group","OCTA_Variable","Wearable_Variable","Correlation","P_value"
+"No_Diabetes_Cataract","Thickness_GCL.IPL_0_6_T0","total_sleep",-0.722223434848211,0.00105986630447346
+"No_Diabetes_Cataract","Thickness_Retina_0_6_T0","total_sleep",-0.68813778777159,0.00226015858882594
+"No_Diabetes_Cataract","Thickness_RNFL_0_6_T0","total_sleep",-0.539910391086543,0.0252781300139835
+"Diabetes_PPV","Thickness_RNFL_0_6_T0","mean_bo",-0.565774980113597,0.0349591162356064

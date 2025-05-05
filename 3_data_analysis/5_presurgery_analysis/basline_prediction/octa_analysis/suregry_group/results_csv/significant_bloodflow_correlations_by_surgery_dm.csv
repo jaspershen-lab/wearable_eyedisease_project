@@ -1,0 +1,11 @@
+"Group","OCTA_Variable","Wearable_Variable","Correlation","P_value"
+"Diabetes_PPV","SVD_NerveFiber_0_6_T0","mean_bo",-0.797623927803108,0.00108826221954381
+"Diabetes_PPV","VD_NerveFiber_0_6_T0","mean_bo",-0.699232187866737,0.00781870018749398
+"Diabetes_PPV","PA_Choroid_0_6_T0","total_sleep",-0.689376986976303,0.00913961632897203
+"Diabetes_PPV","PA_Choriocapillaris_0_6_T0","total_sleep",0.661963282132068,0.013711911159496
+"Diabetes_PPV","VD_NerveFiber_0_6_T0","total_sleep",0.656831394633971,0.0147304623516922
+"Diabetes_PPV","PA_NerveFiber_0_6_T0","total_sleep",0.634135394177501,0.0199302898851293
+"Diabetes_PPV","VD_InnerRetina_0_6_T0","total_sleep",0.625767721878037,0.0221556592672279
+"Diabetes_PPV","PA_Retina_0_6_T0","total_sleep",0.623304740282832,0.0228444460455743
+"No_Diabetes_Cataract","PA_Vitreous_0_6_T0","mean_hr",0.545868500149761,0.0234065078060923
+"Diabetes_PPV","PA_InnerRetina_0_6_T0","total_sleep",0.613069725797255,0.0258777533044915

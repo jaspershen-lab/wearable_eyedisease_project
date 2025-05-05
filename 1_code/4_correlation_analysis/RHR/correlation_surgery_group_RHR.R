@@ -113,7 +113,6 @@ nd_cat_vs_dm_ppv_groups <- baseline_info %>%
   filter(!is.na(nd_cat_vs_dm_ppv)) %>%
   dplyr::select(ID, nd_cat_vs_dm_ppv, age, gender, bmi)
 
-
 #########################
 # Step 5: Define helper functions for visualization
 #########################
@@ -149,21 +148,26 @@ add_significance <- function(contrast_df) {
   return(contrast_df)
 }
 
-# Function to create forest plot with significance markers
+# Modified: Forest plot with significance markers using original group names
 create_forest_plot_with_sig <- function(contrast_df, group_col, colors_map, 
                                         title, metric_name = "RHR") {
   # Add space for significance markers
   max_upper <- max(contrast_df$upper.CL, na.rm = TRUE)
   sig_position <- max_upper + abs(max_upper) * 0.1
   
-  p <- ggplot(contrast_df, aes(x = estimate, y = group, color = group)) +
+  p <- ggplot(contrast_df, aes(x = estimate, y = !!sym(group_col), color = !!sym(group_col))) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "black") +
     geom_point(size = 3) +
     geom_errorbarh(aes(xmin = lower.CL, xmax = upper.CL), height = 0.2) +
     # Add significance markers
     geom_text(aes(x = sig_position, label = significance), 
               hjust = 0, size = 5) +
-    scale_color_manual(values = colors_map) +
+    scale_color_manual(
+      values = colors_map,
+      # Add label conversion
+      labels = c("No_Diabetes_Cataract" = "Non-Diabetic Cataract", 
+                 "Diabetes_PPV" = "Diabetic PPV")
+    ) +
     labs(
       title = title,
       subtitle = "Positive value indicates an increase after surgery",
@@ -178,35 +182,49 @@ create_forest_plot_with_sig <- function(contrast_df, group_col, colors_map,
       panel.grid.minor = element_blank(),
       plot.title = element_text(size = 14, face = "bold"),
       plot.subtitle = element_text(size = 12)
-    )
+    ) +
+    # Add y-axis label conversion
+    scale_y_discrete(labels = c("No_Diabetes_Cataract" = "Non-Diabetic Cataract", 
+                                "Diabetes_PPV" = "Diabetic PPV"))
   
   return(p)
 }
 
 # Function to extract group comparisons with confidence intervals
+# 修改后的函数，将比较方向从 "No_Diabetes_Cataract - Diabetes_PPV" 改为 "Diabetes_PPV - No_Diabetes_Cataract"
 extract_group_comparison <- function(model, group_var, reference_group) {
-  # Get marginal means for each group and period
+  # 获取每个组和时期的边际均值
   emm <- emmeans(model, specs = c(group_var, "period"))
   
-  # Create contrasts between groups within each period
+  # 创建组间对比
   contrasts <- contrast(emm, method = "revpairwise", by = "period") 
   
-  # Convert to dataframe
+  # 转换为数据框
   contrast_df <- as.data.frame(contrasts)
   
-  # Filter to only include comparisons against the reference group
+  # 过滤只包含参考组的比较
   contrast_df <- contrast_df %>%
     filter(grepl(reference_group, contrast))
   
-  # Add more readable comparison names
+  # 添加更易读的比较名称
   contrast_df$comparison <- gsub(paste0(" - ", reference_group), "", contrast_df$contrast)
   
-  # Calculate 95% confidence intervals
-  contrast_df$t_crit <- qt(0.975, contrast_df$df)
-  contrast_df$lower.CL <- contrast_df$estimate - contrast_df$t_crit * contrast_df$SE
-  contrast_df$upper.CL <- contrast_df$estimate + contrast_df$t_crit * contrast_df$SE
+  # 倒转比较方向，从 "reference - comparison" 变为 "comparison - reference"
+  # 这样做会使值的符号相反，显示方向与趋势图一致
+  contrast_df$estimate <- -contrast_df$estimate
+  contrast_df$contrast <- gsub(paste0(reference_group, " - "), "", contrast_df$contrast)
+  contrast_df$contrast <- paste0(contrast_df$contrast, " - ", reference_group)
   
-  # Add significance markers
+  # 计算95%置信区间
+  contrast_df$t_crit <- qt(0.975, contrast_df$df)
+  # 注意反转后上下置信区间也要互换
+  contrast_df$lower.CL <- -contrast_df$estimate + contrast_df$t_crit * contrast_df$SE
+  contrast_df$upper.CL <- -contrast_df$estimate - contrast_df$t_crit * contrast_df$SE
+  # 再次反转回来，因为我们已经调整了estimate
+  contrast_df$lower.CL <- -contrast_df$lower.CL
+  contrast_df$upper.CL <- -contrast_df$upper.CL
+  
+  # 添加显著性标记
   contrast_df$significance <- ""
   contrast_df$significance[contrast_df$p.value < 0.05] <- "*"
   contrast_df$significance[contrast_df$p.value < 0.01] <- "**"
@@ -215,30 +233,35 @@ extract_group_comparison <- function(model, group_var, reference_group) {
   return(contrast_df)
 }
 
-# Function to create comparison forest plot
+# 修改后的比较森林图函数，标题和轴标签使用一致的差异方向
 create_comparison_forest_plot <- function(contrast_df, colors_map, reference_group,
                                           title, metric_name = "RHR") {
-  # Ensure period is an ordered factor
+  # 确保时期是一个有序因子
   contrast_df$period <- factor(contrast_df$period, levels = c("Pre-surgery", "Post-surgery"))
   
-  # Add space for significance markers
+  # 添加空间用于显示显著性标记
   max_upper <- max(contrast_df$upper.CL, na.rm = TRUE)
   sig_position <- max_upper + abs(max_upper) * 0.1
   
-  # Create forest plot
+  # 转换参考组名称用于显示在标题中
+  reference_group_display <- ifelse(reference_group == "No_Diabetes_Cataract", 
+                                    "Non-Diabetic Cataract", reference_group)
+  
+  # 创建森林图
   p <- ggplot(contrast_df, aes(x = estimate, y = comparison)) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "black") +
     geom_point(size = 3, color = colors_map["Diabetes_PPV"]) +
     geom_errorbarh(aes(xmin = lower.CL, xmax = upper.CL), height = 0.2, 
                    color = colors_map["Diabetes_PPV"]) +
-    # Add significance markers
+    # 添加显著性标记
     geom_text(aes(x = sig_position, label = significance), 
               hjust = 0, size = 5) +
     facet_wrap(~ period, ncol = 1) +
     labs(
       title = title,
-      subtitle = paste0("Positive value indicates higher ", metric_name, " compared to ", reference_group),
-      x = paste0("Groups - ", reference_group, " ", metric_name, " (mean & CI 95%)"),
+      subtitle = paste0("Positive value indicates higher ", metric_name, 
+                        " compared to ", reference_group_display),
+      x = paste0("Diabetic PPV - ", reference_group_display, " ", metric_name, " (mean & CI 95%)"),
       y = "",
       caption = "Adjusted for age, gender, and BMI\n* p<0.05, ** p<0.01, *** p<0.001"
     ) +
@@ -249,7 +272,9 @@ create_comparison_forest_plot <- function(contrast_df, colors_map, reference_gro
       panel.grid.minor = element_blank(),
       plot.title = element_text(size = 14, face = "bold"),
       plot.subtitle = element_text(size = 12)
-    )
+    ) +
+    # 添加y轴标签转换
+    scale_y_discrete(labels = c("Diabetes_PPV" = "Diabetic PPV"))
   
   return(p)
 }
@@ -328,25 +353,22 @@ analyze_and_visualize_rhr_by_surgery <- function(stat_type) {
       upper_ci = mean_value + 1.96 * se_value
     )
   
-  # Make group labels more readable for plots
-  avg_data <- avg_data %>%
-    mutate(group_label = case_when(
-      nd_cat_vs_dm_ppv == "No_Diabetes_Cataract" ~ "Non-Diabetic Cataract",
-      nd_cat_vs_dm_ppv == "Diabetes_PPV" ~ "Diabetic PPV",
-      TRUE ~ nd_cat_vs_dm_ppv
-    ))
-  
   # Draw trend plot
-  p_trend <- ggplot(avg_data, aes(x = day, y = mean_value, color = group_label, group = group_label)) +
+  p_trend <- ggplot(avg_data, aes(x = day, y = mean_value, color = nd_cat_vs_dm_ppv, group = nd_cat_vs_dm_ppv)) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "darkgray") +
-    geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, fill = group_label), alpha = 0.2, color = NA) +
+    geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, fill = nd_cat_vs_dm_ppv), alpha = 0.2, color = NA) +
     geom_line(size = 1) + 
     geom_point(size = 2) +
-    scale_color_manual(values = surgery_colors) + 
-    scale_fill_manual(values = surgery_colors) +
+    scale_color_manual(
+      values = surgery_colors,
+      labels = c("No_Diabetes_Cataract" = "Non-Diabetic Cataract", "Diabetes_PPV" = "Diabetic PPV")
+    ) + 
+    scale_fill_manual(
+      values = surgery_colors,
+      labels = c("No_Diabetes_Cataract" = "Non-Diabetic Cataract", "Diabetes_PPV" = "Diabetic PPV")
+    ) +
     labs(
       title = paste0("RHR (", stat_type, ") levels by surgery type"),
-      subtitle = "Mixed-effects model adjusted for age, gender and BMI",
       x = "Days relative to surgery",
       y = paste0("RHR (", stat_type, ")"),
       color = "Group",
@@ -358,20 +380,12 @@ analyze_and_visualize_rhr_by_surgery <- function(stat_type) {
   # Save the time trend plot
   ggsave(paste0("surgery_type_", stat_type, "_time_trend.pdf"), p_trend, width = 10, height = 6, dpi = 300)
   
-  # Create more readable group labels for rest of analysis
-  long_data <- long_data %>%
-    mutate(group_label = case_when(
-      nd_cat_vs_dm_ppv == "No_Diabetes_Cataract" ~ "Non-Diabetic Cataract",
-      nd_cat_vs_dm_ppv == "Diabetes_PPV" ~ "Diabetic PPV",
-      TRUE ~ nd_cat_vs_dm_ppv
-    ))
-  
   # 2. Create box plot for group comparisons
-  surgery_plot <- ggplot(long_data, aes(x = group_label, y = value, fill = group_label)) +
+  surgery_plot <- ggplot(long_data, aes(x = nd_cat_vs_dm_ppv, y = value, fill = nd_cat_vs_dm_ppv)) +
     # Add boxplot
     geom_boxplot(alpha = 0.7, outlier.shape = NA) +
     # Add jittered points
-    geom_jitter(aes(color = group_label), width = 0.2, alpha = 0.5, size = 2) +
+    geom_jitter(aes(color = nd_cat_vs_dm_ppv), width = 0.2, alpha = 0.5, size = 2) +
     # Add mean point in red
     stat_summary(fun = mean, geom = "point", shape = 16, size = 5, color = "darkred") +
     # Add horizontal line at mean with label
@@ -379,8 +393,14 @@ analyze_and_visualize_rhr_by_surgery <- function(stat_type) {
                  aes(label = sprintf("μ = %.2f", ..y..)),
                  hjust = -0.3, vjust = -0.5) +
     # Use custom colors
-    scale_fill_manual(values = surgery_colors) +
-    scale_color_manual(values = surgery_colors) +
+    scale_fill_manual(
+      values = surgery_colors,
+      labels = c("No_Diabetes_Cataract" = "Non-Diabetic Cataract", "Diabetes_PPV" = "Diabetic PPV")
+    ) +
+    scale_color_manual(
+      values = surgery_colors,
+      labels = c("No_Diabetes_Cataract" = "Non-Diabetic Cataract", "Diabetes_PPV" = "Diabetic PPV")
+    ) +
     # Apply bw theme with customizations
     theme_bw() +
     theme(
@@ -397,8 +417,11 @@ analyze_and_visualize_rhr_by_surgery <- function(stat_type) {
       color = "Group"
     ) +
     # Add statistical comparison
-    stat_compare_means(method = "t.test",
-                       label.y = max(long_data$value, na.rm = TRUE) + 0.5)
+    stat_compare_means(method = "wilcox.test",
+                       label.y = max(long_data$value, na.rm = TRUE) + 0.5) +
+    # Add x-axis label conversion
+    scale_x_discrete(labels = c("No_Diabetes_Cataract" = "Non-Diabetic Cataract", 
+                                "Diabetes_PPV" = "Diabetic PPV"))
   
   # Save the box plot
   ggsave(paste0("surgery_type_", stat_type, "_stats_comparison.pdf"), surgery_plot, width = 10, height = 6, dpi = 300)
@@ -407,24 +430,10 @@ analyze_and_visualize_rhr_by_surgery <- function(stat_type) {
   surgery_contrasts <- extract_contrasts(lme_model, "nd_cat_vs_dm_ppv")
   surgery_contrasts <- add_significance(surgery_contrasts)
   
-  # Make group labels more readable
-  surgery_contrasts <- surgery_contrasts %>%
-    mutate(group_display = case_when(
-      group == "No_Diabetes_Cataract" ~ "Non-Diabetic Cataract",
-      group == "Diabetes_PPV" ~ "Diabetic PPV",
-      TRUE ~ group
-    ))
-  
-  # Create custom colors map for the display names
-  display_colors <- c(
-    "Non-Diabetic Cataract" = surgery_colors["No_Diabetes_Cataract"],
-    "Diabetic PPV" = surgery_colors["Diabetes_PPV"]
-  )
-  
   surgery_forest_sig <- create_forest_plot_with_sig(
-    surgery_contrasts %>% mutate(group = group_display), 
+    surgery_contrasts, 
     "group", 
-    display_colors,
+    surgery_colors,  # Use original color mapping
     paste0("RHR (", stat_type, "): Preoperative and postoperative differences by surgery type"),
     paste0("RHR (", stat_type, ")")
   )
@@ -435,25 +444,15 @@ analyze_and_visualize_rhr_by_surgery <- function(stat_type) {
   # 4. Create between-group comparison forest plot
   surgery_comparison <- extract_group_comparison(lme_model, "nd_cat_vs_dm_ppv", "No_Diabetes_Cataract")
   
-  # Make comparison labels more readable
-  surgery_comparison <- surgery_comparison %>%
-    mutate(
-      comparison_display = case_when(
-        comparison == "Diabetes_PPV" ~ "Diabetic PPV",
-        TRUE ~ comparison
-      ),
-      reference_display = "Non-Diabetic Cataract"
-    )
-  
   surgery_forest <- create_comparison_forest_plot(
-    surgery_comparison %>% mutate(comparison = comparison_display),
-    surgery_colors,
-    "Non-Diabetic Cataract",
+    surgery_comparison,  # 使用修改后的比较数据
+    surgery_colors,      # 直接使用原始颜色映射
+    "No_Diabetes_Cataract",  # 使用原始参考组名
     paste0("Diabetic PPV vs Non-Diabetic Cataract RHR (", stat_type, ") Differences"),
     paste0("RHR (", stat_type, ")")
   )
   
-  # Save the comparison forest plot
+  # 保存比较森林图
   ggsave(paste0("surgery_type_", stat_type, "_comparison_forest.pdf"), surgery_forest, width = 10, height = 8, dpi = 300)
   
   # Return model and data
@@ -478,7 +477,3 @@ print("Completed max RHR analysis and visualization")
 
 # Analyze sd (standard deviation) of RHR
 sd_results <- analyze_and_visualize_rhr_by_surgery("sd")
-print("Completed SD RHR analysis and visualization")
-
-# Print final message
-print("Analysis complete. All visualizations saved in the output directory.")

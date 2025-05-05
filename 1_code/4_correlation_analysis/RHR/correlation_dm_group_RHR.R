@@ -331,7 +331,7 @@ analyze_and_visualize_rhr <- function(stat_type) {
     scale_fill_manual(values = diabetes_colors) +
     labs(
       title = paste0("RHR (", stat_type, ") levels by diabetes group"),
-      subtitle = "Mixed-effects model adjusted for age, gender and BMI",
+      # subtitle = "Mixed-effects model adjusted for age, gender and BMI",
       x = "Days relative to surgery",
       y = paste0("RHR (", stat_type, ")")
     ) + 
@@ -370,7 +370,7 @@ analyze_and_visualize_rhr <- function(stat_type) {
       y = paste0("RHR (", stat_type, ")")
     ) +
     # Add statistical comparison (match BO code)
-    stat_compare_means(method = "t.test",
+    stat_compare_means(method = "wilcox.test",
                        label.y = max(long_data$value, na.rm = TRUE) + 0.5)
   
   # Save the box plot

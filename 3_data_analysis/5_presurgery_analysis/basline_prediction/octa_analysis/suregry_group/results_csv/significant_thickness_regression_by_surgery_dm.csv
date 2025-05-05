@@ -1,0 +1,10 @@
+"Group","OCTA_Variable","Variable","Coefficient","P_value"
+"No_Diabetes_Cataract","Thickness_GCL.IPL_0_6_T0","total_sleep",-0.0698000359586004,0.000248319042836205
+"No_Diabetes_Cataract","Thickness_Retina_0_6_T0","total_sleep",-0.118778125889519,0.00244587952545035
+"No_Diabetes_Cataract","Thickness_GCL.IPL_0_6_T0","mean_rhr",5.79309396758451,0.00943994058852572
+"No_Diabetes_Cataract","Thickness_RNFL_0_6_T0","total_sleep",-0.0694850063438812,0.0134002525440573
+"No_Diabetes_Cataract","Thickness_GCL.IPL_0_6_T0","mean_hr",-5.54460534558869,0.0138882525242814
+"No_Diabetes_Cataract","Thickness_Retina_0_6_T0","mean_rhr",11.2589976585677,0.0290847609765946
+"No_Diabetes_Cataract","Thickness_Retina_0_6_T0","mean_bo",-17.0866365425998,0.0342243043340111
+"No_Diabetes_Cataract","Thickness_Retina_0_6_T0","mean_hr",-10.8352665272567,0.0391869821298983
+"Diabetes_PPV","Thickness_GCL.IPL_0_6_T0","mean_bo",-7.76564808869999,0.0495568813466774

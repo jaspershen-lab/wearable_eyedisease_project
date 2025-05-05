@@ -1,0 +1,7 @@
+WARNING: Not enough variation in outcome variable for logistic regression.
+At least 3 observations in each outcome category (improved/not improved) are needed.
+
+Outcome distribution:
+
+ 0  1 
+ 2 21 

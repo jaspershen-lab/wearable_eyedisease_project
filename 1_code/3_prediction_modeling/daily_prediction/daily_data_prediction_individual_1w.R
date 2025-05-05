@@ -13,7 +13,7 @@ setwd(get_project_wd())
 rm(list = ls())
 
 
-day_prior_1 <- read_csv("3_data_analysis/3_prediction_modeling/1m_prediction/daily_data/day_-7_data.csv")
+day_prior_1 <- read_csv("3_data_analysis/3_prediction_modeling/1w_prediction/daily_data/day_-7_data.csv")
 day_prior_2 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_-2_data.csv")
 day_prior_3 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_-3_data.csv")
 day_prior_4 <- read_csv("3_data_analysis/3_prediction_modeling/daily_prediction/daily_data/day_-4_data.csv")
@@ -32,7 +32,7 @@ par(mfrow=c(1,1))
 
 ######imputation
 # First remove rows where vision_improvement is NA (our target variable)
-day_prior_1 <- day_prior_1[!is.na(day_prior_1$vision_improvement_1m), ]
+day_prior_1 <- day_prior_1[!is.na(day_prior_1$vision_improvement), ]
 
 # Select features for imputation
 features_for_imputation <- day_prior_1 %>%
@@ -47,12 +47,12 @@ features_for_imputation <- day_prior_1 %>%
     # Steps features
     steps_total,steps_mean,steps_max,
     # Demographics and medical history
-    age, gender, cataract_2, dm_2, hypertension_2, pre_vision,vision_improvement_1w,
+    age, gender, cataract_2, dm_2, hypertension_2, pre_vision,
     # # OCTA features
     # matches("(SVD|PA|VD).*_0_6_T0"),  # 选择所有 bloodflow 0_6_T0 变量
     # matches("Thickness.*_0_6_T0"),     # 选择所有 thickness 0_6_T0 变量
     # Target variable
-    vision_improvement_1m
+    vision_improvement
   )
 
 # First, let's examine the extent of missing data in our selected features
@@ -119,12 +119,12 @@ selected_features <- c(
   #sleep
   "total_sleep","deep_sleep",
   # Demographics and medical history
-  "age", "gender", "cataract_2", "dm_2", "hypertension_2", "pre_vision", "vision_improvement_1w"
+  "age", "gender", "cataract_2", "dm_2", "hypertension_2", "pre_vision"
 )
 
 # Prepare data for LASSO
 x <- as.matrix(day_prior_1_imputed[, selected_features])
-y <- as.numeric(day_prior_1_imputed$vision_improvement_1m)
+y <- as.numeric(day_prior_1_imputed$vision_improvement)
 
 # Fit LASSO model
 model_lasso <- glmnet(x, y, nlambda=100, alpha=1)
@@ -183,7 +183,7 @@ print(feature_opt)
 selected_features <- selected_features[selected_features != "(Intercept)"]
 
 # Prepare data for regression
-model_data <- day_prior_1_imputed[, c(selected_features, "vision_improvement_1m")]
+model_data <- day_prior_1_imputed[, c(selected_features, "vision_improvement")]
 
 # Set up 5-fold cross-validation control
 ctrl <- trainControl(
@@ -203,7 +203,7 @@ ctrl <- trainControl(
 # Train Linear Regression
 set.seed(123)
 lm_model <- train(
-  vision_improvement_1m ~ .,
+  vision_improvement ~ .,
   data = model_data,
   method = "lm",
   trControl = ctrl,
@@ -213,7 +213,7 @@ lm_model <- train(
 # Train Random Forest
 set.seed(123)
 rf_model <- train(
-  vision_improvement_1m ~ .,
+  vision_improvement ~ .,
   data = model_data,
   method = "rf",
   trControl = ctrl,
@@ -224,7 +224,7 @@ rf_model <- train(
 # Train XGBoost
 set.seed(123)
 xgb_model <- train(
-  vision_improvement_1m ~ .,
+  vision_improvement ~ .,
   data = model_data,
   method = "xgbTree",
   trControl = ctrl,
@@ -240,7 +240,7 @@ lasso_grid <- expand.grid(
 
 set.seed(123)
 lasso_model <- train(
-  vision_improvement_1m ~ .,
+  vision_improvement ~ .,
   data = model_data,
   method = "glmnet",
   trControl = ctrl,
@@ -257,7 +257,7 @@ elastic_net_grid_simple <- expand.grid(
 
 set.seed(123)
 enet_model <- train(
-  vision_improvement_1m ~ .,
+  vision_improvement ~ .,
   data = model_data,
   method = "glmnet",
   trControl = ctrl,

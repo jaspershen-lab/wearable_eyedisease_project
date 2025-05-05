@@ -1,0 +1,3 @@
+"Group","OCTA_Variable","R_squared","RMSE"
+"Diabetes_PPV","VD_NerveFiber_0_6_T0",0.871009819127572,0.483083832947118
+"No_Diabetes_Cataract","PA_Choriocapillaris_0_6_T0",0.498196025975692,1.68763534829368

@@ -1,0 +1,5 @@
+"Group","OCTA_Variable","Wearable_Variable","Correlation","P_value"
+"Diabetes","PA_Choriocapillaris_0_6_T0","total_sleep",0.577475486264496,0.00766911526824788
+"Diabetes","SVD_NerveFiber_0_6_T0","mean_bo",-0.519599328890334,0.0188713495409692
+"No Diabetes","PA_Vitreous_0_6_T0","mean_hr",0.545868500149761,0.0234065078060923
+"No Diabetes","PA_Vitreous_0_6_T0","mean_rhr",0.515429177585758,0.0342113487561296
