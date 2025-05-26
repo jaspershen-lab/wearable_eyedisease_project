@@ -1,0 +1,7 @@
+"Parameter","Comparison","P_Value","P_Adjusted","Significant"
+"Thickness_GCL.IPL","2 vs 1",0.4,0.4,FALSE
+"Thickness_INL","2 vs 1",0.0999999999999999,0.2,FALSE
+"Thickness_INL","3 vs 1",1,1,FALSE
+"Thickness_OuterRetina","2 vs 1",0.4,0.8,FALSE
+"Thickness_OuterRetina","3 vs 1",1,1,FALSE
+"Thickness_Retina","2 vs 1",1,1,FALSE

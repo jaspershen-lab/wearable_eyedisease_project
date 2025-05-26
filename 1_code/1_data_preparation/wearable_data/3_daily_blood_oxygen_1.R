@@ -34,7 +34,7 @@ read_dailybloodoxygen_file <- function(file_path) {
 }
 
 # all_subjects
-subject_folders <- list.dirs("2_data/wearable data_1", recursive = FALSE)
+subject_folders <- list.dirs("2_data/wearable data_2", recursive = FALSE)
 daily_blood_oxygen_data <-
   purrr::map(subject_folders, function(folder) {
     subject_id <- basename(folder)

@@ -1,0 +1,5 @@
+                   Df Sum Sq Mean Sq F value   Pr(>F)    
+as.factor(cluster)  2  794.1   397.1   31.93 1.57e-05 ***
+Residuals          12  149.2    12.4                     
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1

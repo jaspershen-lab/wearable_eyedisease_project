@@ -1,0 +1,16 @@
+"subject_id","cluster","method","optimal_k","silhouette_score"
+"SH019",2,"K-means without outliers (K=2)",2,0.285963226372385
+"SH032",1,"K-means without outliers (K=2)",2,0.285963226372385
+"SH035",1,"K-means without outliers (K=2)",2,0.285963226372385
+"SH047",3,"K-means without outliers (K=2)",2,0.285963226372385
+"SH050",1,"K-means without outliers (K=2)",2,0.285963226372385
+"SH053",1,"K-means without outliers (K=2)",2,0.285963226372385
+"SH058",2,"K-means without outliers (K=2)",2,0.285963226372385
+"SH061",1,"K-means without outliers (K=2)",2,0.285963226372385
+"SH067",2,"K-means without outliers (K=2)",2,0.285963226372385
+"SH068",1,"K-means without outliers (K=2)",2,0.285963226372385
+"SH071",2,"K-means without outliers (K=2)",2,0.285963226372385
+"SH072",2,"K-means without outliers (K=2)",2,0.285963226372385
+"SH073",3,"K-means without outliers (K=2)",2,0.285963226372385
+"SH074",2,"K-means without outliers (K=2)",2,0.285963226372385
+"SH076",2,"K-means without outliers (K=2)",2,0.285963226372385

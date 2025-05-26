@@ -1,0 +1,16 @@
+"subject_id","cluster","method","optimal_k","silhouette_score","is_outlier"
+"SH019",2,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,FALSE
+"SH032",1,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,FALSE
+"SH035",1,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,FALSE
+"SH047",3,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,TRUE
+"SH050",1,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,FALSE
+"SH053",1,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,FALSE
+"SH058",2,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,FALSE
+"SH061",1,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,FALSE
+"SH067",2,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,FALSE
+"SH068",1,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,FALSE
+"SH071",2,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,FALSE
+"SH072",2,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,FALSE
+"SH073",3,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,TRUE
+"SH074",2,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,FALSE
+"SH076",2,"Clean K-means (K=2) - Manual outlier removal",2,0.285963226372385,FALSE

@@ -56,7 +56,7 @@ exam_surgery_info <- data.frame(
 result_list <- list()
 
 # Main processing
-all_subjects <- dir("2_data/OCTA/OCTA_bloodflow_2/")
+all_subjects <- dir("2_data/OCTA/OCTA_bloodflow_3/")
 
 for(i in 1:length(all_subjects)) {
   cat("\nProcessing subject", i, "(", all_subjects[i], ")\n")
@@ -77,7 +77,7 @@ for(i in 1:length(all_subjects)) {
   subject_surgery_date <- subject_surgery_date[1]
   
   # Get all 6x6 files for this subject
-  all_files <- dir(file.path("2_data/OCTA/OCTA_bloodflow_2/", all_subjects[i]))
+  all_files <- dir(file.path("2_data/OCTA/OCTA_bloodflow_3/", all_subjects[i]))
   all_files <- all_files[stringr::str_detect(all_files, "26x21")]
   
   if(length(all_files) == 0) next
@@ -112,7 +112,7 @@ for(i in 1:length(all_subjects)) {
     ))
     
     # Get all quantization files
-    quant_path <- file.path("2_data/OCTA/OCTA_bloodflow_2/", 
+    quant_path <- file.path("2_data/OCTA/OCTA_bloodflow_3/", 
                             all_subjects[i], temp_folder, "Quantization")
     all_data <- dir(quant_path)
     

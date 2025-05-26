@@ -1,0 +1,3 @@
+"max_cluster","Count","Mean_Membership","Min_Membership","Max_Membership","Mean_Vision_Improvement","Mean_Pre_Vision","Mean_Post_Vision","Mean_Age","Outcome_Quality"
+1,13,0.543076072168445,0.504357726926619,0.584768649220102,0.108846153846154,0.247307692307692,0.356153846153846,63.0769230769231,"Worse"
+2,10,0.551506812626115,0.514628769291672,0.57940949056816,0.14,0.58,0.72,48.8,"Better"

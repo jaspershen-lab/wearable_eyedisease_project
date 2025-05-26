@@ -1,0 +1,12 @@
+
+	Welch Two Sample t-test
+
+data:  mean_hr by cluster
+t = -4.5365, df = 19.911, p-value = 0.000203
+alternative hypothesis: true difference in means between group 1 and group 2 is not equal to 0
+95 percent confidence interval:
+ -16.448695  -6.084548
+sample estimates:
+mean in group 1 mean in group 2 
+       63.81614        75.08276 
+

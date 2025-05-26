@@ -1,0 +1,5 @@
+"Parameter","ANOVA_P_Value","ANOVA_P_Adjusted","Significant"
+"Thickness_INL",0.162,0.621333333333333,FALSE
+"Thickness_OuterRetina",0.466,0.621333333333333,FALSE
+"Thickness_Retina",0.34,0.621333333333333,FALSE
+"Thickness_GCL.IPL",0.849,0.849,FALSE

@@ -19,9 +19,62 @@ rm(list = ls())
 # 1. Load the cluster results and vision data
 # -----------------------------------------------------
 # Assuming these files were created in your previous clustering analysis
-ppv_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1w/ppv_cluster_results_all_metrics.csv", check.names = FALSE)
-cat_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1w/cataract_cluster_results_all_metrics.csv", check.names = FALSE)
+# ppv_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/less_timepoint/ppv_cluster_results_time_windows.csv", check.names = FALSE)
+# cat_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/less_timepoint/cataract_cluster_results_time_windows.csv", check.names = FALSE)
+
+ppv_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/ppv_cluster_results_all_metrics.csv", check.names = FALSE)
+cat_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/cataract_cluster_results_all_metrics.csv", check.names = FALSE)
 baseline_info <- read.csv("2_data/analysis_data/baseline_info.csv")
+
+
+# # Extract the subject_id and cluster information
+# ppv_cluster_info <- data.frame(
+#   ID = ppv_clusters$subject_id,
+#   cluster = ppv_clusters$max_cluster,
+#   membership = ppv_clusters$max_membership
+# )
+# 
+# # -----------------------------------------------------
+# # 去掉特定的subject_id (SH073)
+# # -----------------------------------------------------
+# 
+# # 显示筛选前的参与者信息
+# cat("筛选前PPV组参与者:\n")
+# cat("总数:", nrow(ppv_clusters), "\n")
+# cat("参与者ID:", paste(ppv_clusters$subject_id, collapse = ", "), "\n")
+# 
+# cat("\n筛选前白内障组参与者:\n")
+# cat("总数:", nrow(cat_clusters), "\n")
+# cat("参与者ID:", paste(cat_clusters$subject_id, collapse = ", "), "\n")
+# 
+# # 去掉SH073
+# ppv_clusters <- ppv_clusters %>%
+#   filter(subject_id != "SH073")
+# 
+# cat_clusters <- cat_clusters %>%
+#   filter(subject_id != "SH073")
+# 
+# # 显示筛选后的参与者信息
+# cat("\n筛选后PPV组参与者:\n")
+# cat("总数:", nrow(ppv_clusters), "\n")
+# cat("参与者ID:", paste(ppv_clusters$subject_id, collapse = ", "), "\n")
+# 
+# cat("\n筛选后白内障组参与者:\n")
+# cat("总数:", nrow(cat_clusters), "\n")
+# cat("参与者ID:", paste(cat_clusters$subject_id, collapse = ", "), "\n")
+# 
+# # 检查是否成功去掉SH073
+# if("SH073" %in% ppv_clusters$subject_id) {
+#   warning("SH073仍然存在于PPV组数据中！")
+# } else {
+#   cat("\n✓ 成功从PPV组中去掉SH073\n")
+# }
+# 
+# if("SH073" %in% cat_clusters$subject_id) {
+#   warning("SH073仍然存在于白内障组数据中！")
+# } else {
+#   cat("✓ 成功从白内障组中去掉SH073\n")
+# }
 
 # Extract the subject_id and cluster information
 ppv_cluster_info <- data.frame(
@@ -131,7 +184,7 @@ create_betweenstats_plot <- function(data, param_col, title_prefix, surgery_type
 }
 
 # Create directory for plots
-dir.create("3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1w/ggbetweenstats", 
+dir.create("3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1m/ggbetweenstats", 
            recursive = TRUE, showWarnings = FALSE)
 
 # Generate plots for PPV vision improvement
@@ -147,7 +200,7 @@ for (param in vision_params) {
   
   # Save the plot
   ggsave(
-    paste0("3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1w/ggbetweenstats/ppv_", 
+    paste0("3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1m/ggbetweenstats/ppv_", 
            param, 
            ".pdf"),
     p,
@@ -167,7 +220,7 @@ for (param in vision_params) {
   
   # Save the plot
   ggsave(
-    paste0("3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1w/ggbetweenstats/cat_", 
+    paste0("3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1m/ggbetweenstats/cat_", 
            param, 
            ".pdf"),
     p,
@@ -273,13 +326,13 @@ create_significant_summary <- function(test_results, params, output_file) {
 ppv_sig_summary <- create_significant_summary(
   ppv_vision_tests,
   vision_params,
-  "3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1w/ggbetweenstats/ppv_vision_significant_results.csv"
+  "3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1m/ggbetweenstats/ppv_vision_significant_results.csv"
 )
 
 cat_sig_summary <- create_significant_summary(
   cat_vision_tests,
   vision_params,
-  "3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1w/ggbetweenstats/cat_vision_significant_results.csv"
+  "3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1m/ggbetweenstats/cat_vision_significant_results.csv"
 )
 
 # -----------------------------------------------------
@@ -331,13 +384,13 @@ cat_membership_corr <- analyze_membership_correlation(
 # Save correlation results
 write.csv(
   ppv_membership_corr,
-  "3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1w/ggbetweenstats/ppv_membership_correlation_vision.csv",
+  "3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1m/ggbetweenstats/ppv_membership_correlation_vision.csv",
   row.names = FALSE
 )
 
 write.csv(
   cat_membership_corr,
-  "3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1w/ggbetweenstats/cat_membership_correlation_vision.csv",
+  "3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1m/ggbetweenstats/cat_membership_correlation_vision.csv",
   row.names = FALSE
 )
 
@@ -429,7 +482,7 @@ create_top_significant_plots <- function(data, test_results, params, title_prefi
     
     # Save the combined plot
     ggsave(
-      paste0("3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1w/ggbetweenstats/", 
+      paste0("3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1m/ggbetweenstats/", 
              gsub(" ", "_", tolower(title_prefix)), 
              "_combined_plots.pdf"),
       combined_plot,
@@ -507,7 +560,7 @@ create_combined_timepoint_plot <- function(data, surgery_type) {
   
   # Save the plot
   ggsave(
-    paste0("3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1w/ggbetweenstats/", 
+    paste0("3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1m/ggbetweenstats/", 
            tolower(surgery_type), "_combined_timepoints.pdf"),
     p,
     width = 10,
@@ -525,9 +578,9 @@ cat_combined <- create_combined_timepoint_plot(cat_vision_analysis, "Cataract")
 # 9. Save processed data for further analysis
 # -----------------------------------------------------
 # Save the merged datasets
-saveRDS(ppv_vision_analysis, "3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1w/ggbetweenstats/ppv_vision_analysis.rds")
-saveRDS(cat_vision_analysis, "3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1w/ggbetweenstats/cat_vision_analysis.rds")
-saveRDS(all_vision_analysis, "3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1w/ggbetweenstats/all_vision_analysis.rds")
+saveRDS(ppv_vision_analysis, "3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1m/ggbetweenstats/ppv_vision_analysis.rds")
+saveRDS(cat_vision_analysis, "3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1m/ggbetweenstats/cat_vision_analysis.rds")
+saveRDS(all_vision_analysis, "3_data_analysis/6_clustering_modeling/vision_analysis/all_metrics/1m/ggbetweenstats/all_vision_analysis.rds")
 
 # Print a summary of the analysis
 cat("\n=========================================================\n")
@@ -555,3 +608,16 @@ print(ppv_membership_corr)
 
 cat("\nCataract Membership Correlations with Vision Improvement:\n")
 print(cat_membership_corr)
+
+
+
+# Scatterplot of membership vs. vision improvement by cluster
+ggplot(ppv_vision_analysis, aes(x = membership, y = vision_improvement_1m, color = as.factor(cluster))) +
+  geom_point(size = 3, alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(title = "Relationship between Cluster Membership and Vision Improvement (1m)", 
+       x = "Membership Strength",
+       y = "Vision Improvement at 1 Month",
+       color = "Cluster") +
+  theme_bw() +
+  facet_wrap(~cluster, scales = "free") # To see each cluster separately

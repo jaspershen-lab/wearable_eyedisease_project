@@ -1,0 +1,1 @@
+Error in Group2_Diabetes with k = 3 : must have n >= 2 objects to cluster

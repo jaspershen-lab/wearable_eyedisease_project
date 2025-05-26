@@ -1,0 +1,6 @@
+# A tibble: 3 × 7
+  cluster     n mean_hr sd_mean_hr mean_sd_hr mean_min_hr mean_max_hr
+    <int> <int>   <dbl>      <dbl>      <dbl>       <dbl>       <dbl>
+1       1     7    67.5         NA       12.3        39.9        145.
+2       2     9    75.0         NA       11.9        45.3        154.
+3       3     4    61.9         NA       13.0        36.2        148.

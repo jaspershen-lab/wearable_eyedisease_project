@@ -1,0 +1,63 @@
+========================================
+PPV Group Comprehensive Regional Clustering Analysis Report
+Vision + OCTA (Macular + Wide-field Regions)
+========================================
+
+1. Data Overview:
+   - Total patients analyzed: 15
+   - Vision parameters: 3 (improvement, baseline vision, age)
+   - OCTA blood flow - Macular: 7 parameters
+   - OCTA blood flow - Wide-field: 7 parameters
+   - OCTA thickness - Macular: 4 parameters
+   - OCTA thickness - Wide-field: 4 parameters
+   - Total parameters: 25
+
+2. Clustering Results:
+   - Number of clusters: 2
+   - Fuzzy coefficient (m): 1.705
+   - Better outcome group (Cluster 1): 9 patients
+   - Worse outcome group (Cluster 2): 6 patients
+
+3. Statistical Significance:
+   - Significant vision parameters: 0
+   - Significant BF macular parameters: 0
+   - Significant BF wide-field parameters: 6
+   - Significant TH macular parameters: 0
+   - Significant TH wide-field parameters: 1
+   - Total significant parameters: 7
+
+4. Key Regional Findings:
+   - Vision improvements: Better cluster advantages in 0 parameters
+   - Blood flow macular: Better cluster advantages in 0 parameters
+   - Blood flow wide-field: Better cluster advantages in 6 parameters
+   - Thickness macular: Better cluster advantages in 0 parameters
+   - Thickness wide-field: Better cluster advantages in 0 parameters
+   - This analysis integrates both macular and peripheral retinal changes
+
+5. Clinical Implications:
+   - Identifies patients with comprehensive good outcomes across all regions
+   - Distinguishes macular vs peripheral retinal response patterns
+   - Provides most robust patient stratification using multi-regional data
+   - Can guide region-specific follow-up strategies
+
+6. Regional Analysis Advantages:
+   - Separate assessment of macular (0_21) and wide-field (0_6) regions
+   - Ability to identify patients with regional response differences
+   - More comprehensive retinal vascular assessment
+   - Better understanding of surgical impact on different retinal areas
+
+6. Output Files:
+   - ppv_comprehensive_cluster_results_with_outcomes.csv: Main clustering results
+   - ppv_comprehensive_cluster_statistics.csv: Regional statistical analysis
+   - ppv_comprehensive_parameter_importance.csv: Parameter importance ranking
+   - ppv_comprehensive_cluster_summary.csv: Cluster summary statistics
+   - plots/: Comprehensive visualizations including regional comparisons
+
+7. Advantages of Regional Comprehensive Analysis:
+   - Most complete view of patient outcomes (functional + anatomical + regional)
+   - Identifies subtle regional response patterns
+   - Reduced risk of missing important patient subgroups
+   - Superior clinical interpretability with regional insights
+   - Most robust clustering based on maximum available information
+
+

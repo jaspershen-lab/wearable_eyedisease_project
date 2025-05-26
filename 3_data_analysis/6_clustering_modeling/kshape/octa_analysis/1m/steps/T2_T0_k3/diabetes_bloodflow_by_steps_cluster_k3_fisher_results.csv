@@ -1,0 +1,15 @@
+"Parameter","Comparison","P_Value","P_Adjusted","Significant"
+"PA_Choroid","2 vs 1",0.142857142857143,0.285714285714286,FALSE
+"PA_Choroid","3 vs 1",1,1,FALSE
+"PA_DCP","2 vs 1",1,1,FALSE
+"PA_DCP","3 vs 1",1,1,FALSE
+"PA_ICP","2 vs 1",0.485714285714285,0.971428571428571,FALSE
+"PA_ICP","3 vs 1",1,1,FALSE
+"PA_SVP","2 vs 1",0.142857142857143,0.285714285714286,FALSE
+"PA_SVP","3 vs 1",0.4,0.4,FALSE
+"VD_DCP","2 vs 1",1,1,FALSE
+"VD_DCP","3 vs 1",1,1,FALSE
+"VD_ICP","2 vs 1",1,1,FALSE
+"VD_ICP","3 vs 1",1,1,FALSE
+"VD_SVP","2 vs 1",1,1,FALSE
+"VD_SVP","3 vs 1",1,1,FALSE

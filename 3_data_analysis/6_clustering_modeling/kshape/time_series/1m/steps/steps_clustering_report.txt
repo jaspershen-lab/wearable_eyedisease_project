@@ -1,0 +1,38 @@
+============================================
+STEPS COUNT TRAJECTORY CLUSTERING ANALYSIS
+============================================
+
+Analysis performed on: 2025-05-09 13:41:13 
+
+Quality Control Process:
+- Subjects were required to have at least 15 days of data
+- Subjects were required to have data during the perioperative period (-2 to +2 days from surgery)
+
+Group 1 (No Diabetes, Surgery Type 0):
+Original subjects: 28 
+Subjects after QC: 20 ( 87 %)
+
+Group 2 (Diabetes, Surgery Type 1):
+Original subjects: 19 
+Subjects after QC: 14 ( 93.3 %)
+
+Method: Hierarchical clustering with Euclidean distance
+
+============================================
+CONCLUSION
+============================================
+
+This analysis identified distinct steps count trajectory patterns within each patient group during the perioperative period (4 days before to 30 days after surgery).
+
+Quality Control Summary:
+- All subjects were required to have at least 15 days of data
+- All subjects were required to have data during the perioperative period
+- Group 1: 20 of 23 subjects passed QC (87%)
+- Group 2: 14 of 15 subjects passed QC (93.3%)
+
+Key findings:
+1. Different physical activity recovery patterns were observed within each group.
+2. Check the generated plots to visualize these patterns.
+3. Statistical analysis shows differences in mean steps count between clusters.
+4. Further clinical interpretation is recommended to understand the significance of these activity patterns in recovery from surgery.
+

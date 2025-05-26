@@ -1,0 +1,5 @@
+# A tibble: 2 × 7
+  cluster     n mean_steps sd_mean_steps mean_sd_steps mean_min_steps mean_max_steps
+    <int> <int>      <dbl>         <dbl>         <dbl>          <dbl>          <dbl>
+1       1    11       26.0            NA          32.2              0           153.
+2       2     3       12.4            NA          26.3              0           173 

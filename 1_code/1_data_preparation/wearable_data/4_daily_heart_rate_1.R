@@ -33,7 +33,7 @@ read_dailyheartrate_file <- function(file_path) {
 }
 
 # all_subjects
-subject_folders <- list.dirs("2_data/wearable data_1", recursive = FALSE)
+subject_folders <- list.dirs("2_data/wearable data_2", recursive = FALSE)
 daily_heart_rate_data <-
   purrr::map(subject_folders, function(folder) {
     subject_id <- basename(folder)

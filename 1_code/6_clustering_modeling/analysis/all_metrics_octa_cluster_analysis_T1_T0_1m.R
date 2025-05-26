@@ -18,8 +18,8 @@ rm(list = ls())
 # 1. Load the cluster results
 # -----------------------------------------------------
 # Assuming these files were created in your previous clustering analysis
-ppv_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1w/ppv_cluster_results_all_metrics.csv", check.names = FALSE)
-cat_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1w/cataract_cluster_results_all_metrics.csv", check.names = FALSE)
+ppv_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/ppv_cluster_results_all_metrics.csv", check.names = FALSE)
+cat_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/cataract_cluster_results_all_metrics.csv", check.names = FALSE)
 baseline_info <- read.csv("2_data/analysis_data/baseline_info.csv")
 octa_bloodflow <- read.csv("2_data/analysis_data/octa_data_bloodflow_1.csv")
 octa_thickness <- read.csv("2_data/analysis_data/octa_data_thickness_1.csv")
@@ -161,7 +161,7 @@ filter_0_21_params <- function(data) {
   
   # Keep only ID, cluster, membership, surgery_type and 0_21 parameters
   filtered_data <- data %>%
-    select(ID, cluster, membership, surgery_type, all_of(params_0_21))
+    dplyr::select(ID, cluster, membership, surgery_type, all_of(params_0_21))
   
   return(list(
     data = filtered_data,
@@ -174,6 +174,109 @@ ppv_bloodflow_0_21 <- filter_0_21_params(ppv_bloodflow_analysis)
 ppv_thickness_0_21 <- filter_0_21_params(ppv_thickness_analysis)
 cat_bloodflow_0_21 <- filter_0_21_params(cat_bloodflow_analysis)
 cat_thickness_0_21 <- filter_0_21_params(cat_thickness_analysis)
+
+# -----------------------------------------------------
+# 4.5 Filter to focus only on specific layers for bloodflow and thickness
+# -----------------------------------------------------
+# Function to filter bloodflow parameters to focus on SVP, ICP, DCP, and Choroid layers
+filter_bloodflow_layers <- function(data) {
+  # 定义要关注的血流层
+  layers_of_interest <- c("SVP", "ICP", "DCP", "Choroid")
+  
+  # 构建匹配模式
+  pattern <- paste0("(", paste(layers_of_interest, collapse = "|"), ").*0_21_improvement$")
+  
+  # 获取匹配的列名
+  params_of_interest <- names(data)[grep(pattern, names(data))]
+  
+  # 如果没有找到匹配的参数，输出警告
+  if(length(params_of_interest) == 0) {
+    warning("未找到指定的血流层参数！")
+    return(list(data = data, params = character(0)))
+  } else {
+    cat("找到", length(params_of_interest), "个目标血流层的参数:\n")
+    cat(paste(params_of_interest, collapse = "\n"), "\n")
+  }
+  
+  # 保留ID, cluster, membership, surgery_type和目标参数
+  filtered_data <- data %>%
+    dplyr::select(ID, cluster, membership, surgery_type, all_of(params_of_interest))
+  
+  return(list(
+    data = filtered_data,
+    params = params_of_interest
+  ))
+}
+
+# Function to filter thickness parameters to focus on GCL.IPL, INL, and Retina layers
+filter_thickness_layers <- function(data) {
+  # 定义要关注的厚度层
+  layers_of_interest <- c("GCL.IPL", "INL", "Retina")
+  
+  # 构建匹配模式
+  pattern <- paste0("(", paste(layers_of_interest, collapse = "|"), ").*0_21_improvement$")
+  
+  # 获取匹配的列名
+  params_of_interest <- names(data)[grep(pattern, names(data))]
+  
+  # 如果没有找到匹配的参数，输出警告
+  if(length(params_of_interest) == 0) {
+    warning("未找到指定的厚度层参数！")
+    return(list(data = data, params = character(0)))
+  } else {
+    cat("找到", length(params_of_interest), "个目标厚度层的参数:\n")
+    cat(paste(params_of_interest, collapse = "\n"), "\n")
+  }
+  
+  # 保留ID, cluster, membership, surgery_type和目标参数
+  filtered_data <- data %>%
+    dplyr::select(ID, cluster, membership, surgery_type, all_of(params_of_interest))
+  
+  return(list(
+    data = filtered_data,
+    params = params_of_interest
+  ))
+}
+
+# 过滤数据并将结果重新赋值给原始变量
+# 先保存原始参数列表
+original_ppv_bloodflow_params <- ppv_bloodflow_0_21$params
+original_cat_bloodflow_params <- cat_bloodflow_0_21$params
+original_ppv_thickness_params <- ppv_thickness_0_21$params
+original_cat_thickness_params <- cat_thickness_0_21$params
+
+# 应用血流过滤器
+temp_ppv_bloodflow <- filter_bloodflow_layers(ppv_bloodflow_analysis)
+temp_cat_bloodflow <- filter_bloodflow_layers(cat_bloodflow_analysis)
+
+# 应用厚度过滤器
+temp_ppv_thickness <- filter_thickness_layers(ppv_thickness_analysis)
+temp_cat_thickness <- filter_thickness_layers(cat_thickness_analysis)
+
+# 如果过滤后有参数，则更新原始对象
+if(length(temp_ppv_bloodflow$params) > 0) {
+  ppv_bloodflow_0_21 <- temp_ppv_bloodflow
+  cat("更新了PPV血流数据集，从", length(original_ppv_bloodflow_params), "个参数减少到", length(ppv_bloodflow_0_21$params), "个参数\n")
+}
+
+if(length(temp_cat_bloodflow$params) > 0) {
+  cat_bloodflow_0_21 <- temp_cat_bloodflow
+  cat("更新了白内障血流数据集，从", length(original_cat_bloodflow_params), "个参数减少到", length(cat_bloodflow_0_21$params), "个参数\n")
+}
+
+if(length(temp_ppv_thickness$params) > 0) {
+  ppv_thickness_0_21 <- temp_ppv_thickness
+  cat("更新了PPV厚度数据集，从", length(original_ppv_thickness_params), "个参数减少到", length(ppv_thickness_0_21$params), "个参数\n")
+}
+
+if(length(temp_cat_thickness$params) > 0) {
+  cat_thickness_0_21 <- temp_cat_thickness
+  cat("更新了白内障厚度数据集，从", length(original_cat_thickness_params), "个参数减少到", length(cat_thickness_0_21$params), "个参数\n")
+}
+
+# 清理临时变量
+rm(temp_ppv_bloodflow, temp_cat_bloodflow, temp_ppv_thickness, temp_cat_thickness)
+rm(original_ppv_bloodflow_params, original_cat_bloodflow_params, original_ppv_thickness_params, original_cat_thickness_params)
 
 # -----------------------------------------------------
 # 5. Create visualization using ggbetweenstats
@@ -217,7 +320,7 @@ create_betweenstats_plot <- function(data, param_col, title_prefix, surgery_type
 }
 
 # Create directory for plots
-dir.create("3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1w/T1_T0", 
+dir.create("3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1m/T1_T0", 
            recursive = TRUE, showWarnings = FALSE)
 
 # Generate plots for PPV blood flow 0_21 parameters
@@ -231,7 +334,7 @@ for (param in ppv_bloodflow_0_21$params) {
   
   # Save the plot
   ggsave(
-    paste0("3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1w/T1_T0/ppv_bloodflow_", 
+    paste0("3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1m/T1_T0/ppv_bloodflow_", 
            gsub("_0_21_improvement", "", param), 
            ".pdf"),
     p,
@@ -251,7 +354,7 @@ for (param in cat_bloodflow_0_21$params) {
   
   # Save the plot
   ggsave(
-    paste0("3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1w/T1_T0/cat_bloodflow_", 
+    paste0("3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1m/T1_T0/cat_bloodflow_", 
            gsub("_0_21_improvement", "", param), 
            ".pdf"),
     p,
@@ -267,18 +370,18 @@ for (param in cat_bloodflow_0_21$params) {
 analyze_parameter_correlations <- function(data, param_cols, title, output_prefix) {
   # Select only the parameters of interest
   corr_data <- data %>%
-    select(all_of(param_cols))
+    dplyr::select(all_of(param_cols))
   
   # Calculate correlation matrix
   corr_matrix <- cor(corr_data, use = "pairwise.complete.obs", method = "spearman")
   
   # Create the output directory if it doesn't exist
-  dir.create("3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1w/T1_T0", 
+  dir.create("3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1m/T1_T0", 
              recursive = TRUE, showWarnings = FALSE)
   
   # Create correlation plot
   pdf(
-    paste0("3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1w/T1_T0/", 
+    paste0("3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1m/T1_T0/", 
            output_prefix, 
            "_correlation_plot.pdf"),
     width = 12,
@@ -325,25 +428,47 @@ cat_bloodflow_corr <- analyze_parameter_correlations(
 # 7. Statistical analysis of differences between clusters
 # -----------------------------------------------------
 # Function to test for differences between clusters
+# Function to test for differences between clusters
 test_cluster_differences <- function(data, param_cols) {
   results_list <- list()
+  all_p_values <- c()
+  param_names <- c()
   
+  # 先收集所有p值
   for (param in param_cols) {
     # ANOVA to test for differences between clusters
     model_formula <- as.formula(paste(param, "~ cluster"))
     anova_result <- data %>%
       anova_test(model_formula)
     
+    # 收集p值
+    all_p_values <- c(all_p_values, anova_result$p)
+    param_names <- c(param_names, param)
+    
     # Add results to the list
     results_list[[paste0(param, "_anova")]] <- anova_result
+  }
+  
+  # 多重比较校正
+  adjusted_p_values <- p.adjust(all_p_values, method = "fdr")
+  
+  # 添加校正后的p值到结果中
+  for (i in 1:length(param_names)) {
+    param <- param_names[i]
+    results_list[[paste0(param, "_anova_adjusted")]] <- adjusted_p_values[i]
     
-    # If ANOVA is significant, add post-hoc tests
-    if (anova_result$p < 0.05) {
+    # 仅对校正后仍然显著的结果进行事后检验
+    if (adjusted_p_values[i] < 0.05) {
+      model_formula <- as.formula(paste(param, "~ cluster"))
+      # 修改这里：移除p.adjust.method参数，或设置为"none"
       posthoc <- data %>%
         pairwise_t_test(
           model_formula,
-          p.adjust.method = "holm"
+          p.adjust.method = "none"  # 不在这一步进行校正
         )
+      
+      # 单独收集该参数的所有post-hoc p值并进行校正
+      posthoc$p.adj <- p.adjust(posthoc$p, method = "fdr")
       
       results_list[[paste0(param, "_posthoc")]] <- posthoc
     }
@@ -369,14 +494,16 @@ create_significant_summary <- function(test_results, params, output_file) {
   sig_results <- data.frame(
     Parameter = character(),
     P_Value = numeric(),
+    P_Adjusted = numeric(),  # 添加校正后的P值列
     Significant_Pairs = character(),
     stringsAsFactors = FALSE
   )
   
   for (param in params) {
     anova_result <- test_results[[paste0(param, "_anova")]]
+    adjusted_p <- test_results[[paste0(param, "_anova_adjusted")]]
     
-    if (!is.null(anova_result) && anova_result$p < 0.05) {
+    if (!is.null(adjusted_p) && adjusted_p < 0.05) {  # 使用校正后的P值判断显著性
       param_name <- gsub("_0_21_improvement", "", param)
       
       # Get post-hoc results if available
@@ -398,15 +525,16 @@ create_significant_summary <- function(test_results, params, output_file) {
         rbind(data.frame(
           Parameter = param_name,
           P_Value = anova_result$p,
+          P_Adjusted = adjusted_p,  # 添加校正后的P值
           Significant_Pairs = sig_pairs,
           stringsAsFactors = FALSE
         ))
     }
   }
   
-  # Sort by p-value
+  # 按校正后的P值排序
   sig_results <- sig_results %>%
-    arrange(P_Value)
+    arrange(P_Adjusted)
   
   # Save to file
   write.csv(sig_results, output_file, row.names = FALSE)
@@ -418,13 +546,13 @@ create_significant_summary <- function(test_results, params, output_file) {
 ppv_sig_summary <- create_significant_summary(
   ppv_bloodflow_tests,
   ppv_bloodflow_0_21$params,
-  "3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1w/T1_T0/ppv_bloodflow_0_21_significant_results.csv"
+  "3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1m/T1_T0/ppv_bloodflow_0_21_significant_results.csv"
 )
 
 cat_sig_summary <- create_significant_summary(
   cat_bloodflow_tests,
   cat_bloodflow_0_21$params,
-  "3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1w/T1_T0/cat_bloodflow_0_21_significant_results.csv"
+  "3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1m/T1_T0/cat_bloodflow_0_21_significant_results.csv"
 )
 
 # -----------------------------------------------------
@@ -509,12 +637,12 @@ create_top_significant_plots <- function(data, test_results, params, title_prefi
     )
     
     # Create directory if it doesn't exist
-    dir.create("3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1w/T1_T0", 
+    dir.create("3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1m/T1_T0", 
                recursive = TRUE, showWarnings = FALSE)
     
     # Save the combined plot
     ggsave(
-      paste0("3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1w/T1_T0/", 
+      paste0("3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1m/T1_T0/", 
              gsub(" ", "_", tolower(title_prefix)), 
              "_top_significant_0_21.pdf"),
       combined_plot,
@@ -570,9 +698,12 @@ analyze_membership_correlation <- function(data, param_cols) {
       ))
   }
   
-  # Sort by absolute correlation strength
+  # 添加校正后的P值
+  results$P_adjusted <- p.adjust(results$P_value, method = "holm")
+  
+  # 按校正后的P值排序
   results <- results %>%
-    arrange(P_value)
+    arrange(P_adjusted)
   
   return(results)
 }
@@ -592,13 +723,39 @@ cat_membership_corr <- analyze_membership_correlation(
 # Save correlation results
 write.csv(
   ppv_membership_corr,
-  "3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1w/T1_T0/ppv_membership_correlation_0_21.csv",
+  "3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1m/T1_T0/ppv_membership_correlation_0_21.csv",
   row.names = FALSE
 )
 
 write.csv(
   cat_membership_corr,
-  "3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1w/T1_T0/cat_membership_correlation_0_21.csv",
+  "3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1m/T1_T0/cat_membership_correlation_0_21.csv",
+  row.names = FALSE
+)
+
+
+# Analyze correlation for PPV thickness
+ppv_thickness_membership_corr <- analyze_membership_correlation(
+  ppv_thickness_0_21$data,
+  ppv_thickness_0_21$params
+)
+
+# Analyze correlation for cataract thickness
+cat_thickness_membership_corr <- analyze_membership_correlation(
+  cat_thickness_0_21$data,
+  cat_thickness_0_21$params
+)
+
+# Save correlation results for thickness
+write.csv(
+  ppv_thickness_membership_corr,
+  "3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1m/T1_T0/ppv_thickness_membership_correlation_0_21.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  cat_thickness_membership_corr,
+  "3_data_analysis/6_clustering_modeling/octa_analysis/all_metrics/1m/T1_T0/cat_thickness_membership_correlation_0_21.csv",
   row.names = FALSE
 )
 
@@ -637,3 +794,11 @@ print(head(ppv_membership_corr, 5))
 
 cat("\nTop Cataract Membership Correlations:\n")
 print(head(cat_membership_corr, 5))
+
+
+# Print summary of top thickness membership correlations
+cat("\nTop PPV Thickness Membership Correlations:\n")
+print(head(ppv_thickness_membership_corr, 5))
+
+cat("\nTop Cataract Thickness Membership Correlations:\n")
+print(head(cat_thickness_membership_corr, 5))

@@ -8,8 +8,8 @@ library(readxl)
 
 ###mental health combine
 data_mental <- read_excel("2_data/mental questionnaire/mental_health_2.xlsx")
-data_baseline <- read_excel("2_data/baseline questionnaire/baseline_questionnaire_3.xlsx")
-data_va <- read_excel("2_data/va iop/va_iop_5.xlsx")
+data_baseline <- read_excel("2_data/baseline questionnaire/baseline_questionnaire_4.xlsx")
+data_va <- read_excel("2_data/va iop/va_iop_6.xlsx")
 data_bmi <- read_excel("2_data/baseline questionnaire/bmi_data.xlsx")
 
 ###create working directory
@@ -64,31 +64,32 @@ write.csv(data_mental_wide, "mental_health_transformed.csv", row.names = FALSE)
 data_va <- data_va %>%
   mutate(across(where(is.character), ~ na_if(., ".")))
 
-
-###combine with baseline
-data_merged <- data_baseline %>%
-  left_join(data_mental_wide, by = "ID") %>%
-  left_join(data_va, by = "ID")
-
-head(data_merged)
-
-names(data_merged)[names(data_merged) == "surger_eye_1"] <- "surgery_eye_1"
-names(data_merged)[names(data_merged) == "surger_eye_2"] <- "surgery_eye_2"
-names(data_merged)[names(data_merged) == "gender.x"] <- "gender"
-names(data_merged)[names(data_merged) == "age.x"] <- "age"
-
-
-
 # Calculate BMI
 data_bmi <- data_bmi %>%
   mutate(bmi = weight / ((height/100)^2))
 
-# Read the previously saved merged data
-data_merged <- read.csv("baseline_info.csv")
 
-# Merge the BMI data with the existing merged data
-data_merged <- data_merged %>%
+###combine with baseline
+# Change from full_join to left_join
+data_merged <- data_baseline %>%
+  left_join(data_mental_wide, by = "ID") %>%
+  left_join(data_va, by = "ID") %>%
   left_join(data_bmi, by = "ID")
+
+head(data_merged)
+
+# Fix column names
+names(data_merged)[names(data_merged) == "surger_eye_1"] <- "surgery_eye_1"
+names(data_merged)[names(data_merged) == "surger_eye_2"] <- "surgery_eye_2"
+
+# Handle potential duplicate columns from the joins
+if("gender.x" %in% names(data_merged)) {
+  names(data_merged)[names(data_merged) == "gender.x"] <- "gender"
+}
+if("age.x" %in% names(data_merged)) {
+  names(data_merged)[names(data_merged) == "age.x"] <- "age"
+}
+
 
 # Save the updated merged data
 write.csv(data_merged, "baseline_info.csv", row.names = FALSE)

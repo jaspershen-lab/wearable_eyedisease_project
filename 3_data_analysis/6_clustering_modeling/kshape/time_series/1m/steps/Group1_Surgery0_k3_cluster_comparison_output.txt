@@ -1,0 +1,6 @@
+# A tibble: 3 × 7
+  cluster     n mean_steps sd_mean_steps mean_sd_steps mean_min_steps mean_max_steps
+    <int> <int>      <dbl>         <dbl>         <dbl>          <dbl>          <dbl>
+1       1     7       33.4            NA          34.7              0           161.
+2       2     6       50.7            NA          42.8              0           158.
+3       3     7       15.2            NA          25.0              0           159.

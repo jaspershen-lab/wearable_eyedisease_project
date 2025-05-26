@@ -163,7 +163,7 @@ cat("前15个列名:", paste(colnames(merged_data)[1:15], collapse=", "), "\n")
 # 从daily_coverage_status中获取符合条件的subject_id和day_point组合
 valid_combinations <- daily_coverage_status %>%
   filter(meets_threshold == TRUE) %>%
-  select(subject_id, day_point)
+  dplyr::select(subject_id, day_point)
 
 # 打印筛选前的统计信息
 cat("\n筛选前数据统计:\n")
@@ -220,9 +220,10 @@ is_valid_combination <- function(subject_id, day) {
 }
 
 # 循环处理每个时间点，将不符合条件的数据设为NA
+# 循环处理每个时间点，将不符合条件的数据设为NA
 for(day in seq(-4, 30)) {
   day_cols <- day_columns[[as.character(day)]]
-  if(length(day_cols) > 0) {
+  if(length(day_cols) > 0 && nrow(filtered_wide_data) > 0) {  # 添加检查确保数据框不为空
     for(i in 1:nrow(filtered_wide_data)) {
       subject <- filtered_wide_data$subject_id[i]
       if(!is_valid_combination(subject, day)) {
@@ -252,6 +253,68 @@ print(day_completeness)
 # 合并组信息
 filtered_wide_with_groups <- filtered_wide_data %>%
   left_join(group_info, by = c("subject_id" = "ID"))
+
+# -----------------------------------------------------
+# 查看筛选前每一组有多少人
+# -----------------------------------------------------
+
+# 合并组信息
+filtered_wide_with_groups <- filtered_wide_data %>%
+  left_join(group_info, by = c("subject_id" = "ID"))
+
+# 在进行任何筛选之前，先统计原始数据的分组情况
+cat("\n=== 筛选前每组人数统计 ===\n")
+
+# 总体参与者数量
+total_participants <- length(unique(merged_data$subject_id))
+cat("总参与者数量:", total_participants, "\n")
+
+# 有组信息的参与者数量
+participants_with_group_info <- merged_data %>%
+  left_join(group_info, by = c("subject_id" = "ID")) %>%
+  filter(!is.na(dm_status) & !is.na(surgery_type))
+
+cat("有完整组信息的参与者数量:", length(unique(participants_with_group_info$subject_id)), "\n")
+
+# 按糖尿病状态和手术类型分组统计
+group_summary <- participants_with_group_info %>%
+  group_by(dm_status, surgery_type) %>%
+  summarise(
+    count = n_distinct(subject_id),
+    .groups = "drop"
+  ) %>%
+  arrange(dm_status, surgery_type)
+
+cat("\n按糖尿病状态和手术类型分组统计:\n")
+print(group_summary)
+
+# 创建交叉表
+cross_table <- table(participants_with_group_info$dm_status, 
+                     participants_with_group_info$surgery_type, 
+                     dnn = c("糖尿病状态", "手术类型"))
+cat("\n交叉表 (糖尿病状态 x 手术类型):\n")
+print(cross_table)
+
+# 统计我们将要分析的两个目标组
+target_group_1 <- participants_with_group_info %>%
+  filter(dm_status == "No Diabetes" & surgery_type == 0) %>%
+  distinct(subject_id)
+
+target_group_2 <- participants_with_group_info %>%
+  filter(dm_status == "Diabetes" & surgery_type == 1) %>%
+  distinct(subject_id)
+
+cat("\n目标分析组统计:\n")
+cat("无糖尿病 + 手术类型0 组:", nrow(target_group_1), "人\n")
+cat("有糖尿病 + 手术类型1 组:", nrow(target_group_2), "人\n")
+
+# 缺失信息统计
+missing_dm <- sum(is.na(participants_with_group_info$dm_status))
+missing_surgery <- sum(is.na(participants_with_group_info$surgery_type))
+
+cat("\n缺失信息统计:\n")
+cat("缺失糖尿病状态信息:", missing_dm, "人\n")
+cat("缺失手术类型信息:", missing_surgery, "人\n")
 
 # 检查是否有缺失的组信息
 missing_group_info <- sum(is.na(filtered_wide_with_groups$dm_status))
@@ -285,7 +348,7 @@ cat("唯一参与者数:", length(unique(diabetes_surgery1$subject_id)), "\n")
 
 # 保存参与者和时间点的完整度信息
 write.csv(
-  valid_subject_days %>% select(-valid_days), 
+  valid_subject_days %>% dplyr::select(-valid_days), 
   file.path(output_dir, "participant_valid_days.csv"), 
   row.names = FALSE
 )
@@ -306,7 +369,7 @@ if(nrow(no_diabetes_surgery0) > 0) {
   
   # 创建mfuzz格式数据
   mfuzz_data_NoD <- no_diabetes_surgery0 %>%
-    select(subject_id, all_of(mfuzz_cols))
+    dplyr::select(subject_id, all_of(mfuzz_cols))
   
   # 保存mfuzz格式数据
   mfuzz_file_NoD <- file.path(output_dir, "mfuzz_format_NoD_Surg0.csv")
@@ -327,7 +390,7 @@ if(nrow(diabetes_surgery1) > 0) {
   
   # 创建mfuzz格式数据
   mfuzz_data_D <- diabetes_surgery1 %>%
-    select(subject_id, all_of(mfuzz_cols))
+    dplyr::select(subject_id, all_of(mfuzz_cols))
   
   # 保存mfuzz格式数据
   mfuzz_file_D <- file.path(output_dir, "mfuzz_format_D_Surg1.csv")
@@ -345,7 +408,7 @@ cat("\n开始进行时间序列聚类的数据完整度评估...\n")
 # 基于我们已有的有效日期和参与者组合信息，进行宽格式数据的完整度评估
 # 首先分析参与者的完整度（每个参与者有多少天满足佩戴时间要求）
 participant_completeness <- valid_subject_days %>%
-  select(subject_id, valid_days_count) %>%
+  dplyr::select(subject_id, valid_days_count) %>%
   mutate(total_days = length(seq(-4, 30)),
          completeness_rate = valid_days_count / total_days)
 
@@ -429,3 +492,4 @@ cat("\n保存筛选后的合并数据到:", combined_filtered_file, "\n")
 # 保存完整度信息供参考
 write.csv(participant_completeness, file.path(output_dir, "participant_completeness.csv"), row.names = FALSE)
 cat("\n保存参与者完整度信息到:", file.path(output_dir, "participant_completeness.csv"), "\n")
+
