@@ -42,7 +42,9 @@ available_metrics <- check_metrics(ppv_data, metrics)
 cat("可用的指标:", paste(available_metrics, collapse = ", "), "\n")
 
 # 我们将选择4个关键指标来平衡信息量和维度
-selected_metrics <- c("cv_rhr_1","cv_bo", "steps_max","deep_sleep")
+# selected_metrics <- c("cv_rhr_1","steps_max")
+selected_metrics <- c("cv_rhr_1","cv_bo", "steps_max")
+# selected_metrics <- c("cv_rhr_1","cv_bo", "steps_max","deep_sleep")
 selected_metrics <- intersect(selected_metrics, available_metrics)
 
 # 如果某些选定的指标不可用，我们退回到使用可用指标中的前几个
@@ -60,20 +62,28 @@ cat("最终选择的指标:", paste(selected_metrics, collapse = ", "), "\n")
 # More clinically-focused time windows
 # time_windows_weekly <- list(
 #   baseline = list(days = -4:-1, name = "baseline"),               # Pre-surgical baseline
-#   acute_recovery = list(days = 0:3, name = "acute_recovery"),     # Immediate post-op recovery
-#   early_recovery = list(days = 4:7, name = "early_recovery"),     # First week recovery
-#   mid_recovery = list(days = 4:14, name = "mid_recovery"),        # Second week
-#   late_recovery = list(days = 15:30, name = "late_recovery")      # Later recovery
+#   acute_recovery = list(days = 0:7, name = "acute_recovery"),     # Immediate post-op recovery
+#   early_recovery = list(days = 8:14, name = "early_recovery"),     # First week recovery
+#   mid_recovery = list(days = 15:22, name = "mid_recovery"),        # Second week
+#   late_recovery = list(days = 23:30, name = "late_recovery")      # Later recovery
 # )
 
-# Try these more targeted windows
 time_windows_weekly <- list(
   baseline = list(days = -4:-1, name = "baseline"),               # Pre-surgical baseline
-  perioperative = list(days = 0:1, name = "perioperative"),       # Immediate perioperative period
-  early_recovery = list(days = 2:5, name = "early_recovery"),     # First few days post-op
-  mid_recovery = list(days = 6:14, name = "mid_recovery"),        # Week 1-2
-  late_recovery = list(days = 15:30, name = "late_recovery")      # Later recovery
+  acute_recovery = list(days = 0:3, name = "acute_recovery"),     # Immediate post-op recovery
+  early_recovery = list(days = 4:7, name = "early_recovery"),     # First week recovery
+  mid_recovery = list(days = 8:15, name = "mid_recovery"),        # Second week
+  late_recovery = list(days = 16:30, name = "late_recovery")      # Later recovery
 )
+
+# # Try these more targeted windows
+# time_windows_weekly <- list(
+#   baseline = list(days = -4:-1, name = "baseline"),               # Pre-surgical baseline
+#   perioperative = list(days = 0:1, name = "perioperative"),       # Immediate perioperative period
+#   early_recovery = list(days = 2:5, name = "early_recovery"),     # First few days post-op
+#   mid_recovery = list(days = 6:14, name = "mid_recovery"),        # Week 1-2
+#   late_recovery = list(days = 15:30, name = "late_recovery")      # Later recovery
+# )
 
 # 基于时间窗口提取数据的函数
 extract_periop_data_windows <- function(data, metric, time_windows = time_windows_weekly) {

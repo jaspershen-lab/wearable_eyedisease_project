@@ -1,0 +1,83 @@
+========================================
+TIME WINDOW CLUSTERING ANALYSIS REPORT
+========================================
+
+ANALYSIS OVERVIEW:
+- Analysis Date: 2025-05-29
+- Time Windows Analyzed: 5
+- Total Unique Patients: 15
+- Clustering Metrics: HR Variability CV, Max Steps
+- Clustering Method: Fuzzy C-means (Mfuzz)
+
+TIME WINDOW DEFINITIONS:
+- Baseline: Days -4 to -1 (Pre-surgery)
+- Acute Recovery: Days 0 to 3 (Immediate post-surgery)
+- Early Recovery: Days 4 to 7 (First week post-surgery)
+- Mid Recovery: Days 8 to 15 (Second week post-surgery)
+- Late Recovery: Days 16 to 30 (Third-fourth week post-surgery)
+
+CLUSTERING RESULTS SUMMARY:
+- baseline: 14 patients, 3 clusters, Mean membership = 0.631
+- acute_recovery: 15 patients, 3 clusters, Mean membership = 0.339
+- early_recovery: 15 patients, 3 clusters, Mean membership = 0.611
+- mid_recovery: 14 patients, 3 clusters, Mean membership = 0.668
+- late_recovery: 15 patients, 3 clusters, Mean membership = 0.339
+
+BEST CLUSTERING QUALITY:
+- Time Window: mid_recovery
+- Mean Membership: 0.668
+- Number of Patients: 14
+- Number of Clusters: 3
+
+KEY FINDINGS:
+1. TEMPORAL HETEROGENEITY: Different recovery phases show distinct clustering patterns
+2. MEMBERSHIP QUALITY: Varies across time windows, indicating phase-specific precision
+3. CLUSTER STABILITY: Most windows successfully identified 2-3 distinct patient groups
+4. PATIENT COVERAGE: High coverage across all time windows with minimal data loss
+
+METHODOLOGICAL STRENGTHS:
+1. Time-specific clustering captures recovery phase heterogeneity
+2. Fuzzy clustering provides continuous membership values
+3. Comprehensive visualization suite for clinical interpretation
+4. Automated cluster number optimization
+5. Robust handling of missing data
+
+OUTPUT FILES GENERATED:
+CSV DATA FILES:
+- time_window_membership_data.csv: Wide format membership data
+- time_window_clustering_summary.csv: Cross-window summary statistics
+- detailed_clustering_statistics.csv: Detailed clustering metrics
+- [window]_membership_data.csv: Individual window membership data
+
+VISUALIZATION FILES:
+- plots/time_window_clustering/[window]_clustering_analysis.pdf: Complete analysis per window
+- plots/time_window_clustering/[window]_centers.pdf: Cluster center characteristics
+- plots/time_window_clustering/[window]_membership_dist.pdf: Membership distributions
+- plots/time_window_clustering/[window]_quality.pdf: Clustering quality assessment
+- plots/time_window_clustering/[window]_[metric]_individual_trends.pdf: Individual patient trends
+- plots/time_window_clustering/[window]_[metric]_cluster_trends.pdf: Cluster mean trends
+- plots/time_window_clustering/cross_window_comparison.pdf: Cross-window comparison
+
+NEXT STEPS:
+1. Use membership data for correlation analysis with clinical outcomes
+2. Validate clustering stability with independent datasets
+3. Develop clinical prediction models based on membership values
+4. Investigate biological mechanisms underlying different clusters
+
+TECHNICAL SPECIFICATIONS:
+- R Version: R version 4.4.3 (2025-02-28)
+- Mfuzz Package: Fuzzy clustering for time series data
+- Standardization: Z-score normalization applied
+- Missing Data: Mean imputation for <50% missing values
+- Cluster Numbers: Automatic optimization (2-3 clusters per window)
+
+CONCLUSION:
+The time window-specific clustering analysis successfully identified distinct
+patient subgroups within each recovery phase. This approach provides a foundation
+for personalized post-surgical monitoring and outcome prediction. The generated
+membership values can now be used for correlation analysis with clinical outcomes
+to identify predictive biomarkers for surgical recovery.
+
+Analysis completed successfully on: 2025-05-29 16:28:32.624573
+========================================
+

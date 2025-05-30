@@ -449,6 +449,163 @@ create_comprehensive_visualizations <- function(data, vision_params, bloodflow_p
   data$max_cluster <- as.factor(data$max_cluster)
   all_params <- c(vision_params, bloodflow_params, thickness_params)
   
+  # 0. Overall comprehensive heatmap for all parameters
+  cat("Creating overall comprehensive heatmap...\n")
+  
+  # Calculate cluster means for ALL parameters
+  all_params_means <- data %>%
+    group_by(max_cluster) %>%
+    summarise(across(all_of(all_params), mean, na.rm = TRUE), .groups = 'drop')
+  
+  # Prepare data for overall heatmap
+  overall_plot_data <- all_params_means %>%
+    pivot_longer(
+      cols = all_of(all_params),
+      names_to = "Parameter",
+      values_to = "Mean_Value"
+    ) %>%
+    mutate(
+      # Determine parameter category and region
+      Data_Type = case_when(
+        Parameter %in% vision_params ~ "Vision",
+        Parameter %in% bloodflow_macular ~ "Blood Flow - Macular",
+        Parameter %in% bloodflow_widefield ~ "Blood Flow - Wide-field", 
+        Parameter %in% thickness_macular ~ "Thickness - Macular",
+        Parameter %in% thickness_widefield ~ "Thickness - Wide-field",
+        TRUE ~ "Other"
+      ),
+      # Clean parameter names for display
+      Parameter_Clean = gsub("_improvement|_1m", "", Parameter),
+      Parameter_Clean = gsub("_0_21|_0_6", "", Parameter_Clean),
+      Parameter_Clean = gsub("_", " ", Parameter_Clean),
+      # Add region suffix for OCTA parameters
+      Parameter_Display = case_when(
+        grepl("0_21", Parameter) ~ paste0(Parameter_Clean, " (Mac)"),
+        grepl("0_6", Parameter) ~ paste0(Parameter_Clean, " (WF)"),
+        TRUE ~ Parameter_Clean
+      )
+    ) %>%
+    # Order parameters by type and name
+    arrange(Data_Type, Parameter_Display)
+  
+  # Create factor levels for proper ordering
+  overall_plot_data$Parameter_Display <- factor(overall_plot_data$Parameter_Display, 
+                                                levels = unique(overall_plot_data$Parameter_Display))
+  
+  # Create the overall comprehensive heatmap
+  p_overall_heatmap <- ggplot(overall_plot_data, aes(x = Parameter_Display, y = as.factor(max_cluster), fill = Mean_Value)) +
+    geom_tile(color = "white", size = 0.5) +
+    # Add text labels with values
+    geom_text(aes(label = sprintf("%.2f", Mean_Value)), 
+              color = "black", size = 2.5, fontface = "bold") +
+    scale_fill_gradient2(
+      low = "blue", 
+      mid = "white", 
+      high = "red", 
+      midpoint = 0,
+      name = "Mean\nValue",
+      guide = guide_colorbar(barwidth = 1, barheight = 10)
+    ) +
+    facet_wrap(~ Data_Type, scales = "free_x", ncol = 1, strip.position = "top") +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+      axis.text.y = element_text(size = 10, face = "bold"),
+      strip.text = element_text(size = 12, face = "bold", color = "darkblue"),
+      strip.background = element_rect(fill = "lightgray"),
+      panel.grid = element_blank(),
+      panel.spacing = unit(0.5, "lines"),
+      plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 12),
+      legend.position = "right"
+    ) +
+    labs(
+      title = "Comprehensive Cluster Comparison Heatmap",
+      subtitle = paste("All Parameters: Vision + OCTA (Macular & Wide-field) | n =", nrow(data)),
+      x = "Parameters",
+      y = "Cluster",
+      caption = "Mac = Macular (0_21), WF = Wide-field (0_6)"
+    )
+  
+  # Save the overall heatmap
+  ggsave("plots/overall_comprehensive_heatmap.pdf", p_overall_heatmap, 
+         width = 20, height = 12, dpi = 300)
+  ggsave("plots/overall_comprehensive_heatmap.png", p_overall_heatmap, 
+         width = 20, height = 12, dpi = 300)
+  
+  cat("Overall comprehensive heatmap saved to plots/overall_comprehensive_heatmap.pdf/png\n")
+  
+  # Additional summary statistics table
+  cluster_summary_table <- overall_plot_data %>%
+    group_by(max_cluster, Data_Type) %>%
+    summarise(
+      Parameter_Count = n(),
+      Mean_Improvement = mean(Mean_Value, na.rm = TRUE),
+      Positive_Changes = sum(Mean_Value > 0, na.rm = TRUE),
+      Negative_Changes = sum(Mean_Value < 0, na.rm = TRUE),
+      .groups = 'drop'
+    ) %>%
+    arrange(max_cluster, Data_Type)
+  
+  cat("\n===== Cluster Summary by Parameter Type =====\n")
+  print(cluster_summary_table)
+  
+  # Save summary table
+  write.csv(cluster_summary_table, "plots/cluster_summary_by_type.csv", row.names = FALSE)
+  
+  # Create a simplified version focusing on most important parameters
+  if(exists("comprehensive_stats") && nrow(comprehensive_stats) > 0) {
+    # Get top 20 most significant parameters
+    top_params <- comprehensive_stats %>%
+      arrange(P_Value) %>%
+      head(20) %>%
+      mutate(full_param_name = paste0(Parameter, "_improvement")) %>%
+      pull(full_param_name)
+    
+    # Filter for top parameters that exist in our data
+    available_top_params <- intersect(top_params, all_params)
+    
+    if(length(available_top_params) > 0) {
+      # Create focused heatmap with top parameters
+      top_params_data <- overall_plot_data %>%
+        filter(Parameter %in% available_top_params)
+      
+      p_top_heatmap <- ggplot(top_params_data, aes(x = Parameter_Display, y = as.factor(max_cluster), fill = Mean_Value)) +
+        geom_tile(color = "white", size = 0.8) +
+        geom_text(aes(label = sprintf("%.3f", Mean_Value)), 
+                  color = "black", size = 3, fontface = "bold") +
+        scale_fill_gradient2(
+          low = "blue", 
+          mid = "white", 
+          high = "red", 
+          midpoint = 0,
+          name = "Mean\nValue"
+        ) +
+        facet_wrap(~ Data_Type, scales = "free_x", ncol = 1) +
+        theme_minimal() +
+        theme(
+          axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+          axis.text.y = element_text(size = 12, face = "bold"),
+          strip.text = element_text(size = 14, face = "bold"),
+          panel.grid = element_blank(),
+          plot.title = element_text(hjust = 0.5, size = 16, face = "bold")
+        ) +
+        labs(
+          title = "Top Discriminative Parameters Heatmap",
+          subtitle = paste("Most Significant Parameters (p < 0.05) | n =", length(available_top_params)),
+          x = "Most Important Parameters",
+          y = "Cluster"
+        )
+      
+      ggsave("plots/top_parameters_heatmap.pdf", p_top_heatmap, 
+             width = 16, height = 10, dpi = 300)
+      ggsave("plots/top_parameters_heatmap.png", p_top_heatmap, 
+             width = 16, height = 10, dpi = 300)
+      
+      cat("Top parameters heatmap saved to plots/top_parameters_heatmap.pdf/png\n")
+    }
+  }
+  
   # 1. Vision parameters by cluster
   for(param in vision_params) {
     if(param %in% names(data)) {

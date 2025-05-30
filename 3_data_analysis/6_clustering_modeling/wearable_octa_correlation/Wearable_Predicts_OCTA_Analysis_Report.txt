@@ -1,0 +1,50 @@
+========================================
+可穿戴设备Membership预测OCTA改善能力分析报告
+Wearable Device Membership Predicting OCTA Improvements
+========================================
+
+分析目的:
+验证可穿戴设备聚类的membership值能否预测患者术后OCTA参数的改善程度
+
+数据概况:
+- 分析样本: 15 名PPV患者
+- 有效可穿戴设备membership: 15 名
+- 分析的OCTA改善参数: 22 个
+- 包含视力参数: 2 个
+
+预测能力结果:
+- OCTA参数显著相关: 0 个 (0%)
+- 总体显著相关: 0 个 (0%)
+
+最强预测关系:
+- 整体最强相关: Thickness_OuterRetina_0_6_improvement (r = -0.566, p = 0.0698)
+- OCTA最强相关: Thickness_OuterRetina_0_6_improvement (r = -0.566, p = 0.0698)
+
+区域分析结果:
+- Macular区域: 0 / 11 个参数显著相关 (0%)
+
+临床意义:
+❌ 可穿戴设备数据与OCTA改善效果无显著关联
+❌ 需要进一步优化可穿戴设备参数或分析方法
+
+方法学优势:
+1. 使用连续的membership值，比简单分类更敏感
+2. 聚焦于聚类验证的关键OCTA参数
+3. 区分黄斑区和广角区的预测能力
+4. 同时考虑血流和厚度参数的改善
+5. 严格的多重比较校正
+
+输出文件:
+- wearable_membership_predicts_octa_improvements.csv: 详细相关性结果
+- wearable_membership_predicts_octa_heatmap.pdf: 预测能力热图
+- wearable_membership_predicts_octa_scatterplots.pdf: 最强相关性散点图
+
+结论:
+在当前分析中，可穿戴设备聚类的membership值与OCTA改善效果
+未显示显著相关性。可能需要：
+1. 增加样本量
+2. 优化可穿戴设备参数选择
+3. 考虑其他分析方法
+4. 延长随访时间
+
+

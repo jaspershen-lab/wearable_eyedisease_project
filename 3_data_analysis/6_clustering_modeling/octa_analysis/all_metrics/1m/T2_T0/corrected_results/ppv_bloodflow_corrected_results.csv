@@ -1,0 +1,8 @@
+"Parameter","ANOVA_P_Raw","ANOVA_P_Adjusted","ANOVA_Significant","PostHoc_Available","Significant_Pairs"
+"PA_Choroid",0.034,0.238,FALSE,TRUE,""
+"VD_DCP",0.086,0.301,FALSE,FALSE,""
+"PA_SVP",0.33,0.5775,FALSE,FALSE,""
+"VD_ICP",0.294,0.5775,FALSE,FALSE,""
+"VD_SVP",0.532,0.7448,FALSE,FALSE,""
+"PA_ICP",0.729,0.8505,FALSE,FALSE,""
+"PA_DCP",0.882,0.882,FALSE,FALSE,""

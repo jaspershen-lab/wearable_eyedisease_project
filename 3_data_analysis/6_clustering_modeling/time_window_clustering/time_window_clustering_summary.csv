@@ -1,0 +1,6 @@
+"Time_Window","N_Patients","N_Clusters","Mean_Membership","SD_Membership","Min_Membership","Max_Membership","M_Value"
+"baseline",14,3,0.631,0.215,0.476,1,32.798
+"acute_recovery",15,3,0.339,0.005,0.333,0.343,31.058
+"early_recovery",15,3,0.611,0.302,0,0.847,31.058
+"mid_recovery",14,3,0.668,0.199,0.476,1,32.798
+"late_recovery",15,3,0.339,0.005,0.333,0.343,31.058

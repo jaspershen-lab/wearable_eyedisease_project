@@ -1,0 +1,6 @@
+"Time_Window","Pearson_R","Pearson_P","Pearson_Significant","Spearman_R","Spearman_P","Spearman_Significant"
+"baseline",-0.555,0.0957,FALSE,-0.644,0.0444,TRUE
+"acute_recovery",-0.648,0.0426,TRUE,-0.692,0.0265,TRUE
+"early_recovery",0.15,0.679,FALSE,0.251,0.4846,FALSE
+"mid_recovery",0.053,0.8841,FALSE,0.201,0.5772,FALSE
+"late_recovery",-0.137,0.706,FALSE,-0.262,0.4643,FALSE

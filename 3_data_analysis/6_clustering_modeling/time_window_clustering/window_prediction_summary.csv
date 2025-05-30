@@ -1,0 +1,6 @@
+"Time_Window","Total_Tests","Significant_Count","Trend_Count","Mean_Abs_Correlation","Max_Correlation"
+"acute_recovery",22,1,4,0.331,0.647
+"baseline",22,0,1,0.201,0.525
+"early_recovery",22,2,4,0.321,0.619
+"late_recovery",22,3,3,0.305,0.752
+"mid_recovery",22,0,0,0.207,0.456

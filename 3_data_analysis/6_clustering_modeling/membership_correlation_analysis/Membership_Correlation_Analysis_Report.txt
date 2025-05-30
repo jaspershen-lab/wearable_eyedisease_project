@@ -1,0 +1,32 @@
+========================================
+Membership连续性相关分析报告
+========================================
+
+数据概况:
+- 分析样本: 15 名患者
+- 有效可穿戴设备membership: 15 名
+- 有效OCTA membership: 11 名
+- 分析的预后参数: 185 个
+
+可穿戴设备Membership分析结果:
+- 显著Pearson相关参数: 0 个
+- 最强相关性: r = 0.541
+- 最强相关参数: PA_SVP_0_21_improvement
+
+OCTA Membership分析结果:
+- 显著Pearson相关参数: 3 个
+- 最强相关性: r = 0.792
+- 最强相关参数: PA_SVP_0_21_improvement
+
+关键发现:
+1. Membership连续值分析比简单分类比较更敏感
+2. 相关性分析可以识别线性和单调关系
+3. 统计显著性可能受样本量限制
+4. 需要结合效应量和临床意义解读
+
+输出文件:
+- wearable_membership_correlations.csv: 可穿戴设备详细相关性结果
+- octa_membership_correlations.csv: OCTA详细相关性结果
+- *.pdf: 相关性热图和散点图
+
+

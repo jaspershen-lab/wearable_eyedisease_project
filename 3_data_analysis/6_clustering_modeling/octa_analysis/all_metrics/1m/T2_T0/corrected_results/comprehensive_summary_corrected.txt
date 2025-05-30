@@ -1,0 +1,43 @@
+=============================================================================
+OCTA 0_21 Parameter Analysis - Comprehensive Summary (Corrected Analysis)
+=============================================================================
+Analysis Date: 1748332231 
+Multiple Comparison Correction: FDR (False Discovery Rate)
+Statistical Method: ANOVA + Post-hoc pairwise t-tests
+Correlation Method: Spearman correlation
+
+OVERALL STATISTICS
+==================
+Total parameters tested: 22 
+Total significant parameters (FDR-corrected): 0 
+Overall significance rate: 0 %
+
+BY GROUP ANALYSIS
+=================
+PPV Blood Flow:
+  - Parameters tested: 7 
+  - Significant parameters: 0 
+  - Significance rate: 0 %
+
+Cataract Blood Flow:
+  - Parameters tested: 7 
+  - Significant parameters: 0 
+  - Significance rate: 0 %
+
+PPV Thickness:
+  - Parameters tested: 4 
+  - Significant parameters: 0 
+  - Significance rate: 0 %
+
+Cataract Thickness:
+  - Parameters tested: 4 
+  - Significant parameters: 0 
+  - Significance rate: 0 %
+
+MOST SIGNIFICANT FINDINGS
+========================
+No significant parameters found.
+
+=============================================================================
+End of Summary
+=============================================================================

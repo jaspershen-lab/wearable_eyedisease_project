@@ -1,0 +1,16 @@
+"Rank","Time_Window_Clean","OCTA_Clean","Pearson_r","Pearson_p","Significance","Effect_Size","N"
+1,"late recovery","PA Choroid 0 21",0.751610465108778,0.00482095686651425,"**","Large",12
+2,"late recovery","VD ICP 0 21",-0.739357350859572,0.00599636747566264,"**","Large",12
+3,"late recovery","VD SVP 0 21",-0.679789463996553,0.0150127182743385,"*","Large",12
+4,"acute recovery","VD DCP 0 6",-0.64678393751034,0.0230228691839166,"*","Large",12
+5,"early recovery","PA Choroid 0 21",-0.619460409224765,0.0316993001148197,"*","Large",12
+6,"early recovery","Thickness INL 0 21",-0.609443001553802,0.046534103291884,"*","Large",11
+7,"early recovery","Thickness GCL.IPL 0 6",-0.581317622285163,0.0606946684084548,".","Large",11
+8,"early recovery","Thickness GCL.IPL 0 21",-0.561602909800049,0.072201277830384,".","Large",11
+9,"acute recovery","PA ICP 0 21",-0.5450379387493,0.0668618723986647,".","Large",12
+10,"acute recovery","PA DCP 0 21",-0.530610169213464,0.0759237221426536,".","Large",12
+11,"baseline","VD DCP 0 6",-0.524603451472992,0.0975660868752006,".","Large",11
+12,"acute recovery","Thickness OuterRetina 0 21",0.523809963839382,0.0981661265294616,".","Large",11
+13,"acute recovery","Thickness GCL.IPL 0 21",0.49838073228325,0.118689395200957,"","Medium",11
+14,"early recovery","VD ICP 0 6",0.497090076010823,0.100138060371511,"","Medium",12
+15,"acute recovery","Thickness INL 0 21",0.467198756913543,0.147372261052401,"","Medium",11

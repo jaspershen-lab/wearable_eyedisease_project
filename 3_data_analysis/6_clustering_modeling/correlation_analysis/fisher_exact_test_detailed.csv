@@ -1,0 +1,6 @@
+"Time_Window","P_Value","Odds_Ratio","CI_Lower","CI_Upper","Cramers_V","Significance","Association_Strength"
+"baseline",1,"NA","NA","NA",0.356,"不显著","中等"
+"acute_recovery",1,"1.441","0.049","117.478",0.089,"不显著","很弱"
+"early_recovery",0.5,"0.24","0.003","7.076",0.356,"不显著","中等"
+"mid_recovery",1,"NA","NA","NA",0.356,"不显著","中等"
+"late_recovery",0.0667,"Inf","0.523","Inf",0.764,"不显著","强"
