@@ -1,0 +1,3 @@
+"Outcome Type","Parameter","Type","Region","N","Pearson r","Pearson p","Spearman ρ","Spearman p","Effect Size"
+"OCTA","PA Choroid Widefield (0-21°) Improvement","BloodFlow","Macular",12,-0.619,"0.032",-0.45,"0.142","Large"
+"OCTA","Thickness INL Widefield (0-21°) Improvement","Thickness","Macular",11,-0.609,"0.047",-0.284,"0.398","Large"

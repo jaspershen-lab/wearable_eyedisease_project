@@ -1,0 +1,79 @@
+========================================
+TIME WINDOW-SPECIFIC CORRELATION ANALYSIS
+DETAILED REPORT
+========================================
+
+ANALYSIS OVERVIEW:
+- Analysis Date: 2025-05-31
+- Windows Analyzed: 5
+- Significance Threshold: p < 0.05
+- Multiple Testing: Individual window analysis
+
+WINDOW-BY-WINDOW SUMMARY:
+
+1. Late Recovery:
+   - Total correlations tested: 24
+   - Significant correlations: 3 (12.5%)
+   - OCTA significant: 3
+   - Vision significant: 0
+   - Strongest correlation: |r| = 0.752
+   - Best p-value: 0.005
+
+2. Early Recovery:
+   - Total correlations tested: 24
+   - Significant correlations: 2 (8.3%)
+   - OCTA significant: 2
+   - Vision significant: 0
+   - Strongest correlation: |r| = 0.619
+   - Best p-value: 0.032
+
+3. Acute Recovery:
+   - Total correlations tested: 24
+   - Significant correlations: 1 (4.2%)
+   - OCTA significant: 1
+   - Vision significant: 0
+   - Strongest correlation: |r| = 0.647
+   - Best p-value: 0.023
+
+4. Baseline:
+   - Total correlations tested: 24
+   - Significant correlations: 0 (0.0%)
+   - OCTA significant: 0
+   - Vision significant: 0
+   - Strongest correlation: |r| = 0.525
+   - Best p-value: 1
+
+5. Mid Recovery:
+   - Total correlations tested: 24
+   - Significant correlations: 0 (0.0%)
+   - OCTA significant: 0
+   - Vision significant: 0
+   - Strongest correlation: |r| = 0.456
+   - Best p-value: 1
+
+KEY FINDINGS:
+🏆 MOST PREDICTIVE WINDOW: Late Recovery
+   - Highest success rate: 12.5% significant correlations
+   - Total significant: 3 correlations
+
+CLINICAL RECOMMENDATIONS:
+1. PRIORITY MONITORING: Focus on Late Recovery window for prediction
+2. OUTCOME-SPECIFIC PATTERNS: Different windows may be optimal for OCTA vs Vision
+3. PERSONALIZED TIMING: Use window-specific membership for risk assessment
+4. MULTI-WINDOW INTEGRATION: Consider combining multiple windows for enhanced prediction
+
+OUTPUT FILES GENERATED:
+For each time window:
+- [Window]_detailed_correlations.csv: Complete correlation results
+- [Window]_significant_correlations_table.csv: Significant results only
+- [Window]_correlation_strength.pdf: Correlation strength visualization
+- [Window]_significant_scatter_plots.pdf: Scatter plots for significant correlations
+
+Summary files:
+- cross_window_summary.csv: Summary across all windows
+- master_window_comparison.pdf: Overall comparison plot
+- outcome_type_breakdown.pdf: OCTA vs Vision breakdown
+
+Report generated: 2025-05-31 22:47:14.046808
+========================================
+

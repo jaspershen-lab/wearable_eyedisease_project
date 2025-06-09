@@ -1,0 +1,63 @@
+========================================
+PPV Group OCTA-Only Regional Clustering Analysis Report
+OCTA (Macular + Wide-field Regions) - No Vision Data
+========================================
+
+1. Data Overview:
+   - Total patients analyzed: 15
+   - OCTA blood flow - Macular: 7 parameters
+   - OCTA blood flow - Wide-field: 7 parameters
+   - OCTA thickness - Macular: 4 parameters
+   - OCTA thickness - Wide-field: 4 parameters
+   - Total OCTA parameters: 22
+   - NO vision parameters included
+
+2. Clustering Results:
+   - Number of clusters: 2
+   - Fuzzy coefficient (m): 1.775
+   - Better OCTA outcome group (Cluster 1): 9 patients
+   - Worse OCTA outcome group (Cluster 2): 6 patients
+
+3. Statistical Significance:
+   - Significant BF macular parameters: 0
+   - Significant BF wide-field parameters: 6
+   - Significant TH macular parameters: 0
+   - Significant TH wide-field parameters: 1
+   - Total significant OCTA parameters: 7
+
+4. Key Regional OCTA Findings:
+   - Blood flow macular: Better cluster advantages in 0 parameters
+   - Blood flow wide-field: Better cluster advantages in 6 parameters
+   - Thickness macular: Better cluster advantages in 0 parameters
+   - Thickness wide-field: Better cluster advantages in 0 parameters
+   - This analysis focuses purely on retinal vascular changes
+
+5. Clinical Implications:
+   - Identifies patients with good structural OCTA outcomes
+   - Distinguishes macular vs peripheral retinal vascular response patterns
+   - Provides anatomical basis for patient stratification
+   - Independent of functional visual outcomes
+
+6. OCTA-Only Analysis Advantages:
+   - Pure assessment of retinal vascular/structural changes
+   - Independent validation of anatomical improvements
+   - Can identify patients with structural benefits regardless of vision
+   - Suitable for understanding surgical impact on retinal microvasculature
+   - Higher sample size due to no vision data requirement
+
+7. Output Files:
+   - ppv_octa_only_cluster_results_with_outcomes.csv: Main clustering results
+   - ppv_octa_only_cluster_statistics.csv: Regional statistical analysis
+   - ppv_octa_only_parameter_importance.csv: Parameter importance ranking
+   - ppv_octa_only_cluster_summary.csv: Cluster summary statistics
+   - plots/: OCTA-focused visualizations
+
+8. Advantages of OCTA-Only Regional Analysis:
+   - Focuses on anatomical outcomes independent of functional results
+   - May identify structural benefits not reflected in vision
+   - Pure assessment of surgical impact on retinal microvasculature
+   - Regional insights into macular vs peripheral vascular changes
+   - Complementary to vision-based analyses
+   - Potential for identifying subclinical improvements
+
+

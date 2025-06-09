@@ -1,0 +1,45 @@
+========================================
+COMPREHENSIVE TIME WINDOW ANALYSIS SUMMARY
+========================================
+
+📊 OVERALL RESULTS:
+- Total time windows analyzed: 5
+- Windows with significant correlations: 1
+- Total significant correlations found: 1
+- Average significance rate: 0.8%
+
+🏆 TOP PERFORMING WINDOWS:
+1. Early Recovery: 1/24 significant (4.2%)
+2. Baseline: 0/24 significant (0.0%)
+3. Acute Recovery: 0/24 significant (0.0%)
+
+🔍 CLUSTER ANALYSIS INSIGHTS:
+- Windows with cluster analysis: 1
+- High membership patients generally show distinct outcome patterns
+- Membership level can serve as a predictor for treatment outcomes
+- Different clusters may benefit from different treatment approaches
+
+📁 FILES GENERATED:
+Main directory contains:
+- cross_window_summary.csv
+- master_window_comparison.pdf
+- outcome_type_breakdown.pdf
+- Window_Specific_Analysis_Report.txt
+
+detailed_results/ subdirectory contains:
+- Individual window analysis files
+- Correlation visualizations
+- Scatter plots for significant correlations
+- Membership distribution plots
+- Cluster-specific outcome analysis
+
+🎯 CLINICAL RECOMMENDATIONS:
+1. Focus monitoring efforts on the highest-performing time windows
+2. Use membership scores to identify high-risk/high-benefit patients
+3. Consider time-window-specific treatment protocols
+4. Integrate multiple window information for comprehensive assessment
+5. Monitor patients with low membership scores more closely
+
+Analysis completed: 2025-06-02 11:58:31.279327
+========================================
+

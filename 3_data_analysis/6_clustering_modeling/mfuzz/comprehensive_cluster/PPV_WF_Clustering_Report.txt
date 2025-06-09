@@ -1,0 +1,58 @@
+========================================
+PPV Group WF-Focused Clustering Analysis Report
+Vision + OCTA (WF Region 0_21 Only)
+========================================
+
+1. Data Overview:
+   - Total patients analyzed: 15
+   - Vision parameters: 3 (improvement, baseline vision, age)
+   - OCTA blood flow - WF only: 7 parameters
+   - OCTA thickness - WF only: 4 parameters
+   - Total parameters: 14
+   - Focus: Central WF region (0_21) only
+
+2. Clustering Results:
+   - Number of clusters: 2
+   - Fuzzy coefficient (m): 2.186
+   - Better outcome group (Cluster 1): 7 patients
+   - Worse outcome group (Cluster 2): 8 patients
+
+3. Statistical Significance:
+   - Significant vision parameters: 1
+   - Significant WF blood flow parameters: 2
+   - Significant WF thickness parameters: 0
+   - Total significant parameters: 3
+
+4. Key WF Findings:
+   - Vision improvements: Better cluster advantages in 1 parameters
+   - WF blood flow: Better cluster advantages in 2 parameters
+   - WF thickness: Better cluster advantages in 0 parameters
+   - Focus on central 0_21 region provides detailed WF assessment
+
+5. Clinical Implications:
+   - Identifies patients with good central WF outcomes
+   - Focused on clinically most important retinal region
+   - Provides detailed assessment of WF vascular changes
+   - Suitable for WF-specific treatment decisions
+
+6. WF Analysis Advantages:
+   - Concentrated assessment of central vision-critical area
+   - Higher data completeness due to focus on single region
+   - Clinically relevant for central vision outcomes
+   - Reduced complexity while maintaining clinical relevance
+
+7. Output Files:
+   - ppv_WF_cluster_results_with_outcomes.csv: Main clustering results
+   - ppv_WF_cluster_statistics.csv: Statistical analysis
+   - ppv_WF_parameter_importance.csv: Parameter importance ranking
+   - ppv_WF_cluster_summary.csv: Cluster summary statistics
+   - plots/: WF-focused visualizations
+
+8. Advantages of WF-Only Analysis:
+   - Focused on central vision-critical region
+   - Higher patient inclusion due to better data completeness
+   - Clinically relevant for central visual function
+   - Simplified interpretation while maintaining relevance
+   - Optimal for WF-specific surgical outcome assessment
+
+

@@ -1,0 +1,62 @@
+========================================
+PPV Group OCTA 0_21-Only Clustering Analysis Report
+OCTA (0_21 Region Only) - No Vision Data
+========================================
+
+1. Data Overview:
+   - Total patients analyzed: 15
+   - OCTA blood flow - 0_21 region only: 7 parameters
+   - OCTA thickness - 0_21 region only: 4 parameters
+   - Total OCTA 0_21 parameters: 11
+   - Focus: Central 0_21 region only
+   - NO vision parameters included
+   - NO 0_6 wide-field parameters included
+
+2. Clustering Results:
+   - Number of clusters: 2
+   - Fuzzy coefficient (m): 2.587
+   - Better OCTA 0_21 outcome group (Cluster 2): 9 patients
+   - Worse OCTA 0_21 outcome group (Cluster 1): 6 patients
+
+3. Statistical Significance:
+   - Significant BF 0_21 parameters: 2
+   - Significant TH 0_21 parameters: 2
+   - Total significant OCTA 0_21 parameters: 4
+
+4. Key 0_21 Region OCTA Findings:
+   - Blood flow 0_21: Better cluster advantages in 0 parameters
+   - Thickness 0_21: Better cluster advantages in 2 parameters
+   - This analysis focuses on central retinal region most critical for vision
+
+5. Clinical Implications:
+   - Identifies patients with good central retinal OCTA outcomes
+   - Focuses on region most relevant to central visual function
+   - Provides anatomical basis for central vision-related patient stratification
+   - Independent of functional visual outcomes
+   - Simplified assessment focusing on most critical retinal area
+
+6. OCTA 0_21-Only Analysis Advantages:
+   - Focused assessment of central vision-critical region
+   - Higher data completeness due to focus on single region
+   - Clinically relevant for central visual function outcomes
+   - Reduced complexity while maintaining clinical significance
+   - Pure assessment of central retinal vascular changes
+   - Optimal for central vision-specific surgical outcome assessment
+
+7. Output Files:
+   - ppv_octa_0_21_only_cluster_results_with_outcomes.csv: Main clustering results
+   - ppv_octa_0_21_only_cluster_statistics.csv: Statistical analysis
+   - ppv_octa_0_21_only_parameter_importance.csv: Parameter importance ranking
+   - ppv_octa_0_21_only_cluster_summary.csv: Cluster summary statistics
+   - plots/: 0_21-focused visualizations
+
+8. Advantages of 0_21-Only Regional Analysis:
+   - Concentrated on central vision-critical area (0_21)
+   - Higher patient inclusion due to better single-region data completeness
+   - Clinically most relevant for central visual function outcomes
+   - Simplified interpretation while maintaining clinical relevance
+   - Optimal balance between comprehensiveness and focus
+   - Directly relates to central visual acuity outcomes
+   - Most stable clustering due to focused, complete dataset
+
+

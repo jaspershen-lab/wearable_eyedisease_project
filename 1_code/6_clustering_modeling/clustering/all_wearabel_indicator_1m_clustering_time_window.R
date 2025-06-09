@@ -1,5 +1,5 @@
-# Time Window Specific Clustering Analysis - Complete Independent Code
-# Performs independent clustering for each time window and generates comprehensive visualizations
+# 修正时间窗口聚类代码 - 添加真正的Max Membership + 修正cluster标签 + 类似代码一的可视化
+# 解决cluster标签不连续问题（如1,3而不是1,2）+ 添加详细的聚类趋势可视化
 
 library(tidyverse)
 library(Biobase)
@@ -14,8 +14,12 @@ library(r4projects)
 setwd(get_project_wd())
 rm(list = ls())
 
+# ================== 设置随机种子确保可重复性 ==================
+set.seed(123)  # 全局随机种子
+RANDOM_SEED <- 123
+
 # ================== 1. Setup and Data Loading ==================
-cat("===== Time Window Specific Clustering Analysis =====\n")
+cat("===== Time Window Specific Clustering Analysis with Max Membership (Fixed) + Visualization =====\n")
 
 # Define time windows
 time_windows <- list(
@@ -37,18 +41,83 @@ dir.create("3_data_analysis/6_clustering_modeling/time_window_clustering",
            recursive = TRUE, showWarnings = FALSE)
 setwd("3_data_analysis/6_clustering_modeling/time_window_clustering")
 
-cat("Data loaded successfully. Starting time window clustering analysis...\n")
+cat("Data loaded successfully. Starting time window clustering analysis with max membership...\n")
 cat("Time windows:", length(time_windows), "\n")
 cat("Total patients in dataset:", nrow(ppv_data), "\n")
 cat("Metrics for clustering:", paste(key_metrics, collapse = ", "), "\n\n")
 
-# ================== 2. Core Clustering Function ==================
+# ================== 2. 🔧 新增：Cluster标签修正函数 ==================
 
-calculate_window_membership <- function(data, window_info, metrics) {
+fix_cluster_labeling <- function(membership_matrix, max_clusters_per_patient) {
+  
+  cat("=== 修正Cluster标签 ===\n")
+  
+  # 获取实际存在的cluster IDs（有患者分配的clusters）
+  unique_clusters <- sort(unique(max_clusters_per_patient))
+  
+  cat("原始cluster IDs:", paste(unique_clusters, collapse = ", "), "\n")
+  cat("期望的连续IDs: 1, 2, ...,", length(unique_clusters), "\n")
+  
+  # 检查是否需要重新映射
+  expected_clusters <- 1:length(unique_clusters)
+  needs_remapping <- !identical(unique_clusters, expected_clusters)
+  
+  if(needs_remapping) {
+    cat("⚠️ 发现cluster标签不连续，进行重新映射...\n")
+    
+    # 创建映射表：原始cluster ID -> 新的连续ID
+    cluster_mapping <- setNames(1:length(unique_clusters), unique_clusters)
+    
+    cat("Cluster映射关系:\n")
+    for(i in 1:length(cluster_mapping)) {
+      cat(sprintf("  原始Cluster %s -> 新Cluster %d\n", names(cluster_mapping)[i], cluster_mapping[i]))
+    }
+    
+    # 重新映射max_clusters_per_patient
+    remapped_clusters <- cluster_mapping[as.character(max_clusters_per_patient)]
+    
+    # 重新构建membership矩阵（只保留有患者的clusters，并重新排序）
+    remapped_membership_matrix <- matrix(0, nrow = nrow(membership_matrix), 
+                                         ncol = length(unique_clusters))
+    rownames(remapped_membership_matrix) <- rownames(membership_matrix)
+    colnames(remapped_membership_matrix) <- paste0("Cluster_", 1:length(unique_clusters))
+    
+    # 将原始membership值复制到新的位置
+    for(i in 1:length(unique_clusters)) {
+      original_cluster_id <- unique_clusters[i]
+      new_cluster_id <- i
+      remapped_membership_matrix[, new_cluster_id] <- membership_matrix[, original_cluster_id]
+    }
+    
+    cat("✓ Cluster重新映射完成\n")
+    cat("新的cluster分布:", paste(sort(unique(remapped_clusters)), collapse = ", "), "\n\n")
+    
+    return(list(
+      max_clusters = remapped_clusters,
+      membership_matrix = remapped_membership_matrix,
+      cluster_mapping = cluster_mapping,
+      was_remapped = TRUE
+    ))
+    
+  } else {
+    cat("✓ Cluster标签已经连续，无需重新映射\n\n")
+    
+    return(list(
+      max_clusters = max_clusters_per_patient,
+      membership_matrix = membership_matrix,
+      cluster_mapping = NULL,
+      was_remapped = FALSE
+    ))
+  }
+}
+
+# ================== 3. 修正的聚类函数 - 真正的多cluster分析 + 标签修正 ==================
+
+calculate_window_membership_with_max <- function(data, window_info, metrics) {
   window_name <- window_info$name
   window_days <- window_info$days
   
-  cat(sprintf("Processing %s time window (days %s)...\n", 
+  cat(sprintf("Processing %s time window (days %s) with multiple clusters...\n", 
               window_name, paste(range(window_days), collapse = " to ")))
   
   # Extract data for this time window
@@ -105,15 +174,15 @@ calculate_window_membership <- function(data, window_info, metrics) {
   
   cat(sprintf("Valid patients for %s: %d\n", window_name, nrow(complete_patients)))
   
-  # Save original data for visualization
-  original_data <- complete_patients
-  
   # Fill remaining NAs with mean
   numeric_cols <- names(complete_patients)[-1]
   for(col in numeric_cols) {
     if(sum(!is.na(complete_patients[[col]])) > 0) {
       complete_patients[is.na(complete_patients[[col]]), col] <- 
         mean(complete_patients[[col]], na.rm = TRUE)
+    } else {
+      complete_patients[[col]] <- 0
+      cat(sprintf("Warning: Column %s all NA, filled with 0\n", col))
     }
   }
   
@@ -122,6 +191,8 @@ calculate_window_membership <- function(data, window_info, metrics) {
   for(col in numeric_cols) {
     scaled_data[[col]] <- scale(complete_patients[[col]])[,1]
   }
+  
+  # ================== 关键修改：创建真正的多cluster结构 ==================
   
   # Prepare Mfuzz data
   data_matrix <- scaled_data %>%
@@ -137,54 +208,158 @@ calculate_window_membership <- function(data, window_info, metrics) {
   # Estimate optimal parameters
   m_value <- mestimate(eset_std)
   
-  # Determine optimal cluster number
-  optimal_c <- min(3, max(2, floor(nrow(complete_patients)/4)))
+  # 🔧 关键修改：确定真正的多cluster数量
+  # 参考代码二的方法，尝试2-4个clusters
+  max_clusters <- min(4, max(2, floor(nrow(complete_patients)/3)))
   
-  cat(sprintf("Clustering parameters for %s: m = %.3f, clusters = %d\n", 
-              window_name, m_value, optimal_c))
+  cat(sprintf("Testing optimal cluster number for %s (range: 2-%d)...\n", 
+              window_name, max_clusters))
   
-  # Execute clustering
-  set.seed(123)
-  clustering_result <- mfuzz(eset_std, c = optimal_c, m = m_value)
+  # 测试不同cluster数量的效果
+  cluster_results <- list()
+  silhouette_scores <- numeric()
   
-  # Extract membership information
-  main_clusters <- apply(clustering_result$membership, 1, which.max)
-  max_memberships <- apply(clustering_result$membership, 1, max)
+  for(c in 2:max_clusters) {
+    set.seed(RANDOM_SEED)  # 固定随机种子
+    tryCatch({
+      clustering_result <- mfuzz(eset_std, c = c, m = m_value)
+      
+      # 计算silhouette score来评估聚类质量
+      cluster_assignments <- apply(clustering_result$membership, 1, which.max)
+      
+      # 计算距离矩阵
+      dist_matrix <- dist(data_matrix)
+      
+      # 检查是否有足够的clusters
+      if(length(unique(cluster_assignments)) >= 2) {
+        sil_score <- cluster::silhouette(cluster_assignments, dist_matrix)
+        avg_sil <- mean(sil_score[, 3])
+        
+        cluster_results[[paste0("c_", c)]] <- list(
+          clustering = clustering_result,
+          silhouette = avg_sil,
+          n_clusters = c
+        )
+        silhouette_scores <- c(silhouette_scores, avg_sil)
+        
+        cat(sprintf("  Clusters = %d: Silhouette = %.3f\n", c, avg_sil))
+      } else {
+        silhouette_scores <- c(silhouette_scores, -1)
+        cat(sprintf("  Clusters = %d: Failed (insufficient clusters)\n", c))
+      }
+    }, error = function(e) {
+      silhouette_scores <<- c(silhouette_scores, -1)
+      cat(sprintf("  Clusters = %d: Error occurred\n", c))
+    })
+  }
   
-  # Create result dataframe
+  # 选择最佳cluster数量
+  best_c_index <- which.max(silhouette_scores)
+  optimal_c <- best_c_index + 1  # 因为从2开始
+  
+  if(length(cluster_results) == 0 || optimal_c < 2) {
+    cat(sprintf("Warning: Could not find optimal clustering for %s, using 2 clusters\n", window_name))
+    optimal_c <- 2
+    set.seed(RANDOM_SEED)  # 固定随机种子
+    final_clustering <- mfuzz(eset_std, c = optimal_c, m = m_value)
+  } else {
+    final_clustering <- cluster_results[[paste0("c_", optimal_c)]]$clustering
+    cat(sprintf("Selected optimal clusters for %s: %d (Silhouette = %.3f)\n", 
+                window_name, optimal_c, max(silhouette_scores)))
+  }
+  
+  # ================== 🔧 新增：修正cluster标签部分 ==================
+  
+  # 获取membership矩阵
+  membership_matrix <- final_clustering$membership
+  
+  # 计算每个患者的max cluster和max membership
+  original_max_clusters <- apply(membership_matrix, 1, which.max)
+  max_memberships_per_patient <- apply(membership_matrix, 1, max)
+  
+  # 🔧 关键修正：使用修正函数确保cluster标签连续
+  cluster_fix_result <- fix_cluster_labeling(membership_matrix, original_max_clusters)
+  
+  # 使用修正后的结果
+  max_clusters_per_patient <- cluster_fix_result$max_clusters
+  membership_matrix <- cluster_fix_result$membership_matrix
+  
+  # 记录是否进行了重新映射
+  if(cluster_fix_result$was_remapped) {
+    cat(sprintf("📋 %s窗口cluster标签已重新映射为连续标签\n", window_name))
+  }
+  
+  # ================== 提取Max Membership信息 ==================
+  
+  # 创建详细的membership结果 - 使用修正后的数据
   membership_result <- data.frame(
-    subject_id = rownames(clustering_result$membership),
+    subject_id = rownames(membership_matrix),
     window = window_name,
-    max_cluster = main_clusters,
-    max_membership = max_memberships,
+    max_cluster = max_clusters_per_patient,
+    max_membership = max_memberships_per_patient,
     stringsAsFactors = FALSE
   )
   
-  cat(sprintf("✓ %s clustering completed: %d patients, %d clusters, mean membership = %.3f\n\n", 
-              window_name, nrow(membership_result), optimal_c, mean(max_memberships)))
+  # 添加所有clusters的membership值 - 使用修正后的矩阵
+  for(c in 1:ncol(membership_matrix)) {
+    col_name <- paste0("cluster_", c, "_membership")
+    membership_result[[col_name]] <- membership_matrix[, c]
+  }
+  
+  # 标准化为最多4个clusters（为了兼容性）
+  max_possible_clusters <- 4
+  if(ncol(membership_matrix) < max_possible_clusters) {
+    for(c in (ncol(membership_matrix) + 1):max_possible_clusters) {
+      col_name <- paste0("cluster_", c, "_membership")
+      membership_result[[col_name]] <- NA
+    }
+  }
+  
+  # 计算cluster质量指标 - 使用修正后的clusters
+  actual_clusters <- sort(unique(max_clusters_per_patient))
+  cluster_sizes <- as.vector(table(max_clusters_per_patient))
+  
+  cluster_quality <- data.frame(
+    cluster = actual_clusters,
+    size = cluster_sizes,
+    mean_membership = sapply(actual_clusters, function(c) {
+      mean(membership_matrix[max_clusters_per_patient == c, c])
+    })
+  )
+  
+  cat(sprintf("✓ %s clustering completed: %d patients, %d clusters (连续标签)\n", 
+              window_name, nrow(membership_result), length(actual_clusters)))
+  
+  # 打印cluster分布
+  cat("修正后的Cluster分布:\n")
+  print(cluster_quality)
+  cat("\n")
   
   return(list(
     membership_data = membership_result,
-    clustering_result = clustering_result,
-    original_data = original_data,
+    clustering_result = final_clustering,
+    original_data = complete_patients,
     scaled_data = scaled_data,
     window_name = window_name,
     n_patients = nrow(complete_patients),
-    n_clusters = optimal_c,
+    n_clusters = length(actual_clusters),
     m_value = m_value,
-    metrics = metrics
+    metrics = metrics,
+    cluster_quality = cluster_quality,
+    membership_matrix = membership_matrix,
+    cluster_mapping = cluster_fix_result$cluster_mapping  # 保存映射信息
   ))
 }
 
-# ================== 3. Execute Clustering for All Time Windows ==================
+# ================== 4. 执行所有时间窗口的聚类分析 ==================
 
 window_memberships <- list()
 all_membership_data <- data.frame()
 
-cat("Starting clustering analysis for all time windows...\n\n")
+cat("Starting clustering analysis for all time windows with max membership (with fixed labels)...\n\n")
 
 for(window_name in names(time_windows)) {
-  window_result <- calculate_window_membership(ppv_data, time_windows[[window_name]], key_metrics)
+  window_result <- calculate_window_membership_with_max(ppv_data, time_windows[[window_name]], key_metrics)
   
   if(!is.null(window_result)) {
     window_memberships[[window_name]] <- window_result
@@ -195,672 +370,866 @@ for(window_name in names(time_windows)) {
 cat(sprintf("Clustering completed for %d time windows\n", length(window_memberships)))
 cat(sprintf("Total membership records: %d\n\n", nrow(all_membership_data)))
 
-# ================== 4. Clustering Visualization Functions ==================
+# ================== 5. 创建Max Membership宽格式数据 ==================
 
-create_clustering_visualizations <- function(window_memberships) {
+create_max_membership_wide_format <- function(all_membership_data) {
   
-  # Create visualization output directory
-  dir.create("plots/time_window_clustering", recursive = TRUE, showWarnings = FALSE)
+  cat("Creating max membership wide format data...\n")
   
-  cat("Creating detailed visualizations for each time window...\n\n")
+  # 创建基础的max membership宽格式
+  max_membership_wide <- all_membership_data %>%
+    dplyr::select(subject_id, window, max_cluster, max_membership) %>%
+    pivot_wider(
+      names_from = window,
+      values_from = c(max_cluster, max_membership),
+      names_sep = "_"
+    )
   
-  for(window_name in names(window_memberships)) {
-    window_data <- window_memberships[[window_name]]
+  # 重命名列以匹配预期格式
+  names(max_membership_wide) <- gsub("max_membership_", "membership_", names(max_membership_wide))
+  names(max_membership_wide) <- gsub("max_cluster_", "cluster_", names(max_membership_wide))
+  
+  cat("Max membership wide format created with columns:\n")
+  cat(paste(names(max_membership_wide), collapse = ", "), "\n\n")
+  
+  return(max_membership_wide)
+}
+
+# 创建宽格式数据
+max_membership_wide <- create_max_membership_wide_format(all_membership_data)
+
+# ================== 6. 🎨 新增：类似代码一的聚类可视化函数 ==================
+
+# 1. 为每个时间窗口创建详细的聚类趋势图
+create_window_cluster_trends <- function(window_data, ppv_data, window_info) {
+  
+  window_name <- window_data$window_name
+  window_days <- window_info$days
+  metrics <- window_data$metrics
+  
+  cat(sprintf("\n🎨 创建 %s 时间窗口的聚类趋势图...\n", toupper(window_name)))
+  
+  # 创建目录
+  dir.create(paste0("plots/time_window_trends/", window_name), recursive = TRUE, showWarnings = FALSE)
+  
+  # 获取该时间窗口的原始时间序列数据
+  window_cols <- c()
+  for(metric in metrics) {
+    for(day in window_days) {
+      day_str <- paste0("day_", day, "_", metric)
+      if(day_str %in% colnames(ppv_data)) {
+        window_cols <- c(window_cols, day_str)
+      }
+    }
+  }
+  
+  # 提取患者在该时间窗口的完整时间序列
+  patients_in_window <- window_data$membership_data$subject_id
+  window_timeseries <- ppv_data %>%
+    filter(subject_id %in% patients_in_window) %>%
+    dplyr::select(subject_id, all_of(window_cols))
+  
+  # 添加聚类信息
+  window_timeseries <- window_timeseries %>%
+    left_join(window_data$membership_data %>% 
+                dplyr::select(subject_id, max_cluster, max_membership), 
+              by = "subject_id")
+  
+  # 为每个指标创建趋势图
+  metric_plots <- list()
+  
+  for(metric in metrics) {
     
-    cat(sprintf("Generating visualizations for %s...\n", window_name))
+    cat(sprintf("  创建 %s 指标的趋势图...\n", metric))
     
-    # Extract data
-    membership_data <- window_data$membership_data
-    clustering_result <- window_data$clustering_result
-    original_data <- window_data$original_data
-    centers <- clustering_result$centers
+    # 找到该指标在该时间窗口的列
+    metric_cols <- window_cols[grep(paste0("_", metric, "$"), window_cols)]
     
-    # Check and fix cluster numbering continuity
-    unique_clusters <- sort(unique(membership_data$max_cluster))
-    n_actual_clusters <- length(unique_clusters)
+    if(length(metric_cols) == 0) next
     
-    # Recode cluster numbers to be continuous if needed
-    if(!identical(unique_clusters, 1:n_actual_clusters)) {
-      cat(sprintf("Recoding cluster numbers for %s (found: %s)\n", 
-                  window_name, paste(unique_clusters, collapse = ", ")))
-      cluster_mapping <- setNames(1:n_actual_clusters, unique_clusters)
-      membership_data$max_cluster_original <- membership_data$max_cluster
-      membership_data$max_cluster <- cluster_mapping[as.character(membership_data$max_cluster)]
+    # 准备绘图数据
+    plot_data <- window_timeseries %>%
+      dplyr::select(subject_id, max_cluster, max_membership, all_of(metric_cols)) %>%
+      pivot_longer(
+        cols = all_of(metric_cols),
+        names_to = "day_metric",
+        values_to = "value"
+      ) %>%
+      mutate(
+        day = as.numeric(gsub("^day_(-?\\d+)_.*$", "\\1", day_metric))
+      ) %>%
+      filter(!is.na(value))
+    
+    if(nrow(plot_data) == 0) next
+    
+    # 计算每个聚类的平均轮廓
+    mean_profiles <- plot_data %>%
+      group_by(max_cluster, day) %>%
+      summarise(
+        mean_value = mean(value, na.rm = TRUE),
+        se_value = sd(value, na.rm = TRUE) / sqrt(n()),
+        .groups = 'drop'
+      )
+    
+    # 为每个聚类创建单独的图
+    n_clusters <- length(unique(plot_data$max_cluster))
+    
+    for(cluster_id in sort(unique(plot_data$max_cluster))) {
       
-      # Update centers row names
-      if(!is.null(centers)) {
-        centers <- centers[as.character(unique_clusters), , drop = FALSE]
-        rownames(centers) <- 1:n_actual_clusters
+      # 该聚类的数据
+      cluster_data <- plot_data %>% filter(max_cluster == cluster_id)
+      cluster_mean <- mean_profiles %>% filter(max_cluster == cluster_id)
+      
+      # 创建聚类特定的图
+      p <- ggplot() +
+        # 个体轨迹（按membership着色）
+        geom_line(data = cluster_data, 
+                  aes(x = day, y = value, group = subject_id, color = max_membership),
+                  alpha = 0.6, size = 0.8) +
+        # 平均轮廓（粗黑线）
+        geom_line(data = cluster_mean,
+                  aes(x = day, y = mean_value),
+                  color = "black", size = 2) +
+        # 🎯 新增：拟合趋势线（平滑曲线）
+        geom_smooth(data = cluster_data,
+                    aes(x = day, y = value),
+                    method = "loess", se = TRUE, 
+                    color = "darkred", size = 1.5, 
+                    alpha = 0.8, span = 0.7) +
+        # 添加标准误差
+        geom_ribbon(data = cluster_mean,
+                    aes(x = day, ymin = mean_value - se_value, ymax = mean_value + se_value),
+                    alpha = 0.2, fill = "gray") +
+        # 添加平均点
+        geom_point(data = cluster_mean,
+                   aes(x = day, y = mean_value),
+                   color = "black", size = 3) +
+        # 颜色渐变（membership值）
+        scale_color_gradientn(
+          colors = c("#4575B4", "#74ADD1", "#ABD9E9", "#E0F3F8", 
+                     "#FFFFBF", "#FEE090", "#FDAE61", "#F46D43", "#D73027"),
+          limits = c(0.2, 1.0),
+          oob = scales::squish,
+          name = "Max\nMembership"
+        ) +
+        # 设置x轴
+        scale_x_continuous(breaks = window_days) +
+        # 标签
+        labs(
+          title = paste(toupper(window_name), "Window - Cluster", cluster_id),
+          subtitle = paste(toupper(metric), "| n =", nrow(cluster_data) / length(unique(cluster_data$day)), "patients | Smooth trend in red"),
+          x = "Day Relative to Surgery",
+          y = paste(metric, "Value"),
+          caption = paste("Time window:", paste(range(window_days), collapse = " to "), "days | Black line = mean, Red smooth = fitted trend")
+        ) +
+        theme_bw() +
+        theme(
+          plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+          plot.subtitle = element_text(hjust = 0.5, size = 11),
+          legend.position = "right",
+          panel.grid.minor = element_blank()
+        )
+      
+      # 保存单个聚类图
+      ggsave(paste0("plots/time_window_trends/", window_name, "/", 
+                    window_name, "_cluster_", cluster_id, "_", metric, "_trend.pdf"),
+             p, width = 10, height = 6)
+      ggsave(paste0("plots/time_window_trends/", window_name, "/", 
+                    window_name, "_cluster_", cluster_id, "_", metric, "_trend.png"),
+             p, width = 10, height = 6, dpi = 300)
+    }
+    
+    # 创建所有聚类对比图
+    p_all <- ggplot() +
+      # 个体轨迹
+      geom_line(data = plot_data, 
+                aes(x = day, y = value, group = subject_id, color = factor(max_cluster)),
+                alpha = 0.3, size = 0.5) +
+      # 🎯 新增：每个聚类的拟合趋势线
+      geom_smooth(data = plot_data,
+                  aes(x = day, y = value, color = factor(max_cluster)),
+                  method = "loess", se = TRUE, size = 1.5, alpha = 0.8, span = 0.7) +
+      # 平均轮廓
+      geom_line(data = mean_profiles,
+                aes(x = day, y = mean_value, color = factor(max_cluster)),
+                size = 2, linetype = "dashed") +
+      # 添加平均点
+      geom_point(data = mean_profiles,
+                 aes(x = day, y = mean_value, color = factor(max_cluster)),
+                 size = 3) +
+      # 分面
+      facet_wrap(~ max_cluster, labeller = label_both) +
+      # 颜色
+      scale_color_brewer(type = "qual", palette = "Set2", name = "Cluster") +
+      # x轴
+      scale_x_continuous(breaks = window_days) +
+      # 标签
+      labs(
+        title = paste(toupper(window_name), "Window - All Clusters Comparison"),
+        subtitle = paste(toupper(metric), "| Total n =", length(unique(plot_data$subject_id)), "patients | Smooth trends with confidence bands"),
+        x = "Day Relative to Surgery",
+        y = paste(metric, "Value"),
+        caption = paste("Time window:", paste(range(window_days), collapse = " to "), "days | Dashed line = mean, Smooth curve = fitted trend")
+      ) +
+      theme_bw() +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size = 11),
+        legend.position = "bottom",
+        panel.grid.minor = element_blank()
+      )
+    
+    metric_plots[[metric]] <- p_all
+    
+    # 保存对比图
+    ggsave(paste0("plots/time_window_trends/", window_name, "/", 
+                  window_name, "_all_clusters_", metric, "_comparison.pdf"),
+           p_all, width = 12, height = 8)
+    ggsave(paste0("plots/time_window_trends/", window_name, "/", 
+                  window_name, "_all_clusters_", metric, "_comparison.png"),
+           p_all, width = 12, height = 8, dpi = 300)
+  }
+  
+  # 组合所有指标
+  if(length(metric_plots) > 0) {
+    combined_plot <- do.call(gridExtra::grid.arrange, 
+                             c(metric_plots, 
+                               ncol = 1,
+                               top = paste(toupper(window_name), "Window - All Metrics & Clusters")))
+    
+    # 保存组合图
+    ggsave(paste0("plots/time_window_trends/", window_name, "/", 
+                  window_name, "_combined_all_metrics_clusters.pdf"),
+           combined_plot, width = 12, height = 6 * length(metrics))
+    ggsave(paste0("plots/time_window_trends/", window_name, "/", 
+                  window_name, "_combined_all_metrics_clusters.png"),
+           combined_plot, width = 12, height = 6 * length(metrics), dpi = 300)
+  }
+  
+  cat(sprintf("  ✓ %s 时间窗口趋势图创建完成\n", toupper(window_name)))
+}
+
+# 2. 创建跨时间窗口的聚类中心对比
+create_cross_window_cluster_centers <- function(window_memberships, key_metrics) {
+  
+  cat("\n🎨 创建跨时间窗口聚类中心对比图...\n")
+  
+  dir.create("plots/cross_window_analysis", recursive = TRUE, showWarnings = FALSE)
+  
+  # 为每个指标创建跨窗口对比
+  for(metric in key_metrics) {
+    
+    cat(sprintf("  创建 %s 指标的跨窗口对比...\n", metric))
+    
+    # 收集所有窗口的聚类中心数据
+    all_centers_data <- data.frame()
+    
+    for(window_name in names(window_memberships)) {
+      window_data <- window_memberships[[window_name]]
+      if(is.null(window_data)) next
+      
+      # 获取该窗口该指标的聚类中心
+      window_center_data <- data.frame(
+        window = window_name,
+        cluster = 1:window_data$n_clusters,
+        metric = metric,
+        stringsAsFactors = FALSE
+      )
+      
+      # 从原始数据计算每个聚类的平均值
+      cluster_means <- window_data$original_data %>%
+        left_join(window_data$membership_data %>% 
+                    dplyr::select(subject_id, max_cluster), by = "subject_id") %>%
+        group_by(max_cluster) %>%
+        summarise(across(contains(metric), mean, na.rm = TRUE), .groups = 'drop')
+      
+      # 添加平均值到中心数据
+      metric_col <- names(cluster_means)[grep(metric, names(cluster_means))]
+      if(length(metric_col) > 0) {
+        window_center_data$mean_value <- cluster_means[[metric_col]]
+        all_centers_data <- rbind(all_centers_data, window_center_data)
       }
     }
     
-    # 1. Cluster center features plot
-    centers_df <- as.data.frame(centers) %>%
-      mutate(cluster = paste0("Cluster ", 1:n())) %>%
-      pivot_longer(cols = -cluster, names_to = "metric", values_to = "value") %>%
-      mutate(
-        metric_clean = case_when(
-          grepl("cv_rhr", metric) ~ "HR Variability CV",
-          grepl("steps_max", metric) ~ "Max Steps",
-          TRUE ~ metric
-        )
-      )
+    if(nrow(all_centers_data) == 0) next
     
-    p1 <- ggplot(centers_df, aes(x = metric_clean, y = value, fill = cluster)) +
-      geom_col(position = "dodge", alpha = 0.8, width = 0.7) +
-      geom_text(aes(label = round(value, 2)), 
-                position = position_dodge(width = 0.7), vjust = -0.3, size = 3) +
+    # 创建跨窗口聚类中心对比图
+    p_centers <- ggplot(all_centers_data, aes(x = window, y = mean_value, 
+                                              color = factor(cluster), group = factor(cluster))) +
+      geom_line(size = 1.5) +
+      geom_point(size = 4) +
+      # 🎯 新增：为每个聚类添加拟合趋势线
+      geom_smooth(method = "loess", se = TRUE, alpha = 0.3, size = 1, span = 0.8) +
+      scale_color_brewer(type = "qual", palette = "Set2", name = "Cluster") +
       labs(
-        title = paste(toupper(window_name), "Cluster Centers"),
-        subtitle = paste("Time Window:", window_name, "| Patients:", window_data$n_patients),
-        x = "Wearable Device Metrics",
-        y = "Standardized Value",
-        fill = "Cluster"
+        title = paste("Cross-Window Cluster Centers Comparison -", toupper(metric)),
+        subtitle = "Mean values across different time windows with fitted trends",
+        x = "Time Window",
+        y = paste("Mean", metric, "Value"),
+        caption = "Each line represents one cluster across time windows | Smooth curves show fitted trends"
       ) +
-      theme_minimal() +
+      theme_bw() +
       theme(
         plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 11),
+        axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = "bottom"
       )
     
-    # 2. Patient distribution scatter plot (if 2D)
-    p2 <- NULL
-    if(ncol(original_data) == 3) {  # subject_id + 2 metrics
-      plot_data <- original_data %>%
-        left_join(membership_data %>% dplyr::select(subject_id, max_cluster, max_membership), 
-                  by = "subject_id")
-      
-      metric_names <- names(original_data)[-1]
-      
-      p2 <- ggplot(plot_data, aes_string(x = metric_names[1], y = metric_names[2])) +
-        geom_point(aes(color = factor(max_cluster), size = max_membership), alpha = 0.8) +
-        geom_text(aes(label = subject_id), vjust = -0.5, size = 2.5, alpha = 0.7) +
-        scale_size_continuous(range = c(2, 6), name = "Membership") +
-        labs(
-          title = paste(toupper(window_name), "Patient Distribution"),
-          x = gsub(paste0(window_name, "_"), "", metric_names[1]),
-          y = gsub(paste0(window_name, "_"), "", metric_names[2]),
-          color = "Cluster"
-        ) +
-        theme_minimal() +
-        theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
-    }
-    
-    # 3. Membership distribution boxplot
-    p3 <- ggplot(membership_data, aes(x = factor(max_cluster), y = max_membership, 
-                                      fill = factor(max_cluster))) +
-      geom_boxplot(alpha = 0.7, width = 0.6) +
-      geom_jitter(width = 0.2, alpha = 0.8, size = 2.5) +
-      geom_text(aes(label = subject_id), vjust = -0.3, size = 2.5, alpha = 0.7) +
-      labs(
-        title = paste(toupper(window_name), "Membership Distribution"),
-        x = "Cluster",
-        y = "Membership Value",
-        fill = "Cluster"
-      ) +
-      theme_minimal() +
-      theme(
-        plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-        legend.position = "none"
-      )
-    
-    # 4. Clustering statistics
-    cluster_stats <- membership_data %>%
-      group_by(max_cluster) %>%
-      summarise(
-        N_Patients = n(),
-        Mean_Membership = round(mean(max_membership), 3),
-        SD_Membership = round(sd(max_membership), 3),
-        Min_Membership = round(min(max_membership), 3),
-        Max_Membership = round(max(max_membership), 3),
-        .groups = 'drop'
-      ) %>%
-      mutate(Cluster = paste0("Cluster ", max_cluster)) %>%
-      dplyr::select(Cluster, everything(), -max_cluster)
-    
-    # 5. Patient distribution pie chart
-    cluster_counts <- table(membership_data$max_cluster)
-    pie_data <- data.frame(
-      cluster = names(cluster_counts),
-      count = as.numeric(cluster_counts)
-    ) %>%
-      mutate(
-        percentage = round(count/sum(count)*100, 1),
-        label = paste0("Cluster ", cluster, "\n", count, " patients\n(", percentage, "%)")
-      )
-    
-    p4 <- ggplot(pie_data, aes(x = "", y = count, fill = factor(cluster))) +
-      geom_bar(stat = "identity", width = 1) +
-      coord_polar("y", start = 0) +
-      geom_text(aes(label = label), position = position_stack(vjust = 0.5), size = 3) +
-      labs(
-        title = paste(toupper(window_name), "Patient Distribution"),
-        fill = "Cluster"
-      ) +
-      theme_void() +
-      theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
-    
-    # 6. Membership quality assessment
-    membership_matrix <- clustering_result$membership
-    membership_certainty <- apply(membership_matrix, 1, function(row) {
-      sorted_row <- sort(row, decreasing = TRUE)
-      if(length(sorted_row) >= 2) {
-        return(sorted_row[1] - sorted_row[2])
-      } else {
-        return(sorted_row[1])
-      }
-    })
-    
-    quality_data <- data.frame(
-      subject_id = rownames(membership_matrix),
-      max_cluster = apply(membership_matrix, 1, which.max),
-      max_membership = apply(membership_matrix, 1, max),
-      certainty = membership_certainty
-    )
-    
-    p5 <- ggplot(quality_data, aes(x = max_membership, y = certainty, 
-                                   color = factor(max_cluster))) +
-      geom_point(size = 3, alpha = 0.8) +
-      geom_text(aes(label = subject_id), vjust = -0.5, size = 2.5, alpha = 0.7) +
-      geom_smooth(method = "lm", se = FALSE, alpha = 0.6) +
-      labs(
-        title = paste(toupper(window_name), "Clustering Quality Assessment"),
-        x = "Max Membership Value",
-        y = "Certainty (Max - Second Max)",
-        color = "Cluster"
-      ) +
-      theme_minimal() +
-      theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
-    
-    # Combine and save plots
-    if(!is.null(p2)) {
-      combined_plot <- grid.arrange(p1, p2, p3, p4, p5, ncol = 2, nrow = 3,
-                                    top = paste("Time Window Clustering Analysis:", toupper(window_name)))
-    } else {
-      combined_plot <- grid.arrange(p1, p3, p4, p5, ncol = 2, nrow = 2,
-                                    top = paste("Time Window Clustering Analysis:", toupper(window_name)))
-    }
-    
-    # Save plots
-    ggsave(paste0("plots/time_window_clustering/", window_name, "_clustering_analysis.pdf"),
-           combined_plot, width = 16, height = 12)
-    ggsave(paste0("plots/time_window_clustering/", window_name, "_clustering_analysis.png"),
-           combined_plot, width = 16, height = 12, dpi = 300)
-    
-    # Save individual plots
-    ggsave(paste0("plots/time_window_clustering/", window_name, "_centers.pdf"), p1, width = 10, height = 6)
-    ggsave(paste0("plots/time_window_clustering/", window_name, "_membership_dist.pdf"), p3, width = 8, height = 6)
-    ggsave(paste0("plots/time_window_clustering/", window_name, "_quality.pdf"), p5, width = 10, height = 6)
-    
-    # Print statistics
-    cat(sprintf("%s CLUSTERING STATISTICS:\n", toupper(window_name)))
-    print(cluster_stats)
-    cat("\n")
-    
-    # Update membership data in the list
-    window_memberships[[window_name]]$membership_data <- membership_data
+    # 保存跨窗口对比图
+    ggsave(paste0("plots/cross_window_analysis/cross_window_", metric, "_centers.pdf"),
+           p_centers, width = 12, height = 8)
+    ggsave(paste0("plots/cross_window_analysis/cross_window_", metric, "_centers.png"),
+           p_centers, width = 12, height = 8, dpi = 300)
   }
   
-  return(window_memberships)
+  cat("  ✓ 跨时间窗口聚类中心对比图创建完成\n")
 }
 
-# ================== 5. Cross-Window Comparison Analysis ==================
-
-create_cross_window_analysis <- function(window_memberships) {
+# 4. 🎯 新增：创建基于聚类中心的趋势对比图（类似参考代码风格）
+create_cluster_center_trends <- function(window_data, ppv_data, window_info) {
   
-  cat("Creating cross-window comparison analysis...\n")
+  window_name <- window_data$window_name
+  window_days <- window_info$days
+  metrics <- window_data$metrics
   
-  # Summary statistics
-  summary_data <- data.frame()
-  for(window_name in names(window_memberships)) {
-    window_detail <- window_memberships[[window_name]]
-    summary_data <- rbind(summary_data, data.frame(
-      Time_Window = window_name,
-      N_Patients = window_detail$n_patients,
-      N_Clusters = window_detail$n_clusters,
-      Mean_Membership = round(mean(window_detail$membership_data$max_membership), 3),
-      SD_Membership = round(sd(window_detail$membership_data$max_membership), 3),
-      Min_Membership = round(min(window_detail$membership_data$max_membership), 3),
-      Max_Membership = round(max(window_detail$membership_data$max_membership), 3),
-      M_Value = round(window_detail$m_value, 3)
-    ))
+  cat(sprintf("\n🎯 创建 %s 时间窗口的聚类中心趋势图...\n", toupper(window_name)))
+  
+  # 创建目录
+  dir.create(paste0("plots/cluster_center_trends/", window_name), recursive = TRUE, showWarnings = FALSE)
+  
+  # 获取该时间窗口的原始时间序列数据
+  window_cols <- c()
+  for(metric in metrics) {
+    for(day in window_days) {
+      day_str <- paste0("day_", day, "_", metric)
+      if(day_str %in% colnames(ppv_data)) {
+        window_cols <- c(window_cols, day_str)
+      }
+    }
   }
   
-  summary_data$Time_Window <- factor(summary_data$Time_Window, 
-                                     levels = c("baseline", "acute_recovery", "early_recovery", 
-                                                "mid_recovery", "late_recovery"))
+  # 提取患者在该时间窗口的完整时间序列
+  patients_in_window <- window_data$membership_data$subject_id
+  window_timeseries <- ppv_data %>%
+    filter(subject_id %in% patients_in_window) %>%
+    dplyr::select(subject_id, all_of(window_cols))
   
-  cat("Clustering Overview Across Time Windows:\n")
-  print(summary_data)
-  cat("\n")
+  # 添加聚类信息
+  window_timeseries <- window_timeseries %>%
+    left_join(window_data$membership_data %>% 
+                dplyr::select(subject_id, max_cluster, max_membership), 
+              by = "subject_id")
   
-  # Visualization plots
-  # 1. Membership quality comparison
-  p1 <- ggplot(summary_data, aes(x = Time_Window, y = Mean_Membership, fill = Time_Window)) +
-    geom_col(alpha = 0.8, width = 0.7) +
-    geom_errorbar(aes(ymin = Mean_Membership - SD_Membership, 
-                      ymax = Mean_Membership + SD_Membership),
-                  width = 0.2, alpha = 0.7) +
-    geom_text(aes(label = round(Mean_Membership, 3)), vjust = -0.5, size = 3.5) +
+  # 为每个指标创建基于聚类中心的趋势图
+  for(metric in metrics) {
+    
+    cat(sprintf("  创建 %s 指标的聚类中心趋势图...\n", metric))
+    
+    # 找到该指标在该时间窗口的列
+    metric_cols <- window_cols[grep(paste0("_", metric, "$"), window_cols)]
+    
+    if(length(metric_cols) == 0) next
+    
+    # 准备绘图数据 - 计算每个聚类在每个时间点的均值
+    cluster_centers_data <- window_timeseries %>%
+      dplyr::select(subject_id, max_cluster, all_of(metric_cols)) %>%
+      group_by(max_cluster) %>%
+      summarise(across(all_of(metric_cols), mean, na.rm = TRUE), .groups = 'drop')
+    
+    # 转换为长格式
+    plot_data <- cluster_centers_data %>%
+      pivot_longer(
+        cols = all_of(metric_cols),
+        names_to = "day_metric",
+        values_to = "value"
+      ) %>%
+      mutate(
+        day = as.numeric(gsub("^day_(-?\\d+)_.*$", "\\1", day_metric)),
+        cluster = factor(max_cluster)
+      )
+    
+    if(nrow(plot_data) == 0) next
+    
+    # 🎯 创建干净的聚类中心趋势图（类似参考代码风格）
+    p_centers <- ggplot(plot_data, aes(x = day, y = value, color = cluster)) +
+      # 连接线
+      geom_line(size = 2, alpha = 0.8) +
+      # 数据点
+      geom_point(size = 4, alpha = 0.9) +
+      # 颜色设置（类似参考代码）
+      scale_color_manual(
+        values = c("1" = "#D73027", "2" = "#4575B4", "3" = "#91BFDB", "4" = "#FC8D59"),
+        name = "Cluster",
+        labels = function(x) paste("Cluster", x)
+      ) +
+      # x轴设置
+      scale_x_continuous(
+        breaks = window_days,
+        labels = window_days,
+        name = "Time Point (Relative Days)"
+      ) +
+      # 清晰的标题和标签
+      labs(
+        title = paste(toupper(window_name), "Cluster Mean Trends:", toupper(gsub("_", " ", metric))),
+        subtitle = paste("Time Window:", paste(range(window_days), collapse = " to "), "days"),
+        y = paste(toupper(gsub("_", " ", metric)))
+      ) +
+      # 干净的主题（类似参考代码）
+      theme_bw() +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size = 14, face = "bold"),
+        axis.text = element_text(size = 12),
+        legend.title = element_text(size = 14, face = "bold"),
+        legend.text = element_text(size = 12),
+        legend.position = "right",
+        panel.grid.major = element_line(color = "grey90", size = 0.5),
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect(fill = "white", color = NA),
+        panel.background = element_rect(fill = "white", color = NA)
+      )
+    
+    # 🎯 创建带误差棒的版本（显示标准误）
+    # 计算标准误
+    cluster_stats <- window_timeseries %>%
+      dplyr::select(subject_id, max_cluster, all_of(metric_cols)) %>%
+      pivot_longer(
+        cols = all_of(metric_cols),
+        names_to = "day_metric", 
+        values_to = "value"
+      ) %>%
+      mutate(
+        day = as.numeric(gsub("^day_(-?\\d+)_.*$", "\\1", day_metric))
+      ) %>%
+      group_by(max_cluster, day) %>%
+      summarise(
+        mean_value = mean(value, na.rm = TRUE),
+        se_value = sd(value, na.rm = TRUE) / sqrt(n()),
+        n_patients = n(),
+        .groups = 'drop'
+      ) %>%
+      mutate(cluster = factor(max_cluster))
+    
+    p_centers_se <- ggplot(cluster_stats, aes(x = day, y = mean_value, color = cluster)) +
+      # 误差棒
+      geom_errorbar(aes(ymin = mean_value - se_value, ymax = mean_value + se_value),
+                    width = 0.3, size = 1, alpha = 0.8) +
+      # 连接线
+      geom_line(size = 2, alpha = 0.8) +
+      # 数据点
+      geom_point(size = 4, alpha = 0.9) +
+      # 颜色设置
+      scale_color_manual(
+        values = c("1" = "#D73027", "2" = "#4575B4", "3" = "#91BFDB", "4" = "#FC8D59"),
+        name = "Cluster",
+        labels = function(x) paste("Cluster", x)
+      ) +
+      # x轴设置
+      scale_x_continuous(
+        breaks = window_days,
+        labels = window_days,
+        name = "Time Point (Relative Days)"
+      ) +
+      # 标题和标签
+      labs(
+        title = paste(toupper(window_name), "Cluster Mean Trends:", toupper(gsub("_", " ", metric))),
+        subtitle = paste("Time Window:", paste(range(window_days), collapse = " to "), "days | Error bars show ±SE"),
+        y = paste(toupper(gsub("_", " ", metric))),
+        caption = "Points show cluster means with standard error bars"
+      ) +
+      # 主题
+      theme_bw() +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size = 14, face = "bold"),
+        axis.text = element_text(size = 12),
+        legend.title = element_text(size = 14, face = "bold"),
+        legend.text = element_text(size = 12),
+        legend.position = "right",
+        panel.grid.major = element_line(color = "grey90", size = 0.5),
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect(fill = "white", color = NA),
+        panel.background = element_rect(fill = "white", color = NA),
+        plot.caption = element_text(size = 10, hjust = 0.5)
+      )
+    
+    # 保存干净版本
+    ggsave(paste0("plots/cluster_center_trends/", window_name, "/", 
+                  window_name, "_", metric, "_cluster_centers_clean.pdf"),
+           p_centers, width = 10, height = 6, device = "pdf")
+    ggsave(paste0("plots/cluster_center_trends/", window_name, "/", 
+                  window_name, "_", metric, "_cluster_centers_clean.png"),
+           p_centers, width = 10, height = 6, dpi = 300)
+    
+    # 保存带误差棒版本
+    ggsave(paste0("plots/cluster_center_trends/", window_name, "/", 
+                  window_name, "_", metric, "_cluster_centers_with_SE.pdf"),
+           p_centers_se, width = 10, height = 6, device = "pdf")
+    ggsave(paste0("plots/cluster_center_trends/", window_name, "/", 
+                  window_name, "_", metric, "_cluster_centers_with_SE.png"),
+           p_centers_se, width = 10, height = 6, dpi = 300)
+  }
+  
+  cat(sprintf("  ✓ %s 时间窗口聚类中心趋势图创建完成\n", toupper(window_name)))
+}
+create_window_quality_overview <- function(window_memberships) {
+  
+  cat("\n🎨 创建时间窗口聚类质量总览...\n")
+  
+  # 收集所有窗口的质量数据
+  quality_summary <- data.frame()
+  
+  for(window_name in names(window_memberships)) {
+    window_data <- window_memberships[[window_name]]
+    if(is.null(window_data)) next
+    
+    # 计算该窗口的质量指标
+    window_quality <- data.frame(
+      window = window_name,
+      n_patients = window_data$n_patients,
+      n_clusters = window_data$n_clusters,
+      mean_max_membership = mean(window_data$membership_data$max_membership),
+      sd_max_membership = sd(window_data$membership_data$max_membership),
+      min_max_membership = min(window_data$membership_data$max_membership),
+      max_max_membership = max(window_data$membership_data$max_membership),
+      was_remapped = !is.null(window_data$cluster_mapping)
+    )
+    
+    quality_summary <- rbind(quality_summary, window_quality)
+  }
+  
+  # 创建质量对比图
+  p1 <- ggplot(quality_summary, aes(x = window, y = mean_max_membership, fill = window)) +
+    geom_col(alpha = 0.8) +
+    geom_errorbar(aes(ymin = mean_max_membership - sd_max_membership,
+                      ymax = mean_max_membership + sd_max_membership),
+                  width = 0.2) +
+    geom_text(aes(label = paste0("n=", n_patients)), vjust = -0.5) +
+    scale_fill_brewer(type = "qual", palette = "Set3") +
     labs(
-      title = "Membership Quality Comparison Across Time Windows",
+      title = "Time Window Clustering Quality",
+      subtitle = "Mean Max Membership ± SD",
       x = "Time Window",
-      y = "Mean Membership Value",
-      fill = "Time Window"
+      y = "Mean Max Membership"
     ) +
-    theme_minimal() +
+    theme_bw() +
     theme(
       plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 11),
       axis.text.x = element_text(angle = 45, hjust = 1),
       legend.position = "none"
     )
   
-  # 2. Number of clusters comparison
-  p2 <- ggplot(summary_data, aes(x = Time_Window, y = N_Clusters, fill = Time_Window)) +
-    geom_col(alpha = 0.8, width = 0.7) +
-    geom_text(aes(label = N_Clusters), vjust = -0.5, size = 4) +
+  p2 <- ggplot(quality_summary, aes(x = window, y = n_clusters, fill = was_remapped)) +
+    geom_col(alpha = 0.8) +
+    geom_text(aes(label = n_clusters), vjust = -0.5) +
+    scale_fill_manual(values = c("FALSE" = "lightgreen", "TRUE" = "coral"),
+                      labels = c("FALSE" = "Original Labels", "TRUE" = "Remapped Labels"),
+                      name = "Label Status") +
     labs(
       title = "Number of Clusters by Time Window",
+      subtitle = "Color indicates if cluster labels were remapped",
       x = "Time Window",
       y = "Number of Clusters"
     ) +
-    theme_minimal() +
+    theme_bw() +
     theme(
       plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 11),
       axis.text.x = element_text(angle = 45, hjust = 1),
-      legend.position = "none"
+      legend.position = "bottom"
     )
   
-  # 3. Patient count comparison
-  p3 <- ggplot(summary_data, aes(x = Time_Window, y = N_Patients, fill = Time_Window)) +
-    geom_col(alpha = 0.8, width = 0.7) +
-    geom_text(aes(label = N_Patients), vjust = -0.5, size = 4) +
-    labs(
-      title = "Number of Valid Patients by Time Window",
-      x = "Time Window",
-      y = "Number of Patients"
-    ) +
-    theme_minimal() +
-    theme(
-      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-      axis.text.x = element_text(angle = 45, hjust = 1),
-      legend.position = "none"
-    )
+  # 组合质量图
+  combined_quality <- gridExtra::grid.arrange(p1, p2, ncol = 1,
+                                              top = "Time Window Clustering Quality Overview")
   
-  # Combined comparison plot
-  comparison_plot <- grid.arrange(p1, p2, p3, ncol = 1,
-                                  top = "Cross-Window Clustering Comparison Analysis")
+  # 保存质量总览
+  ggsave("plots/cross_window_analysis/time_window_quality_overview.pdf",
+         combined_quality, width = 12, height = 10)
+  ggsave("plots/cross_window_analysis/time_window_quality_overview.png",
+         combined_quality, width = 12, height = 10, dpi = 300)
   
-  # Save comparison plot
-  ggsave("plots/time_window_clustering/cross_window_comparison.pdf", 
-         comparison_plot, width = 12, height = 12)
-  ggsave("plots/time_window_clustering/cross_window_comparison.png", 
-         comparison_plot, width = 12, height = 12, dpi = 300)
+  cat("  ✓ 时间窗口聚类质量总览创建完成\n")
   
-  return(list(
-    summary_data = summary_data,
-    comparison_plot = comparison_plot
-  ))
+  return(quality_summary)
 }
 
-# ================== 6. Create Cluster Trend Plots ==================
+# ================== 7. 执行所有可视化 ==================
 
-create_cluster_trend_plots <- function(window_memberships, time_windows) {
-  
-  cat("Creating cluster trend plots for each time window...\n")
-  
-  for(window_name in names(window_memberships)) {
-    window_data <- window_memberships[[window_name]]
-    
-    if(is.null(window_data)) {
-      cat(sprintf("Skipping %s - no data\n", window_name))
-      next
-    }
-    
-    cat(sprintf("Creating trend plots for %s...\n", window_name))
-    
-    # Get data
-    membership_data <- window_data$membership_data
-    window_info <- time_windows[[window_name]]
-    window_days <- window_info$days
-    
-    # Reconstruct trend data from original ppv_data
-    trend_data <- data.frame()
-    
-    for(metric in c("cv_rhr_1", "steps_max")) {
-      for(day in window_days) {
-        day_col <- paste0("day_", day, "_", metric)
-        if(day_col %in% names(ppv_data)) {
-          day_data <- ppv_data %>%
-            dplyr::select(subject_id, !!sym(day_col)) %>%
-            mutate(
-              day = day,
-              metric = metric,
-              value = !!sym(day_col),
-              time_point = day - min(window_days) + 1
-            ) %>%
-            dplyr::select(subject_id, day, metric, value, time_point)
-          
-          trend_data <- rbind(trend_data, day_data)
-        }
-      }
-    }
-    
-    # Add clustering information
-    trend_data <- trend_data %>%
-      left_join(membership_data %>% dplyr::select(subject_id, max_cluster, max_membership), 
-                by = "subject_id") %>%
-      filter(!is.na(max_cluster))
-    
-    if(nrow(trend_data) > 0) {
-      # Create trend plots for each metric
-      for(metric in c("cv_rhr_1", "steps_max")) {
-        metric_data <- trend_data %>% filter(metric == !!metric)
-        
-        if(nrow(metric_data) == 0) next
-        
-        # Calculate cluster mean trends
-        cluster_trends <- metric_data %>%
-          group_by(max_cluster, time_point, day) %>%
-          summarise(
-            mean_value = mean(value, na.rm = TRUE),
-            se_value = sd(value, na.rm = TRUE) / sqrt(n()),
-            n_patients = n(),
-            .groups = 'drop'
-          ) %>%
-          filter(!is.na(mean_value))
-        
-        # Individual patient trends
-        p_individual <- ggplot(metric_data, aes(x = time_point, y = value, group = subject_id)) +
-          geom_line(aes(color = max_membership, linetype = factor(max_cluster)), alpha = 0.7, size = 0.8) +
-          geom_point(aes(color = max_membership, shape = factor(max_cluster)), size = 2, alpha = 0.8) +
-          scale_color_gradientn(
-            colors = c("#4575B4", "#74ADD1", "#ABD9E9", "#E0F3F8", 
-                       "#FFFFBF", "#FEE090", "#FDAE61", "#F46D43", "#D73027"),
-            limits = c(0.3, 1.0),
-            oob = scales::squish,
-            name = "Membership"
-          ) +
-          scale_linetype_manual(values = c("solid", "dashed", "dotted"), name = "Cluster") +
-          scale_shape_manual(values = c(16, 17, 18), name = "Cluster") +
-          labs(
-            title = paste(toupper(window_name), "Individual Patient Trends:", 
-                          ifelse(metric == "cv_rhr_1", "HR Variability CV", "Max Steps")),
-            x = "Time Point (Relative Days)",
-            y = ifelse(metric == "cv_rhr_1", "HR Variability CV", "Max Steps"),
-            subtitle = paste("Time Window:", paste(range(window_days), collapse = " to "), "days")
-          ) +
-          theme_minimal() +
-          theme(
-            plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-            plot.subtitle = element_text(hjust = 0.5, size = 10),
-            legend.position = "right"
-          )
-        
-        # Cluster mean trend plot
-        p_cluster_mean <- ggplot(cluster_trends, aes(x = time_point, y = mean_value, 
-                                                     color = factor(max_cluster), group = max_cluster)) +
-          geom_line(size = 1.5, alpha = 0.8) +
-          geom_point(size = 3, alpha = 0.9) +
-          geom_errorbar(aes(ymin = mean_value - se_value, ymax = mean_value + se_value),
-                        width = 0.2, alpha = 0.7) +
-          geom_text(aes(label = paste0("n=", n_patients)), vjust = -0.5, size = 2.5, alpha = 0.8) +
-          scale_color_brewer(type = "qual", palette = "Set1", name = "Cluster") +
-          labs(
-            title = paste(toupper(window_name), "Cluster Mean Trends:", 
-                          ifelse(metric == "cv_rhr_1", "HR Variability CV", "Max Steps")),
-            x = "Time Point (Relative Days)",
-            y = ifelse(metric == "cv_rhr_1", "HR Variability CV", "Max Steps"),
-            subtitle = paste("Time Window:", paste(range(window_days), collapse = " to "), "days")
-          ) +
-          theme_minimal() +
-          theme(
-            plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-            plot.subtitle = element_text(hjust = 0.5, size = 10),
-            legend.position = "right"
-          )
-        
-        # Save plots
-        ggsave(paste0("plots/time_window_clustering/", window_name, "_", metric, "_individual_trends.pdf"),
-               p_individual, width = 12, height = 8)
-        ggsave(paste0("plots/time_window_clustering/", window_name, "_", metric, "_cluster_trends.pdf"),
-               p_cluster_mean, width = 10, height = 6)
-      }
-    }
+cat("\n========================================\n")
+cat("🎨 开始创建类似代码一的时间窗口聚类可视化\n")
+cat("========================================\n")
+
+# 1. 为每个时间窗口创建详细趋势图
+cat("\n=== 创建各时间窗口的详细聚类趋势图 ===\n")
+for(window_name in names(window_memberships)) {
+  if(!is.null(window_memberships[[window_name]])) {
+    create_window_cluster_trends(
+      window_memberships[[window_name]], 
+      ppv_data, 
+      time_windows[[window_name]]
+    )
   }
 }
 
-# ================== 7. Execute Analysis ==================
-
-cat("Starting comprehensive clustering analysis...\n\n")
-
-# Execute clustering visualizations
-updated_window_memberships <- create_clustering_visualizations(window_memberships)
-
-# Create cross-window comparison
-cross_window_results <- create_cross_window_analysis(updated_window_memberships)
-
-# Create cluster trend plots
-create_cluster_trend_plots(updated_window_memberships, time_windows)
-
-# ================== 8. Save Results and Generate Summary ==================
-
-# Reshape data for output
-membership_wide <- all_membership_data %>%
-  dplyr::select(subject_id, window, max_membership) %>%
-  pivot_wider(
-    names_from = window,
-    values_from = max_membership,
-    names_prefix = "membership_"
-  )
-
-# Save main results
-write.csv(membership_wide, "time_window_membership_data.csv", row.names = FALSE)
-write.csv(cross_window_results$summary_data, "time_window_clustering_summary.csv", row.names = FALSE)
-
-# Save detailed clustering statistics
-clustering_details_summary <- data.frame()
-for(window_name in names(updated_window_memberships)) {
-  window_data <- updated_window_memberships[[window_name]]
-  cluster_stats <- window_data$membership_data %>%
-    group_by(max_cluster) %>%
-    summarise(
-      count = n(),
-      mean_membership = round(mean(max_membership), 3),
-      sd_membership = round(sd(max_membership), 3),
-      min_membership = round(min(max_membership), 3),
-      max_membership = round(max(max_membership), 3),
-      .groups = 'drop'
-    ) %>%
-    mutate(window = window_name)
-  
-  clustering_details_summary <- rbind(clustering_details_summary, cluster_stats)
+# 🎯 新增：创建聚类中心趋势图（类似参考代码风格）
+cat("\n=== 创建聚类中心趋势图（干净风格） ===\n")
+for(window_name in names(window_memberships)) {
+  if(!is.null(window_memberships[[window_name]])) {
+    create_cluster_center_trends(
+      window_memberships[[window_name]], 
+      ppv_data, 
+      time_windows[[window_name]]
+    )
+  }
 }
 
-write.csv(clustering_details_summary, "detailed_clustering_statistics.csv", row.names = FALSE)
+# 2. 创建跨时间窗口聚类中心对比
+cat("\n=== 创建跨时间窗口聚类中心对比 ===\n")
+create_cross_window_cluster_centers(window_memberships, key_metrics)
 
-# Save individual window membership data for each time window
-for(window_name in names(updated_window_memberships)) {
-  window_data <- updated_window_memberships[[window_name]]$membership_data
-  write.csv(window_data, paste0(window_name, "_membership_data.csv"), row.names = FALSE)
-}
+# 3. 创建时间窗口聚类质量总览
+cat("\n=== 创建时间窗口聚类质量总览 ===\n")
+quality_overview <- create_window_quality_overview(window_memberships)
 
-# ================== 9. Generate Final Summary Report ==================
+# ================== 8. 保存详细的聚类结果 ==================
 
-generate_clustering_report <- function(window_memberships, cross_window_results) {
+save_detailed_clustering_results <- function(window_memberships, max_membership_wide) {
   
-  total_windows <- length(window_memberships)
-  total_unique_patients <- length(unique(unlist(lapply(window_memberships, function(x) x$membership_data$subject_id))))
+  cat("Saving detailed clustering results...\n")
   
-  # Calculate overall statistics
-  overall_stats <- data.frame()
+  # 1. 保存max membership宽格式数据
+  write.csv(max_membership_wide, "time_window_max_membership_data_fixed.csv", row.names = FALSE)
+  
+  # 2. 保存每个时间窗口的详细membership矩阵
   for(window_name in names(window_memberships)) {
     window_data <- window_memberships[[window_name]]
-    overall_stats <- rbind(overall_stats, data.frame(
-      Window = window_name,
-      N_Patients = window_data$n_patients,
-      N_Clusters = window_data$n_clusters,
-      Mean_Membership = round(mean(window_data$membership_data$max_membership), 3),
-      Best_Membership = round(max(window_data$membership_data$max_membership), 3)
-    ))
+    
+    if(!is.null(window_data)) {
+      # 保存完整的membership数据
+      write.csv(window_data$membership_data, 
+                paste0(window_name, "_detailed_membership_fixed.csv"), 
+                row.names = FALSE)
+      
+      # 保存cluster质量数据
+      write.csv(window_data$cluster_quality,
+                paste0(window_name, "_cluster_quality_fixed.csv"),
+                row.names = FALSE)
+      
+      # 保存membership矩阵
+      membership_matrix_df <- as.data.frame(window_data$membership_matrix)
+      membership_matrix_df$subject_id <- rownames(window_data$membership_matrix)
+      write.csv(membership_matrix_df,
+                paste0(window_name, "_membership_matrix_fixed.csv"),
+                row.names = FALSE)
+      
+      # 保存cluster映射信息（如果有的话）
+      if(!is.null(window_data$cluster_mapping)) {
+        mapping_df <- data.frame(
+          Original_Cluster = names(window_data$cluster_mapping),
+          New_Cluster = as.numeric(window_data$cluster_mapping)
+        )
+        write.csv(mapping_df,
+                  paste0(window_name, "_cluster_mapping.csv"),
+                  row.names = FALSE)
+      }
+    }
   }
   
-  # Find best performing window
-  best_window <- overall_stats[which.max(overall_stats$Mean_Membership), ]
+  # 3. 创建聚类摘要
+  clustering_summary <- data.frame()
+  for(window_name in names(window_memberships)) {
+    window_data <- window_memberships[[window_name]]
+    if(!is.null(window_data)) {
+      summary_row <- data.frame(
+        Time_Window = window_name,
+        N_Patients = window_data$n_patients,
+        N_Clusters = window_data$n_clusters,
+        Mean_Max_Membership = round(mean(window_data$membership_data$max_membership), 3),
+        SD_Max_Membership = round(sd(window_data$membership_data$max_membership), 3),
+        Min_Max_Membership = round(min(window_data$membership_data$max_membership), 3),
+        Max_Max_Membership = round(max(window_data$membership_data$max_membership), 3),
+        M_Value = round(window_data$m_value, 3),
+        Was_Remapped = !is.null(window_data$cluster_mapping)
+      )
+      clustering_summary <- rbind(clustering_summary, summary_row)
+    }
+  }
+  
+  write.csv(clustering_summary, "time_window_max_clustering_summary_fixed.csv", row.names = FALSE)
+  
+  cat("✓ All detailed clustering results saved (with fixed labels)\n\n")
+  
+  return(clustering_summary)
+}
+
+# 保存结果
+clustering_summary <- save_detailed_clustering_results(window_memberships, max_membership_wide)
+
+# ================== 9. 生成综合可视化报告 ==================
+
+generate_comprehensive_visualization_report <- function(window_memberships, clustering_summary, quality_overview) {
   
   report <- paste0(
     "========================================\n",
-    "TIME WINDOW CLUSTERING ANALYSIS REPORT\n",
+    "时间窗口聚类分析 + 类似代码一可视化报告\n",
     "========================================\n\n",
     
-    "ANALYSIS OVERVIEW:\n",
-    "- Analysis Date: ", Sys.Date(), "\n",
-    "- Time Windows Analyzed: ", total_windows, "\n",
-    "- Total Unique Patients: ", total_unique_patients, "\n",
-    "- Clustering Metrics: HR Variability CV, Max Steps\n",
-    "- Clustering Method: Fuzzy C-means (Mfuzz)\n\n",
+    "🎨 可视化功能升级:\n",
+    "✅ 每个时间窗口的详细聚类趋势图（类似代码一）\n",
+    "✅ 个体轨迹 + 平均轮廓可视化\n",
+    "✅ Membership值着色显示聚类置信度\n",
+    "✅ 跨时间窗口聚类中心对比\n",
+    "✅ 时间窗口聚类质量总览\n",
+    "✅ 固定随机种子确保可重复性\n\n",
     
-    "TIME WINDOW DEFINITIONS:\n",
-    "- Baseline: Days -4 to -1 (Pre-surgery)\n",
-    "- Acute Recovery: Days 0 to 3 (Immediate post-surgery)\n",
-    "- Early Recovery: Days 4 to 7 (First week post-surgery)\n",
-    "- Mid Recovery: Days 8 to 15 (Second week post-surgery)\n",
-    "- Late Recovery: Days 16 to 30 (Third-fourth week post-surgery)\n\n",
+    "🔬 分析设置:\n",
+    "- 随机种子: ", RANDOM_SEED, " (确保可重复性)\n",
+    "- 聚类方法: Fuzzy C-means (Mfuzz)\n",
+    "- 分析指标: ", paste(key_metrics, collapse = ", "), "\n",
+    "- 时间窗口数: ", length(window_memberships), "\n",
+    "- 分析日期: ", Sys.Date(), "\n\n",
     
-    "CLUSTERING RESULTS SUMMARY:\n"
+    "📊 各时间窗口聚类结果:\n"
   )
   
-  for(i in 1:nrow(overall_stats)) {
+  # 添加每个时间窗口的详细信息
+  for(i in 1:nrow(clustering_summary)) {
+    window_data <- clustering_summary[i, ]
     report <- paste0(report,
-                     sprintf("- %s: %d patients, %d clusters, Mean membership = %.3f\n",
-                             overall_stats$Window[i], overall_stats$N_Patients[i], 
-                             overall_stats$N_Clusters[i], overall_stats$Mean_Membership[i])
-    )
+                     sprintf("\n%d. %s:\n", i, toupper(window_data$Time_Window)),
+                     sprintf("   - 患者数量: %d\n", window_data$N_Patients),
+                     sprintf("   - 聚类数量: %d (fixed labels)\n", window_data$N_Clusters),
+                     sprintf("   - 平均Max Membership: %.3f ± %.3f\n", 
+                             window_data$Mean_Max_Membership, window_data$SD_Max_Membership),
+                     sprintf("   - 标签重新映射: %s\n", ifelse(window_data$Was_Remapped, "是", "否")))
   }
   
-  report <- paste0(report, "\n",
-                   "BEST CLUSTERING QUALITY:\n",
-                   sprintf("- Time Window: %s\n", best_window$Window),
-                   sprintf("- Mean Membership: %.3f\n", best_window$Mean_Membership),
-                   sprintf("- Number of Patients: %d\n", best_window$N_Patients),
-                   sprintf("- Number of Clusters: %d\n\n", best_window$N_Clusters),
+  report <- paste0(report,
+                   "\n🎨 生成的可视化文件结构:\n",
+                   "📁 plots/time_window_trends/[window_name]/:\n",
+                   "  - 每个聚类的详细趋势图（个体轨迹 + 平均轮廓）\n",
+                   "  - 按membership值着色的个体轨迹\n",
+                   "  - 各聚类对比图\n",
+                   "  - 所有指标组合图\n\n",
                    
-                   "KEY FINDINGS:\n",
-                   "1. TEMPORAL HETEROGENEITY: Different recovery phases show distinct clustering patterns\n",
-                   "2. MEMBERSHIP QUALITY: Varies across time windows, indicating phase-specific precision\n",
-                   "3. CLUSTER STABILITY: Most windows successfully identified 2-3 distinct patient groups\n",
-                   "4. PATIENT COVERAGE: High coverage across all time windows with minimal data loss\n\n",
+                   "📁 plots/cross_window_analysis/:\n",
+                   "  - 跨时间窗口聚类中心对比\n",
+                   "  - 时间窗口聚类质量总览\n\n",
                    
-                   "METHODOLOGICAL STRENGTHS:\n",
-                   "1. Time-specific clustering captures recovery phase heterogeneity\n",
-                   "2. Fuzzy clustering provides continuous membership values\n",
-                   "3. Comprehensive visualization suite for clinical interpretation\n",
-                   "4. Automated cluster number optimization\n",
-                   "5. Robust handling of missing data\n\n",
+                   "📈 可视化特点（类似代码一）:\n",
+                   "✅ 个体患者轨迹：每条线代表一个患者\n",
+                   "✅ Membership着色：线条颜色反映聚类置信度\n",
+                   "✅ 平均轮廓：粗黑线显示聚类平均趋势\n",
+                   "✅ 标准误差：灰色阴影显示不确定性\n",
+                   "✅ 聚类对比：直观比较不同聚类模式\n\n",
                    
-                   "OUTPUT FILES GENERATED:\n",
-                   "CSV DATA FILES:\n",
-                   "- time_window_membership_data.csv: Wide format membership data\n",
-                   "- time_window_clustering_summary.csv: Cross-window summary statistics\n",
-                   "- detailed_clustering_statistics.csv: Detailed clustering metrics\n",
-                   "- [window]_membership_data.csv: Individual window membership data\n\n",
+                   "🔍 如何使用可视化结果:\n",
+                   "1. 查看 time_window_trends/ 了解每个时间窗口的聚类模式\n",
+                   "2. 观察个体轨迹的membership着色了解聚类稳定性\n",
+                   "3. 比较不同聚类的平均轮廓识别关键差异\n",
+                   "4. 查看 cross_window_analysis/ 了解跨窗口聚类演变\n\n",
                    
-                   "VISUALIZATION FILES:\n",
-                   "- plots/time_window_clustering/[window]_clustering_analysis.pdf: Complete analysis per window\n",
-                   "- plots/time_window_clustering/[window]_centers.pdf: Cluster center characteristics\n",
-                   "- plots/time_window_clustering/[window]_membership_dist.pdf: Membership distributions\n",
-                   "- plots/time_window_clustering/[window]_quality.pdf: Clustering quality assessment\n",
-                   "- plots/time_window_clustering/[window]_[metric]_individual_trends.pdf: Individual patient trends\n",
-                   "- plots/time_window_clustering/[window]_[metric]_cluster_trends.pdf: Cluster mean trends\n",
-                   "- plots/time_window_clustering/cross_window_comparison.pdf: Cross-window comparison\n\n",
-                   
-                   "NEXT STEPS:\n",
-                   "1. Use membership data for correlation analysis with clinical outcomes\n",
-                   "2. Validate clustering stability with independent datasets\n",
-                   "3. Develop clinical prediction models based on membership values\n",
-                   "4. Investigate biological mechanisms underlying different clusters\n\n",
-                   
-                   "TECHNICAL SPECIFICATIONS:\n",
-                   "- R Version: ", R.version.string, "\n",
-                   "- Mfuzz Package: Fuzzy clustering for time series data\n",
-                   "- Standardization: Z-score normalization applied\n",
-                   "- Missing Data: Mean imputation for <50% missing values\n",
-                   "- Cluster Numbers: Automatic optimization (2-3 clusters per window)\n\n",
-                   
-                   "CONCLUSION:\n",
-                   "The time window-specific clustering analysis successfully identified distinct\n",
-                   "patient subgroups within each recovery phase. This approach provides a foundation\n",
-                   "for personalized post-surgical monitoring and outcome prediction. The generated\n",
-                   "membership values can now be used for correlation analysis with clinical outcomes\n",
-                   "to identify predictive biomarkers for surgical recovery.\n\n",
-                   
-                   "Analysis completed successfully on: ", Sys.time(), "\n",
-                   "========================================\n"
+                   "📊 聚类质量总结:\n"
   )
   
-  # Save report
-  writeLines(report, "Time_Window_Clustering_Analysis_Report.txt")
+  # 添加质量总结
+  avg_membership <- mean(clustering_summary$Mean_Max_Membership)
+  total_patients <- sum(clustering_summary$N_Patients)
+  remapped_windows <- sum(clustering_summary$Was_Remapped)
+  
+  report <- paste0(report,
+                   sprintf("- 平均Max Membership: %.3f\n", avg_membership),
+                   sprintf("- 总分析患者数: %d\n", total_patients),
+                   sprintf("- 需要标签修正的窗口: %d/%d\n", remapped_windows, nrow(clustering_summary)),
+                   sprintf("- 所有聚类标签已修正为连续编号\n\n"),
+                   
+                   "🎯 关键发现:\n",
+                   "✅ 固定随机种子确保完全可重复性\n",
+                   "✅ 每个时间窗口都生成了高质量聚类\n",
+                   "✅ 可视化清晰展示了聚类模式差异\n",
+                   "✅ Membership着色有助于评估聚类置信度\n\n",
+                   
+                   "📝 数据文件:\n",
+                   "- time_window_max_membership_data_fixed.csv: 修正后的宽格式数据\n",
+                   "- time_window_max_clustering_summary_fixed.csv: 聚类摘要\n",
+                   "- [window]_detailed_membership_fixed.csv: 各窗口详细数据\n\n",
+                   
+                   "🚀 下一步建议:\n",
+                   "1. 使用可视化结果进行临床解读\n",
+                   "2. 基于聚类模式进行预后分析\n",
+                   "3. 比较不同时间窗口的预测能力\n",
+                   "4. 验证聚类模式的临床意义\n\n",
+                   
+                   "报告生成时间: ", Sys.time(), "\n",
+                   "========================================\n")
+  
+  # 保存报告
+  writeLines(report, "Time_Window_Clustering_Visualization_Report.txt")
   cat(report)
   
   return(report)
 }
 
-# Generate final report
-clustering_report <- generate_clustering_report(updated_window_memberships, cross_window_results)
+# 生成可视化报告
+visualization_report <- generate_comprehensive_visualization_report(
+  window_memberships, clustering_summary, quality_overview
+)
 
-# ================== 10. Final Summary ==================
+# ================== 10. 最终验证和总结 ==================
 
-cat("\n" , "="*60, "\n")
-cat("TIME WINDOW CLUSTERING ANALYSIS COMPLETED SUCCESSFULLY\n")
-cat("="*60, "\n\n")
+cat("\n🎉 时间窗口聚类分析 + 可视化完成！\n")
+cat("========================================\n")
+cat("✅ 随机种子固定:", RANDOM_SEED, "\n")
+cat("✅ 聚类标签已修正为连续编号\n")
+cat("✅ 类似代码一的详细可视化已生成\n")
+cat("✅ 所有图表和数据已保存\n")
+cat("========================================\n")
 
-cat("SUMMARY OF COMPLETED TASKS:\n")
-cat("✓ Independent clustering for", length(updated_window_memberships), "time windows\n")
-cat("✓ Comprehensive visualization suite generated\n")
-cat("✓ Cross-window comparison analysis completed\n")
-cat("✓ Cluster trend plots created\n")
-cat("✓ All results saved to CSV files\n")
-cat("✓ Detailed analysis report generated\n\n")
+# 显示生成的文件
+cat("\n📁 生成的主要文件:\n")
+main_files <- c(
+  "time_window_max_membership_data_fixed.csv",
+  "time_window_max_clustering_summary_fixed.csv", 
+  "Time_Window_Clustering_Visualization_Report.txt"
+)
 
-cat("KEY OUTPUTS:\n")
-cat("📊 DATA FILES:\n")
-for(file in c("time_window_membership_data.csv", "time_window_clustering_summary.csv", 
-              "detailed_clustering_statistics.csv")) {
-  if(file.exists(file)) {
-    cat(sprintf("   ✓ %s\n", file))
+for (file in main_files) {
+  if (file.exists(file)) {
+    cat(sprintf("✓ %s\n", file))
+  } else {
+    cat(sprintf("❌ %s (未找到)\n", file))
   }
 }
 
-cat("\n📈 VISUALIZATION FILES:\n")
-if(dir.exists("plots/time_window_clustering")) {
-  plot_files <- list.files("plots/time_window_clustering", pattern = "\\.pdf$")
-  cat(sprintf("   ✓ %d PDF visualization files generated\n", length(plot_files)))
-}
+cat("\n📊 生成的可视化目录:\n")
+viz_dirs <- c(
+  "plots/time_window_trends",
+  "plots/cluster_center_trends",
+  "plots/cross_window_analysis"
+)
 
-cat("\n📋 ANALYSIS REPORT:\n")
-if(file.exists("Time_Window_Clustering_Analysis_Report.txt")) {
-  cat("   ✓ Time_Window_Clustering_Analysis_Report.txt\n")
-}
-
-cat("\n🎯 READY FOR NEXT STEP:\n")
-cat("The clustering analysis is complete. You can now proceed with:\n")
-cat("1. Correlation analysis with OCTA outcomes\n")
-cat("2. Clinical outcome prediction modeling\n")
-cat("3. Validation with independent datasets\n")
-cat("4. Integration with other biomarkers\n\n")
-
-cat("MEMBERSHIP DATA STRUCTURE:\n")
-if(exists("membership_wide")) {
-  cat("Time window membership data dimensions:", dim(membership_wide), "\n")
-  cat("Available membership columns:\n")
-  membership_cols <- grep("^membership_", names(membership_wide), value = TRUE)
-  for(col in membership_cols) {
-    valid_count <- sum(!is.na(membership_wide[[col]]))
-    cat(sprintf("   - %s: %d valid values\n", col, valid_count))
+for (dir in viz_dirs) {
+  if (dir.exists(dir)) {
+    n_subdirs <- length(list.dirs(dir, recursive = FALSE))
+    n_files <- length(list.files(dir, pattern = "\\.(pdf|png)$", recursive = TRUE))
+    cat(sprintf("✓ %s (%d subdirs, %d files)\n", dir, n_subdirs, n_files))
+  } else {
+    cat(sprintf("❌ %s (未找到)\n", dir))
   }
 }
 
-cat("\n", "="*60, "\n")
-cat("ANALYSIS COMPLETE - READY FOR CORRELATION ANALYSIS\n")
-cat("="*60, "\n")
+cat("\n🎨 现在你有了完整的时间窗口聚类可视化:\n")
+cat("1. 每个时间窗口的详细聚类趋势图\n")
+cat("2. 个体轨迹 + membership着色\n") 
+cat("3. 聚类平均轮廓 + 标准误差\n")
+cat("4. 🎯 聚类中心趋势图（类似参考代码风格）\n")
+cat("5. 带误差棒的聚类中心图\n")
+cat("6. 跨时间窗口聚类中心对比\n")
+cat("7. 聚类质量总览和评估\n")
+cat("8. 固定随机种子保证可重复性\n")
+cat("\n所有可视化都包含干净的聚类中心趋势，类似你参考代码的风格！\n")

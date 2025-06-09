@@ -1,4 +1,0 @@
-"max_cluster","Count","Mean_Membership","Min_Membership","Max_Membership","Outcome_Quality"
-1,6,0.728901362491786,0.639397960388959,0.797123183780168,"Worse"
-2,9,0.674699229468304,0.512229967468987,0.771319357394705,"Better"
-NA,10,NA,Inf,-Inf,NA

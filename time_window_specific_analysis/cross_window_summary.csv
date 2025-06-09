@@ -1,0 +1,6 @@
+"Time_Window","Total_Tests","Significant_Count","Significant_Percentage","OCTA_Significant","Vision_Significant","Strongest_Correlation","Best_P_Value"
+"Late Recovery",24,3,12.5,3,0,0.752,"0.005"
+"Early Recovery",24,2,8.3,2,0,0.619,"0.032"
+"Acute Recovery",24,1,4.2,1,0,0.647,"0.023"
+"Baseline",24,0,0,0,0,0.525,"1"
+"Mid Recovery",24,0,0,0,0,0.456,"1"
