@@ -52,3 +52,12 @@ rsconnect/
 4_manuscript/
 5_summary/
 3_data_analysis/2_data_analysis/RHR/heart_rate_data_RHR.rda
+
+
+###ignore large files in 3_data_analysis
+3_data_analysis/2_data_analysis/RHR/heart_rate_data_RHR.rda
+
+# gitignore
+echo ".DS_Store" >> ~/.gitignore_global
+echo "._*" >> ~/.gitignore_global
+git config --global core.excludesfile ~/.gitignore_global
