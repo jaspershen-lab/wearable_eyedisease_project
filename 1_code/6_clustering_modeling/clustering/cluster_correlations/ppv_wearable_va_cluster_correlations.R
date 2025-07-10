@@ -11,8 +11,8 @@ setwd(get_project_wd())
 rm(list = ls())
 
 # Step 1: Load the clustering results from both analyses
-wearable_clusters  <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/less_timepoint/ppv_cluster_results_time_windows.csv", check.names = FALSE)
-# wearable_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/ppv_cluster_results_all_metrics.csv")
+# wearable_clusters  <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/less_timepoint/ppv_cluster_results_time_windows.csv", check.names = FALSE)
+wearable_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/ppv_cluster_results_all_metrics.csv")
 va_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/vision_cluster/ppv_vision_cluster_results.csv")
 
 # Print summary of the loaded data

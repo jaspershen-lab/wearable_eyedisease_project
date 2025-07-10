@@ -143,6 +143,7 @@ library(patchwork)
 library(grid)
 library(ggplot2)
 
+# 修改 create_perfect_alignment_plot 函数，使上方和右侧柱状图大小一致
 create_perfect_alignment_plot <- function(hourly_coverage) {
   # Sort subject IDs numerically 
   hourly_coverage$subject_id <- factor(
@@ -176,21 +177,21 @@ create_perfect_alignment_plot <- function(hourly_coverage) {
   # 1. Create main heatmap with exact dimensions and fixed plot ratio
   p_main <- ggplot(hourly_coverage, aes(x = day_point, y = subject_id)) +
     geom_point(aes(size = hours_covered, 
-                  color = hours_covered,
-                  fill = hours_covered),
-              shape = 16,
-              alpha = 0.7) +
+                   color = hours_covered,
+                   fill = hours_covered),
+               shape = 16,
+               alpha = 0.7) +
     scale_color_gradient2(
-      low = "#f0ead2",
-      mid = "#dde5b4",
-      high = "#adc178",
+      low = "#c8d6b0",
+      mid = "#769f4a", 
+      high = "#5a7836",
       midpoint = 12,
       name = "Hours with\nData"
     ) +
     scale_fill_gradient2(
-      low = "#f0ead2",
-      mid = "#dde5b4",
-      high = "#adc178",
+      low = "#c8d6b0",
+      mid = "#769f4a",
+      high = "#5a7836", 
       midpoint = 12,
       name = "Hours with\nData"
     ) +
@@ -202,7 +203,7 @@ create_perfect_alignment_plot <- function(hourly_coverage) {
     # Set exact limits to match side plots - critical for alignment
     scale_x_continuous(limits = c(day_range[1], day_range[2]), 
                        breaks = seq(-5, 30, by = 5),
-                       expand = c(0.01, 0.01)) +  # Tiny expansion for padding
+                       expand = c(0.01, 0.01)) +
     base_theme +
     theme(
       panel.border = element_rect(color = "black", fill = NA, size = 0.5),
@@ -211,18 +212,19 @@ create_perfect_alignment_plot <- function(hourly_coverage) {
       legend.position = "right"
     ) +
     labs(
-      title = "Heart Rate Data Coverage Pattern",
+      title = "Heart Rate Data Coverage Pattern - PPV Diabetes Patients",
+      subtitle = paste("N =", length(unique_subjects), "participants"),
       x = "Days Relative to Surgery",
-      y = "Subject ID"
+      y = "Patient ID"
     )
   
-  # 2. Create top bar chart with EXACTLY matching x-axis
-  max_daily_hours <- max(daily_totals$daily_hours) * 1.05  # Add small padding
+  # 2. Create top bar chart with EXACTLY matching x-axis - 调整高度比例
+  max_daily_hours <- max(daily_totals$daily_hours) * 1.05
   p_top <- ggplot(daily_totals, aes(x = day_point, y = daily_hours)) +
     geom_col(fill = "#d9d0b4") +
     # Match the x-axis exactly with main plot - critical for alignment
     scale_x_continuous(limits = c(day_range[1], day_range[2]), 
-                       expand = c(0.01, 0.01)) +  # Must match main plot exactly
+                       expand = c(0.01, 0.01)) +
     scale_y_continuous(limits = c(0, max_daily_hours),
                        expand = c(0, 0)) +
     base_theme +
@@ -235,13 +237,13 @@ create_perfect_alignment_plot <- function(hourly_coverage) {
     ) +
     labs(y = "Daily\nHours")
   
-  # 3. Create right bar chart with EXACTLY matching y-axis
-  max_total_hours <- max(subject_totals$total_hours) * 1.05  # Small padding
+  # 3. Create right bar chart with EXACTLY matching y-axis - 调整宽度比例
+  max_total_hours <- max(subject_totals$total_hours) * 1.05
   p_right <- ggplot(subject_totals, aes(y = subject_id, x = total_hours)) +
     geom_col(fill = "#d9d0b4") +
     # Set y-axis to exactly match main plot - critical for alignment
     scale_y_discrete(limits = unique_subjects,
-                    expand = c(0.01, 0.01)) +  # Must match main plot exactly
+                     expand = c(0.01, 0.01)) +
     scale_x_continuous(limits = c(0, max_total_hours),
                        expand = c(0, 0)) +
     base_theme +
@@ -261,36 +263,162 @@ create_perfect_alignment_plot <- function(hourly_coverage) {
       plot.background = element_rect(fill = "white", color = NA)
     )
   
-  # Use a fixed design with synchronized y-axis
-  # The key to equal y-axis is aligning plots exactly and using fixed aspect ratios
+  # 关键修改：调整layout的widths和heights使上方和右侧图表大小一致
   combined_plot <- (p_top | p_empty) / (p_main | p_right) +
     plot_layout(
-      widths = c(4, 1),     # Main plot is 4x wider than right sidebar
-      heights = c(1, 5),    # Increase main plot height proportion for better y-axis matching
-      guides = "collect"    # Collect all legends
+      widths = c(4, 1),      # 保持主图和右侧图的宽度比例
+      heights = c(1, 4),     # 修改：使上方图和主图的高度比例为1:4，与右侧图的宽度比例一致
+      guides = "collect"     # Collect all legends
     ) &
     theme(plot.margin = unit(c(0, 0, 0, 0), "mm"))  # Remove outer margins
   
   return(combined_plot)
 }
 
-# Create the combined plot with perfect alignment
+# 使用修正的函数重新创建图表
 combined_plot <- create_perfect_alignment_plot(hourly_coverage)
 print(combined_plot)
 
-# Save the plot with better dimensions for perfect alignment
-ggsave(filename = "heart_rate_data_perfectly_aligned.pdf", 
+# 保存修正的图表
+ggsave(filename = "heart_rate_data_perfectly_aligned_fixed.pdf", 
        plot = combined_plot, 
-       width = 14,       # Wider format for better visualization
-       height = 11,      # Taller format to allow y-axis to match
-       dpi = 300)        # Higher resolution
-
-# Save as PNG for immediate viewing
-ggsave(filename = "heart_rate_data_perfectly_aligned.png", 
-       plot = combined_plot, 
-       width = 14, 
-       height = 11, 
+       width = 12,       # 稍微调整宽度
+       height = 10,      # 稍微调整高度
        dpi = 300)
+
+# 另一种方法：如果您想要更精确的控制，可以使用相等的比例
+create_perfect_alignment_plot_equal <- function(hourly_coverage) {
+  # 前面的代码保持不变...
+  hourly_coverage$subject_id <- factor(
+    hourly_coverage$subject_id,
+    levels = rev(unique(hourly_coverage$subject_id)[order(as.numeric(gsub("SH0*", "", unique(hourly_coverage$subject_id))))])
+  )
+  
+  daily_totals <- hourly_coverage %>%
+    group_by(day_point) %>%
+    summarise(daily_hours = sum(hours_covered), .groups = "drop")
+  
+  subject_totals <- hourly_coverage %>%
+    group_by(subject_id) %>%
+    summarise(total_hours = sum(hours_covered), .groups = "drop")
+  
+  day_range <- range(hourly_coverage$day_point)
+  unique_subjects <- levels(hourly_coverage$subject_id)
+  
+  base_theme <- theme_bw() +
+    theme(
+      panel.grid = element_blank(),
+      plot.background = element_rect(fill = "white", color = NA),
+      panel.background = element_rect(fill = "white", color = NA)
+    )
+  
+  # 主图
+  p_main <- ggplot(hourly_coverage, aes(x = day_point, y = subject_id)) +
+    geom_point(aes(size = hours_covered, 
+                   color = hours_covered,
+                   fill = hours_covered),
+               shape = 16,
+               alpha = 0.7) +
+    scale_color_gradient2(
+      low = "#c8d6b0",
+      mid = "#769f4a", 
+      high = "#5a7836",
+      midpoint = 12,
+      name = "Hours with\nData"
+    ) +
+    scale_fill_gradient2(
+      low = "#c8d6b0",
+      mid = "#769f4a",
+      high = "#5a7836", 
+      midpoint = 12,
+      name = "Hours with\nData"
+    ) +
+    scale_size(
+      range = c(0.1, 4),
+      limits = c(0, 24),
+      name = "Hours with\nData"
+    ) +
+    scale_x_continuous(limits = c(day_range[1], day_range[2]), 
+                       breaks = seq(-5, 30, by = 5),
+                       expand = c(0.01, 0.01)) +
+    base_theme +
+    theme(
+      panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+      axis.text.y = element_text(size = 8),
+      axis.text.x = element_text(angle = 0),
+      legend.position = "right"
+    ) +
+    labs(
+      title = "Heart Rate Data Coverage Pattern - PPV Diabetes Patients",
+      subtitle = paste("N =", length(unique_subjects), "participants"),
+      x = "Days Relative to Surgery",
+      y = "Patient ID"
+    )
+  
+  # 上方图
+  max_daily_hours <- max(daily_totals$daily_hours) * 1.05
+  p_top <- ggplot(daily_totals, aes(x = day_point, y = daily_hours)) +
+    geom_col(fill = "#d9d0b4") +
+    scale_x_continuous(limits = c(day_range[1], day_range[2]), 
+                       expand = c(0.01, 0.01)) +
+    scale_y_continuous(limits = c(0, max_daily_hours),
+                       expand = c(0, 0)) +
+    base_theme +
+    theme(
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.text.y = element_text(size = 7),
+      panel.border = element_rect(color = "black", fill = NA, size = 0.3)
+    ) +
+    labs(y = "Daily\nHours")
+  
+  # 右侧图
+  max_total_hours <- max(subject_totals$total_hours) * 1.05
+  p_right <- ggplot(subject_totals, aes(y = subject_id, x = total_hours)) +
+    geom_col(fill = "#d9d0b4") +
+    scale_y_discrete(limits = unique_subjects,
+                     expand = c(0.01, 0.01)) +
+    scale_x_continuous(limits = c(0, max_total_hours),
+                       expand = c(0, 0)) +
+    base_theme +
+    theme(
+      axis.title.y = element_blank(),
+      axis.text.y = element_blank(),
+      axis.ticks.y = element_blank(),
+      axis.text.x = element_text(size = 7),
+      panel.border = element_rect(color = "black", fill = NA, size = 0.3)
+    ) +
+    labs(x = "Total Hours")
+  
+  p_empty <- ggplot() + 
+    theme_void() +
+    theme(plot.background = element_rect(fill = "white", color = NA))
+  
+  # 使用相等的比例 - 1:1的比例使上方和右侧图表大小一致
+  combined_plot <- (p_top | p_empty) / (p_main | p_right) +
+    plot_layout(
+      widths = c(3, 1),      # 主图:右侧图 = 3:1
+      heights = c(1, 3),     # 上方图:主图 = 1:3，与宽度比例一致
+      guides = "collect"
+    ) &
+    theme(plot.margin = unit(c(0, 0, 0, 0), "mm"))
+  
+  return(combined_plot)
+}
+
+# 创建相等比例的图表
+combined_plot_equal <- create_perfect_alignment_plot_equal(hourly_coverage)
+print(combined_plot_equal)
+
+# 保存相等比例的图表
+ggsave(filename = "heart_rate_data_perfectly_aligned_equal.pdf", 
+       plot = combined_plot_equal, 
+       width = 10,
+       height = 10,       # 使用正方形比例
+       dpi = 300)
+
+cat("Generated aligned plots with consistent bar chart sizes!\n")
 
 
 

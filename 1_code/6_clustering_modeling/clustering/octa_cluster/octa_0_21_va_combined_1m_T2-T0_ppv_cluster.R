@@ -117,15 +117,16 @@ vision_data <- baseline_info %>%
 ppv_vision <- vision_data %>%
   filter(ID %in% ppv_patients)
 
-# -------------------- 5. Filter OCTA parameters (WF ONLY) --------------------
-# Function to filter blood flow layers (WF REGION ONLY - 0_21)
-filter_bloodflow_layers_WF <- function(data) {
+# -------------------- 5. Filter OCTA parameters --------------------
+# Function to filter blood flow layers (enhanced for 0_21 only)
+filter_bloodflow_layers <- function(data) {
   layers_of_interest <- c("SVP", "ICP", "DCP", "Choroid")
-  # MODIFIED: Only include WF region (0_21)
-  region_of_interest <- "0_21"
+  # MODIFIED: Only include 0_21 region (removing 0_6)
+  regions_of_interest <- c("0_21")
   
-  # Create pattern for WF region only
-  pattern <- paste0("(", paste(layers_of_interest, collapse = "|"), ").*", region_of_interest, "_T0$")
+  # Create pattern for 0_21 region only
+  pattern <- paste0("(", paste(layers_of_interest, collapse = "|"), ").*(",
+                    paste(regions_of_interest, collapse = "|"), ")_T0$")
   
   params_T0 <- names(data)[grep(pattern, names(data))]
   
@@ -133,11 +134,18 @@ filter_bloodflow_layers_WF <- function(data) {
     warning("No target blood flow layer T0 parameters found!")
     return(list(data = data, params = character(0)))
   } else {
-    cat("Found", length(params_T0), "WF blood flow T0 parameters:\n")
-    cat("- WF region (0_21) only:", length(params_T0), "parameters\n\n")
+    cat("Found", length(params_T0), "target blood flow layer T0 parameters:\n")
     
-    cat("WF blood flow parameters:\n")
-    cat(paste(gsub("_T0$", "", params_T0), collapse = "\n"), "\n\n")
+    # Separate macular parameters for better reporting
+    macular_params <- params_T0[grep("0_21_T0$", params_T0)]
+    
+    cat("- Macular region (0_21):", length(macular_params), "parameters\n")
+    cat("- Total:", length(params_T0), "parameters\n\n")
+    
+    if(length(macular_params) > 0) {
+      cat("Macular parameters:\n")
+      cat(paste(gsub("_T0$", "", macular_params), collapse = "\n"), "\n\n")
+    }
   }
   
   params_T2 <- gsub("_T0$", "_T2", params_T0)
@@ -161,18 +169,20 @@ filter_bloodflow_layers_WF <- function(data) {
     params_T0 = final_params_T0,
     params_T2 = final_params_T2,
     base_params = valid_base_params,
-    WF_params = gsub("_T0$", "", params_T0)
+    macular_params = gsub("_T0$", "", macular_params),
+    widefield_params = character(0)  # Empty since we removed 0_6
   ))
 }
 
-# Function to filter thickness layers (WF REGION ONLY - 0_21)
-filter_thickness_layers_WF <- function(data) {
+# Function to filter thickness layers (enhanced for 0_21 only)
+filter_thickness_layers <- function(data) {
   layers_of_interest <- c("GCL.IPL", "INL", "Retina")
-  # MODIFIED: Only include WF region (0_21)
-  region_of_interest <- "0_21"
+  # MODIFIED: Only include 0_21 region (removing 0_6)
+  regions_of_interest <- c("0_21")
   
-  # Create pattern for WF region only
-  pattern <- paste0("(", paste(layers_of_interest, collapse = "|"), ").*", region_of_interest, "_T0$")
+  # Create pattern for 0_21 region only
+  pattern <- paste0("(", paste(layers_of_interest, collapse = "|"), ").*(",
+                    paste(regions_of_interest, collapse = "|"), ")_T0$")
   
   params_T0 <- names(data)[grep(pattern, names(data))]
   
@@ -180,11 +190,18 @@ filter_thickness_layers_WF <- function(data) {
     warning("No target thickness layer T0 parameters found!")
     return(list(data = data, params = character(0)))
   } else {
-    cat("Found", length(params_T0), "WF thickness T0 parameters:\n")
-    cat("- WF region (0_21) only:", length(params_T0), "parameters\n\n")
+    cat("Found", length(params_T0), "target thickness layer T0 parameters:\n")
     
-    cat("WF thickness parameters:\n")
-    cat(paste(gsub("_T0$", "", params_T0), collapse = "\n"), "\n\n")
+    # Separate macular parameters for better reporting
+    macular_params <- params_T0[grep("0_21_T0$", params_T0)]
+    
+    cat("- Macular region (0_21):", length(macular_params), "parameters\n")
+    cat("- Total:", length(params_T0), "parameters\n\n")
+    
+    if(length(macular_params) > 0) {
+      cat("Macular thickness parameters:\n")
+      cat(paste(gsub("_T0$", "", macular_params), collapse = "\n"), "\n\n")
+    }
   }
   
   params_T2 <- gsub("_T0$", "_T2", params_T0)
@@ -208,13 +225,14 @@ filter_thickness_layers_WF <- function(data) {
     params_T0 = final_params_T0,
     params_T2 = final_params_T2,
     base_params = valid_base_params,
-    WF_params = gsub("_T0$", "", params_T0)
+    macular_params = gsub("_T0$", "", macular_params),
+    widefield_params = character(0)  # Empty since we removed 0_6
   ))
 }
 
-# Apply filters (WF ONLY)
-ppv_bloodflow_filtered <- filter_bloodflow_layers_WF(ppv_bloodflow)
-ppv_thickness_filtered <- filter_thickness_layers_WF(ppv_thickness)
+# Apply filters
+ppv_bloodflow_filtered <- filter_bloodflow_layers(ppv_bloodflow)
+ppv_thickness_filtered <- filter_thickness_layers(ppv_thickness)
 
 # -------------------- 6. Calculate OCTA improvements --------------------
 calculate_improvement <- function(data, params_T0, params_T2) {
@@ -254,18 +272,18 @@ comprehensive_data <- ppv_vision %>%
   dplyr::select(ID, vision_improvement_1m, pre_vision, age) %>%
   full_join(ppv_octa_combined, by = "ID")
 
-# Print data combination summary (WF ONLY)
-cat("\n===== WF-Only Data Summary =====\n")
-cat("Total patients in WF dataset:", nrow(comprehensive_data), "\n")
+# Print data combination summary (enhanced for regions)
+cat("\n===== Comprehensive Data Summary =====\n")
+cat("Total patients in comprehensive dataset:", nrow(comprehensive_data), "\n")
 cat("Vision parameters: vision_improvement_1m, pre_vision, age\n")
 
-if(length(ppv_bloodflow_filtered$WF_params) > 0) {
-  cat("OCTA blood flow - WF region (0_21):", length(ppv_bloodflow_filtered$WF_params), "parameters\n")
+if(length(ppv_bloodflow_filtered$macular_params) > 0) {
+  cat("OCTA blood flow - Macular region (0_21):", length(ppv_bloodflow_filtered$macular_params), "parameters\n")
 }
 cat("Total OCTA blood flow parameters:", ncol(ppv_bloodflow_improvement) - 1, "\n")
 
-if(length(ppv_thickness_filtered$WF_params) > 0) {
-  cat("OCTA thickness - WF region (0_21):", length(ppv_thickness_filtered$WF_params), "parameters\n")
+if(length(ppv_thickness_filtered$macular_params) > 0) {
+  cat("OCTA thickness - Macular region (0_21):", length(ppv_thickness_filtered$macular_params), "parameters\n")
 }
 cat("Total OCTA thickness parameters:", ncol(ppv_thickness_improvement) - 1, "\n")
 cat("Total parameters:", ncol(comprehensive_data) - 1, "\n")
@@ -317,18 +335,22 @@ cat("Complete data patient count:", nrow(complete_data),
     "(", round(nrow(complete_data)/nrow(clustering_data)*100, 1), "%)\n")
 cat("Removed", sum(!complete_rows), "patients with missing values\n")
 
-# Count parameters by type (WF ONLY)
+# Count parameters by type
 vision_params <- names(complete_data)[grepl("vision_improvement|pre_vision|age", names(complete_data))]
 bloodflow_params <- names(complete_data)[grepl("SVP|ICP|DCP|Choroid", names(complete_data))]
 thickness_params <- names(complete_data)[grepl("GCL|INL|Retina", names(complete_data))]
 
-# All OCTA parameters are now WF only
-bloodflow_WF <- bloodflow_params  # All blood flow params are WF
-thickness_WF <- thickness_params  # All thickness params are WF
+# Count parameters by type and region
+bloodflow_macular <- bloodflow_params[grepl("0_21", bloodflow_params)]
+bloodflow_widefield <- character(0)  # Empty since we removed 0_6
+thickness_macular <- thickness_params[grepl("0_21", thickness_params)]
+thickness_widefield <- character(0)  # Empty since we removed 0_6
 
 cat("Vision parameters:", length(vision_params), "\n")
-cat("Blood flow parameters - WF (0_21) only:", length(bloodflow_WF), "\n")
-cat("Thickness parameters - WF (0_21) only:", length(thickness_WF), "\n")
+cat("Blood flow parameters - Total:", length(bloodflow_params), "\n")
+cat("  - Macular (0_21):", length(bloodflow_macular), "\n")
+cat("Thickness parameters - Total:", length(thickness_params), "\n")
+cat("  - Macular (0_21):", length(thickness_macular), "\n")
 
 # Check data adequacy
 if(nrow(complete_data) < 5) {
@@ -343,8 +365,10 @@ comprehensive_data_std <- as.data.frame(scale(complete_data))
 cat("\n===== Final Clustering Dataset =====\n")
 cat("Total parameters used:", ncol(comprehensive_data_std), "\n")
 cat("- Vision parameters:", length(vision_params), "\n")
-cat("- Blood flow parameters (WF only):", length(bloodflow_params), "\n")
-cat("- Thickness parameters (WF only):", length(thickness_params), "\n")
+cat("- Blood flow parameters:", length(bloodflow_params), "\n")
+cat("  * Macular region:", length(bloodflow_macular), "\n")
+cat("- Thickness parameters:", length(thickness_params), "\n")
+cat("  * Macular region:", length(thickness_macular), "\n")
 cat("Patients used:", nrow(comprehensive_data_std), "\n")
 cat("Patient IDs:", paste(complete_ids, collapse=", "), "\n")
 
@@ -381,23 +405,23 @@ comprehensive_clusters_result <- data.frame(
 )
 
 # Save clustering results
-write.csv(comprehensive_clusters_result, "ppv_WF_cluster_results.csv", row.names = FALSE)
+write.csv(comprehensive_clusters_result, "ppv_comprehensive_cluster_results.csv", row.names = FALSE)
 
 # -------------------- 10. Visualize clustering results --------------------
 # Create comprehensive dataset with cluster assignments
 comprehensive_data_with_clusters <- comprehensive_data %>%
   inner_join(comprehensive_clusters_result, by = c("ID" = "subject_id"))
 
-# Function to create WF-focused visualizations
-create_WF_visualizations <- function(data, vision_params, bloodflow_params, thickness_params, 
-                                          bloodflow_WF, thickness_WF) {
+# Function to create enhanced visualizations with regional analysis
+create_comprehensive_visualizations <- function(data, vision_params, bloodflow_params, thickness_params, 
+                                                bloodflow_macular, bloodflow_widefield, thickness_macular, thickness_widefield) {
   dir.create("plots", recursive = TRUE, showWarnings = FALSE)
   
   data$max_cluster <- as.factor(data$max_cluster)
   all_params <- c(vision_params, bloodflow_params, thickness_params)
   
-  # 0. Overall WF heatmap for all parameters
-  cat("Creating WF-focused comprehensive heatmap...\n")
+  # 0. Overall comprehensive heatmap for all parameters
+  cat("Creating overall comprehensive heatmap...\n")
   
   # Calculate cluster means for ALL parameters
   all_params_means <- data %>%
@@ -412,18 +436,18 @@ create_WF_visualizations <- function(data, vision_params, bloodflow_params, thic
       values_to = "Mean_Value"
     ) %>%
     mutate(
-      # Determine parameter category
+      # Determine parameter category and region
       Data_Type = case_when(
         Parameter %in% vision_params ~ "Vision",
-        Parameter %in% bloodflow_WF ~ "Blood Flow - WF",
-        Parameter %in% thickness_WF ~ "Thickness - WF",
+        Parameter %in% bloodflow_macular ~ "Blood Flow - Macular",
+        Parameter %in% thickness_macular ~ "Thickness - Macular",
         TRUE ~ "Other"
       ),
       # Clean parameter names for display
       Parameter_Clean = gsub("_improvement|_1m", "", Parameter),
-      Parameter_Clean = gsub("_0_21", "", Parameter_Clean),
+      Parameter_Clean = gsub("_0_21|_0_6", "", Parameter_Clean),
       Parameter_Clean = gsub("_", " ", Parameter_Clean),
-      # Add WF suffix for OCTA parameters
+      # Add region suffix for OCTA parameters
       Parameter_Display = case_when(
         grepl("0_21", Parameter) ~ paste0(Parameter_Clean, " (Mac)"),
         TRUE ~ Parameter_Clean
@@ -436,16 +460,16 @@ create_WF_visualizations <- function(data, vision_params, bloodflow_params, thic
   overall_plot_data$Parameter_Display <- factor(overall_plot_data$Parameter_Display, 
                                                 levels = unique(overall_plot_data$Parameter_Display))
   
-  # Create the overall WF heatmap
+  # Create the overall comprehensive heatmap
   p_overall_heatmap <- ggplot(overall_plot_data, aes(x = Parameter_Display, y = as.factor(max_cluster), fill = Mean_Value)) +
     geom_tile(color = "white", size = 0.5) +
     # Add text labels with values
     geom_text(aes(label = sprintf("%.2f", Mean_Value)), 
               color = "black", size = 2.5, fontface = "bold") +
     scale_fill_gradient2(
-      low = "blue", 
+      low = "#542788", 
       mid = "white", 
-      high = "red", 
+      high = "#f1a340", 
       midpoint = 0,
       name = "Mean\nValue",
       guide = guide_colorbar(barwidth = 1, barheight = 10)
@@ -455,7 +479,7 @@ create_WF_visualizations <- function(data, vision_params, bloodflow_params, thic
     theme(
       axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
       axis.text.y = element_text(size = 10, face = "bold"),
-      strip.text = element_text(size = 12, face = "bold", color = "darkblue"),
+      strip.text = element_text(size = 12, face = "bold", color = "black"),
       strip.background = element_rect(fill = "lightgray"),
       panel.grid = element_blank(),
       panel.spacing = unit(0.5, "lines"),
@@ -464,20 +488,20 @@ create_WF_visualizations <- function(data, vision_params, bloodflow_params, thic
       legend.position = "right"
     ) +
     labs(
-      title = "WF-Focused Cluster Comparison Heatmap",
-      subtitle = paste("Vision + OCTA WF Parameters (0_21 only) | n =", nrow(data)),
+      title = "Comprehensive Cluster Comparison Heatmap",
+      subtitle = paste("All Parameters: Vision + OCTA (Macular only) | n =", nrow(data)),
       x = "Parameters",
       y = "Cluster",
-      caption = "Mac = WF region (0_21)"
+      caption = "Mac = Macular (0_21)"
     )
   
   # Save the overall heatmap
-  ggsave("plots/WF_comprehensive_heatmap.pdf", p_overall_heatmap, 
-         width = 16, height = 10, dpi = 300)
-  ggsave("plots/WF_comprehensive_heatmap.png", p_overall_heatmap, 
-         width = 16, height = 10, dpi = 300)
+  ggsave("plots/overall_comprehensive_heatmap.pdf", p_overall_heatmap, 
+         width = 20, height = 12, dpi = 300)
+  ggsave("plots/overall_comprehensive_heatmap.png", p_overall_heatmap, 
+         width = 20, height = 12, dpi = 300)
   
-  cat("WF comprehensive heatmap saved to plots/WF_comprehensive_heatmap.pdf/png\n")
+  cat("Overall comprehensive heatmap saved to plots/overall_comprehensive_heatmap.pdf/png\n")
   
   # Additional summary statistics table
   cluster_summary_table <- overall_plot_data %>%
@@ -491,11 +515,11 @@ create_WF_visualizations <- function(data, vision_params, bloodflow_params, thic
     ) %>%
     arrange(max_cluster, Data_Type)
   
-  cat("\n===== Cluster Summary by Parameter Type (WF Focus) =====\n")
+  cat("\n===== Cluster Summary by Parameter Type =====\n")
   print(cluster_summary_table)
   
   # Save summary table
-  write.csv(cluster_summary_table, "plots/WF_cluster_summary_by_type.csv", row.names = FALSE)
+  write.csv(cluster_summary_table, "plots/cluster_summary_by_type.csv", row.names = FALSE)
   
   # 1. Vision parameters by cluster
   for(param in vision_params) {
@@ -505,7 +529,7 @@ create_WF_visualizations <- function(data, vision_params, bloodflow_params, thic
       p <- ggplot(data, aes(x = max_cluster, y = .data[[param]], fill = max_cluster)) +
         geom_boxplot() +
         geom_jitter(alpha = 0.5, width = 0.2) +
-        scale_fill_brewer(palette = "Set1") +
+        scale_fill_manual(values = c("#1f77b4", "#ff7f0e")) +
         theme_bw() +
         labs(title = paste("Vision:", param_clean, "by Cluster"), 
              x = "Cluster", y = param_clean)
@@ -514,7 +538,160 @@ create_WF_visualizations <- function(data, vision_params, bloodflow_params, thic
     }
   }
   
-  # 2. WF heatmap
+  # 1.5. OCTA specific boxplots for PA, VD, and Thickness indicators
+  cat("Creating OCTA-specific boxplots for PA, VD, and Thickness indicators...\n")
+  
+  # Function to create OCTA indicator boxplots
+  create_octa_boxplots <- function(data, all_params) {
+    # Define OCTA indicators of interest
+    pa_params <- all_params[grepl("PA.*_improvement", all_params)]
+    vd_params <- all_params[grepl("VD.*_improvement", all_params)]
+    thickness_params <- all_params[grepl("(GCL|INL|Retina).*_improvement", all_params)]
+    
+    # Function to create boxplot for a group of parameters
+    create_grouped_boxplot <- function(params, indicator_name, color_palette = "Set2") {
+      if(length(params) == 0) {
+        cat("No", indicator_name, "parameters found\n")
+        return(NULL)
+      }
+      
+      cat("Creating", indicator_name, "boxplot with", length(params), "parameters\n")
+      
+      # Prepare data for plotting
+      plot_data <- data %>%
+        dplyr::select(max_cluster, all_of(params)) %>%
+        pivot_longer(cols = all_of(params), names_to = "Parameter", values_to = "Value") %>%
+        mutate(
+          Parameter_Clean = gsub("_improvement", "", Parameter),
+          Parameter_Clean = gsub("_0_21", "", Parameter_Clean),
+          Parameter_Clean = gsub("_", " ", Parameter_Clean)
+        )
+      
+      # Create boxplot
+      p <- ggplot(plot_data, aes(x = Parameter_Clean, y = Value, fill = max_cluster)) +
+        geom_boxplot(position = position_dodge(width = 0.8), alpha = 0.7) +
+        geom_jitter(aes(color = max_cluster), position = position_jitterdodge(dodge.width = 0.8, jitter.width = 0.2), 
+                    alpha = 0.6, size = 1) +
+        scale_fill_manual(values = c("#1f77b4", "#ff7f0e"), name = "Cluster")+
+      scale_color_manual(values = c("#1f77b4", "#ff7f0e"), name = "Cluster")+
+        theme_bw() +
+        theme(
+          axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+          plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+          legend.position = "top"
+        ) +
+        labs(
+          title = paste(indicator_name, "Improvements by Cluster"),
+          subtitle = paste("Comparison across", length(params), "parameters"),
+          x = paste(indicator_name, "Parameters"),
+          y = "Improvement Value"
+        )
+      
+      return(p)
+    }
+    
+    # Create PA boxplot
+    if(length(pa_params) > 0) {
+      p_pa <- create_grouped_boxplot(pa_params, "Perfusion Area (PA)", "Set1")
+      if(!is.null(p_pa)) {
+        ggsave("plots/octa_PA_improvements_boxplot.pdf", p_pa, width = 12, height = 8)
+        ggsave("plots/octa_PA_improvements_boxplot.png", p_pa, width = 12, height = 8, dpi = 300)
+        cat("PA boxplot saved to plots/octa_PA_improvements_boxplot.pdf/png\n")
+      }
+    }
+    
+    # Create VD boxplot
+    if(length(vd_params) > 0) {
+      p_vd <- create_grouped_boxplot(vd_params, "Vessel Density (VD)", "Set1")
+      if(!is.null(p_vd)) {
+        ggsave("plots/octa_VD_improvements_boxplot.pdf", p_vd, width = 12, height = 8)
+        ggsave("plots/octa_VD_improvements_boxplot.png", p_vd, width = 12, height = 8, dpi = 300)
+        cat("VD boxplot saved to plots/octa_VD_improvements_boxplot.pdf/png\n")
+      }
+    }
+    
+    # Create Thickness boxplot
+    if(length(thickness_params) > 0) {
+      p_thickness <- create_grouped_boxplot(thickness_params, "Retinal Thickness", "Set1")
+      if(!is.null(p_thickness)) {
+        ggsave("plots/octa_Thickness_improvements_boxplot.pdf", p_thickness, width = 12, height = 8)
+        ggsave("plots/octa_Thickness_improvements_boxplot.png", p_thickness, width = 12, height = 8, dpi = 300)
+        cat("Thickness boxplot saved to plots/octa_Thickness_improvements_boxplot.pdf/png\n")
+      }
+    }
+    
+    # Create combined summary boxplot for all three indicators
+    combined_params <- c(pa_params, vd_params, thickness_params)
+    if(length(combined_params) > 0) {
+      combined_plot_data <- data %>%
+        dplyr::select(max_cluster, all_of(combined_params)) %>%
+        pivot_longer(cols = all_of(combined_params), names_to = "Parameter", values_to = "Value") %>%
+        mutate(
+          Indicator_Type = case_when(
+            grepl("PA", Parameter) ~ "Perfusion Area (PA)",
+            grepl("VD", Parameter) ~ "Vessel Density (VD)",
+            grepl("GCL|INL|Retina", Parameter) ~ "Retinal Thickness",
+            TRUE ~ "Other"
+          ),
+          Parameter_Clean = gsub("_improvement", "", Parameter),
+          Parameter_Clean = gsub("_0_21", "", Parameter_Clean),
+          Parameter_Clean = gsub("_", " ", Parameter_Clean)
+        )
+      
+      p_combined <- ggplot(combined_plot_data, aes(x = Indicator_Type, y = Value, fill = max_cluster)) +
+        geom_boxplot(position = position_dodge(width = 0.8), alpha = 0.7) +
+        geom_jitter(aes(color = max_cluster), position = position_jitterdodge(dodge.width = 0.8, jitter.width = 0.3), 
+                    alpha = 0.5, size = 1.5) +
+        scale_fill_manual(values = c("#2ca02c", "#d62728"), name = "Cluster")+
+      scale_color_manual(values = c("#2ca02c", "#d62728"), name = "Cluster")+
+        theme_bw() +
+        theme(
+          axis.text.x = element_text(angle = 15, hjust = 1, size = 12),
+          plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+          plot.subtitle = element_text(hjust = 0.5, size = 12),
+          legend.position = "top",
+          strip.text = element_text(size = 12, face = "bold")
+        ) +
+        labs(
+          title = "OCTA Indicators Improvement Comparison by Cluster",
+          subtitle = paste("PA, VD, and Thickness improvements | n =", nrow(data)),
+          x = "OCTA Indicator Type",
+          y = "Improvement Value"
+        ) +
+        facet_wrap(~ Indicator_Type, scales = "free_x", ncol = 3)
+      
+      ggsave("plots/octa_combined_indicators_boxplot.pdf", p_combined, width = 16, height = 10)
+      ggsave("plots/octa_combined_indicators_boxplot.png", p_combined, width = 16, height = 10, dpi = 300)
+      cat("Combined OCTA indicators boxplot saved to plots/octa_combined_indicators_boxplot.pdf/png\n")
+    }
+    
+    # Summary statistics for OCTA indicators by cluster
+    if(length(combined_params) > 0) {
+      octa_summary <- combined_plot_data %>%
+        group_by(max_cluster, Indicator_Type) %>%
+        summarise(
+          Parameter_Count = n(),
+          Mean_Improvement = mean(Value, na.rm = TRUE),
+          Median_Improvement = median(Value, na.rm = TRUE),
+          SD_Improvement = sd(Value, na.rm = TRUE),
+          Positive_Improvements = sum(Value > 0, na.rm = TRUE),
+          Negative_Improvements = sum(Value < 0, na.rm = TRUE),
+          .groups = 'drop'
+        )
+      
+      cat("\n===== OCTA Indicators Summary by Cluster =====\n")
+      print(octa_summary)
+      
+      # Save OCTA summary
+      write.csv(octa_summary, "plots/octa_indicators_cluster_summary.csv", row.names = FALSE)
+      cat("OCTA indicators summary saved to plots/octa_indicators_cluster_summary.csv\n")
+    }
+  }
+  
+  # Execute OCTA boxplot creation
+  create_octa_boxplots(data, all_params)
+  
+  # 2. Enhanced heatmap with regional breakdown
   cluster_means <- data %>%
     group_by(max_cluster) %>%
     summarise(across(all_of(all_params), mean, na.rm = TRUE))
@@ -528,17 +705,19 @@ create_WF_visualizations <- function(data, vision_params, bloodflow_params, thic
     mutate(
       Data_Type = case_when(
         Parameter %in% vision_params ~ "Vision",
-        Parameter %in% bloodflow_WF ~ "Blood Flow - WF",
-        Parameter %in% thickness_WF ~ "Thickness - WF",
+        Parameter %in% bloodflow_macular ~ "Blood Flow - Macular",
+        Parameter %in% thickness_macular ~ "Thickness - Macular",
         TRUE ~ "Other"
       ),
       Parameter_Clean = gsub("_improvement|_1m", "", Parameter)
     )
   
-  # Create WF heatmap
+  # Create comprehensive heatmap with regional breakdown
   p_heatmap <- ggplot(plot_data, aes(x = Parameter_Clean, y = max_cluster, fill = Mean_Value)) +
     geom_tile() +
-    scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+    scale_fill_gradient2( low = "#542788", 
+                          mid = "white", 
+                          high = "#f1a340",  midpoint = 0) +
     facet_wrap(~ Data_Type, scales = "free_x", ncol = 1) +
     theme_minimal() +
     theme(
@@ -546,14 +725,14 @@ create_WF_visualizations <- function(data, vision_params, bloodflow_params, thic
       strip.text = element_text(size = 11, face = "bold")
     ) +
     labs(
-      title = "WF Parameter Overview by Cluster\n(Vision + OCTA WF Region Only)",
+      title = "Comprehensive Parameter Overview by Cluster\n(Macular Region Only)",
       x = "Parameters",
       y = "Cluster",
       fill = "Mean\nValue"
     )
   
-  ggsave("plots/WF_heatmap.pdf", p_heatmap, width = 20, height = 10)
-  ggsave("plots/WF_heatmap.png", p_heatmap, width = 20, height = 10, dpi = 300)
+  ggsave("plots/comprehensive_regional_heatmap.pdf", p_heatmap, width = 24, height = 12)
+  ggsave("plots/comprehensive_regional_heatmap.png", p_heatmap, width = 24, height = 12, dpi = 300)
   
   # 3. PCA visualization
   if(length(all_params) > 2) {
@@ -562,7 +741,7 @@ create_WF_visualizations <- function(data, vision_params, bloodflow_params, thic
     
     pca_result <- prcomp(pca_data, scale. = TRUE)
     
-    # Create PCA plot data frame
+    # Create PCA plot data frame - THIS IS THE CORRECT SYNTAX
     pca_plot_data <- data.frame(
       PC1 = pca_result$x[,1],
       PC2 = pca_result$x[,2],
@@ -574,17 +753,17 @@ create_WF_visualizations <- function(data, vision_params, bloodflow_params, thic
     p_pca <- ggplot(pca_plot_data, aes(x = PC1, y = PC2, color = Cluster, alpha = Membership)) +
       geom_point(size = 3) +
       stat_ellipse(aes(group = Cluster), level = 0.95) +
-      scale_color_brewer(palette = "Set1") +
+      scale_color_manual(values = c("#1f77b4", "#ff7f0e")) +
       theme_bw() +
       labs(
-        title = "PCA of WF Parameters\n(Vision + OCTA WF Only)",
+        title = "PCA of Comprehensive Parameters\n(Vision + OCTA Macular)",
         x = paste0("PC1 (", round(summary(pca_result)$importance[2,1]*100, 1), "%)"),
         y = paste0("PC2 (", round(summary(pca_result)$importance[2,2]*100, 1), "%)")
       )
     
-    ggsave("plots/WF_pca.pdf", p_pca, width = 10, height = 8)
+    ggsave("plots/comprehensive_regional_pca.pdf", p_pca, width = 10, height = 8)
     
-    # 4. Variable contribution plot
+    # 4. Enhanced variable contribution plot with regional colors
     loadings <- pca_result$rotation[, 1:2]
     loadings_df <- data.frame(
       Variable = rownames(loadings),
@@ -592,8 +771,8 @@ create_WF_visualizations <- function(data, vision_params, bloodflow_params, thic
       PC2 = loadings[, 2],
       Data_Type = case_when(
         rownames(loadings) %in% vision_params ~ "Vision",
-        rownames(loadings) %in% bloodflow_WF ~ "BF - WF",
-        rownames(loadings) %in% thickness_WF ~ "TH - WF",
+        rownames(loadings) %in% bloodflow_macular ~ "BF - Macular",
+        rownames(loadings) %in% thickness_macular ~ "TH - Macular",
         TRUE ~ "Other"
       )
     )
@@ -607,29 +786,30 @@ create_WF_visualizations <- function(data, vision_params, bloodflow_params, thic
       scale_color_brewer(palette = "Set2") +
       theme_bw() +
       labs(
-        title = "Parameter Contributions to Principal Components\n(WF Analysis)",
+        title = "Parameter Contributions to Principal Components\n(Regional Analysis)",
         x = paste0("PC1 (", round(summary(pca_result)$importance[2,1]*100, 1), "%)"),
         y = paste0("PC2 (", round(summary(pca_result)$importance[2,2]*100, 1), "%)"),
         color = "Parameter Type"
       )
     
-    ggsave("plots/WF_loadings.pdf", p_loadings, width = 14, height = 12)
+    ggsave("plots/comprehensive_regional_loadings.pdf", p_loadings, width = 14, height = 12)
   }
 }
 
 # Create visualizations
-create_WF_visualizations(comprehensive_data_with_clusters, vision_params, bloodflow_params, thickness_params,
-                              bloodflow_WF, thickness_WF)
+create_comprehensive_visualizations(comprehensive_data_with_clusters, vision_params, bloodflow_params, thickness_params,
+                                    bloodflow_macular, bloodflow_widefield, thickness_macular, thickness_widefield)
 
 # -------------------- 11. Statistical analysis --------------------
-# Function to analyze differences between clusters (WF-focused)
-analyze_WF_differences <- function(data, vision_params, bloodflow_params, thickness_params,
-                                        bloodflow_WF, thickness_WF) {
+# Function to analyze differences between clusters (enhanced for regional analysis)
+analyze_comprehensive_differences <- function(data, vision_params, bloodflow_params, thickness_params,
+                                              bloodflow_macular, bloodflow_widefield, thickness_macular, thickness_widefield) {
   all_params <- c(vision_params, bloodflow_params, thickness_params)
   
   results <- data.frame(
     Parameter = character(),
     Data_Type = character(),
+    Region = character(),
     Cluster1_Mean = numeric(),
     Cluster2_Mean = numeric(),
     Mean_Difference = numeric(),
@@ -640,12 +820,19 @@ analyze_WF_differences <- function(data, vision_params, bloodflow_params, thickn
   
   for(param in all_params) {
     if(param %in% names(data) && !all(is.na(data[[param]]))) {
-      # Determine data type
+      # Determine data type and region
       data_type <- case_when(
         param %in% vision_params ~ "Vision",
-        param %in% bloodflow_params ~ "Blood Flow - WF",
-        param %in% thickness_params ~ "Thickness - WF",
+        param %in% bloodflow_params ~ "Blood Flow",
+        param %in% thickness_params ~ "Thickness",
         TRUE ~ "Other"
+      )
+      
+      region <- case_when(
+        param %in% vision_params ~ "N/A",
+        param %in% bloodflow_macular ~ "Macular",
+        param %in% thickness_macular ~ "Macular",
+        TRUE ~ "Unknown"
       )
       
       param_data <- data[, c("max_cluster", param)]
@@ -660,6 +847,7 @@ analyze_WF_differences <- function(data, vision_params, bloodflow_params, thickn
           results <- rbind(results, data.frame(
             Parameter = gsub("_improvement|_1m", "", param),
             Data_Type = data_type,
+            Region = region,
             Cluster1_Mean = ifelse("1" %in% names(means), means["1"], NA),
             Cluster2_Mean = ifelse("2" %in% names(means), means["2"], NA),
             Mean_Difference = ifelse(length(means) >= 2, means["2"] - means["1"], NA),
@@ -676,58 +864,74 @@ analyze_WF_differences <- function(data, vision_params, bloodflow_params, thickn
   if(nrow(results) > 0) {
     results$P_Adjusted <- p.adjust(results$P_Value, method = "fdr")
     results$Significant_Adjusted <- ifelse(results$P_Adjusted < 0.05, "Yes", "No")
-    results <- results %>% arrange(Data_Type, P_Value)
+    results <- results %>% arrange(Data_Type, Region, P_Value)
   }
   
   return(results)
 }
 
-# Perform statistical analysis
-comprehensive_stats <- analyze_WF_differences(comprehensive_data_with_clusters, vision_params, bloodflow_params, thickness_params,
-                                                   bloodflow_WF, thickness_WF)
+# Perform statistical analysis (updated function call)
+comprehensive_stats <- analyze_comprehensive_differences(comprehensive_data_with_clusters, vision_params, bloodflow_params, thickness_params,
+                                                         bloodflow_macular, bloodflow_widefield, thickness_macular, thickness_widefield)
 
 # Save results
-write.csv(comprehensive_stats, "ppv_WF_cluster_statistics.csv", row.names = FALSE)
+write.csv(comprehensive_stats, "ppv_comprehensive_cluster_statistics.csv", row.names = FALSE)
 
-# Print significant results by data type
-cat("\n===== Significant Parameters by Data Type (WF Focus) =====\n")
+# Print significant results by data type and region
+cat("\n===== Significant Parameters by Data Type and Region =====\n")
 
-for(data_type in c("Vision", "Blood Flow - WF", "Thickness - WF")) {
+for(data_type in c("Vision", "Blood Flow", "Thickness")) {
   cat("\n", data_type, "parameters:\n")
   
-  sig_params <- comprehensive_stats %>% 
-    filter(Data_Type == data_type & Significant == "Yes") %>%
-    arrange(P_Value)
-  
-  if(nrow(sig_params) > 0) {
-    print(sig_params %>% dplyr::select(Parameter, Mean_Difference, P_Value, Significant))
+  if(data_type == "Vision") {
+    sig_params <- comprehensive_stats %>% 
+      filter(Data_Type == data_type & Significant == "Yes") %>%
+      arrange(P_Value)
+    
+    if(nrow(sig_params) > 0) {
+      print(sig_params %>% dplyr::select(Parameter, Mean_Difference, P_Value, Significant))
+    } else {
+      cat("No significant parameters found\n")
+    }
   } else {
-    cat("No significant parameters found\n")
+    # For OCTA parameters, show by region
+    for(region in c("Macular")) {  # Only Macular since we removed 0_6
+      sig_params <- comprehensive_stats %>% 
+        filter(Data_Type == data_type & Region == region & Significant == "Yes") %>%
+        arrange(P_Value)
+      
+      if(nrow(sig_params) > 0) {
+        cat("  ", region, "region:\n")
+        print(sig_params %>% dplyr::select(Parameter, Mean_Difference, P_Value, Significant))
+      } else {
+        cat("  ", region, "region: No significant parameters found\n")
+      }
+    }
   }
 }
 
 # -------------------- 12. Interpret clusters --------------------
-# WF cluster interpretation function
-interpret_WF_clusters <- function(stats_results) {
+# Comprehensive cluster interpretation function
+interpret_comprehensive_clusters <- function(stats_results) {
   if(nrow(stats_results) == 0) {
     cat("No statistical results available for interpretation\n")
     return(NULL)
   }
   
-  # Analyze by data type
+  # Analyze by data type and region
   vision_stats <- stats_results %>% filter(Data_Type == "Vision")
-  bloodflow_WF_stats <- stats_results %>% filter(Data_Type == "Blood Flow - WF")
-  thickness_WF_stats <- stats_results %>% filter(Data_Type == "Thickness - WF")
+  bloodflow_macular_stats <- stats_results %>% filter(Data_Type == "Blood Flow" & Region == "Macular")
+  thickness_macular_stats <- stats_results %>% filter(Data_Type == "Thickness" & Region == "Macular")
   
-  # Count significant improvements by cluster
+  # Count significant improvements by cluster and region
   vision_cluster2_better <- sum(vision_stats$Mean_Difference > 0 & vision_stats$Significant == "Yes", na.rm = TRUE)
   vision_cluster1_better <- sum(vision_stats$Mean_Difference < 0 & vision_stats$Significant == "Yes", na.rm = TRUE)
   
-  bf_mac_cluster2_better <- sum(bloodflow_WF_stats$Mean_Difference > 0 & bloodflow_WF_stats$Significant == "Yes", na.rm = TRUE)
-  bf_mac_cluster1_better <- sum(bloodflow_WF_stats$Mean_Difference < 0 & bloodflow_WF_stats$Significant == "Yes", na.rm = TRUE)
+  bf_mac_cluster2_better <- sum(bloodflow_macular_stats$Mean_Difference > 0 & bloodflow_macular_stats$Significant == "Yes", na.rm = TRUE)
+  bf_mac_cluster1_better <- sum(bloodflow_macular_stats$Mean_Difference < 0 & bloodflow_macular_stats$Significant == "Yes", na.rm = TRUE)
   
-  th_mac_cluster2_better <- sum(thickness_WF_stats$Mean_Difference > 0 & thickness_WF_stats$Significant == "Yes", na.rm = TRUE)
-  th_mac_cluster1_better <- sum(thickness_WF_stats$Mean_Difference < 0 & thickness_WF_stats$Significant == "Yes", na.rm = TRUE)
+  th_mac_cluster2_better <- sum(thickness_macular_stats$Mean_Difference > 0 & thickness_macular_stats$Significant == "Yes", na.rm = TRUE)
+  th_mac_cluster1_better <- sum(thickness_macular_stats$Mean_Difference < 0 & thickness_macular_stats$Significant == "Yes", na.rm = TRUE)
   
   # Total significant improvements
   total_cluster2_better <- vision_cluster2_better + bf_mac_cluster2_better + th_mac_cluster2_better
@@ -764,26 +968,26 @@ interpret_WF_clusters <- function(stats_results) {
   }
   
   # Print interpretation results
-  cat("\n===== WF-Focused Cluster Interpretation =====\n")
+  cat("\n===== Comprehensive Cluster Interpretation =====\n")
   cat("Overall better cluster:", better_cluster, "\n")
   cat("Overall worse cluster:", worse_cluster, "\n\n")
   
   cat("Detailed breakdown:\n")
   cat("Vision - Cluster 2 advantages:", vision_cluster2_better, ", Cluster 1 advantages:", vision_cluster1_better, "\n")
-  cat("Blood Flow WF - Cluster 2 advantages:", bf_mac_cluster2_better, ", Cluster 1 advantages:", bf_mac_cluster1_better, "\n")
-  cat("Thickness WF - Cluster 2 advantages:", th_mac_cluster2_better, ", Cluster 1 advantages:", th_mac_cluster1_better, "\n")
+  cat("Blood Flow Macular - Cluster 2 advantages:", bf_mac_cluster2_better, ", Cluster 1 advantages:", bf_mac_cluster1_better, "\n")
+  cat("Thickness Macular - Cluster 2 advantages:", th_mac_cluster2_better, ", Cluster 1 advantages:", th_mac_cluster1_better, "\n")
   cat("Total - Cluster 2 advantages:", total_cluster2_better, ", Cluster 1 advantages:", total_cluster1_better, "\n\n")
   
   # Additional summary
   cat("Summary:\n")
   if(better_cluster == 2) {
-    cat("Cluster 2 patients show significantly better WF outcomes\n")
+    cat("Cluster 2 patients show significantly better outcomes across multiple parameters\n")
   } else {
-    cat("Cluster 1 patients show significantly better WF outcomes\n")
+    cat("Cluster 1 patients show significantly better outcomes across multiple parameters\n")
   }
   
-  cat("This indicates that PPV patients can be stratified into distinct WF outcome groups\n")
-  cat("based on their vision and WF OCTA response patterns.\n")
+  cat("This indicates that PPV patients can be stratified into distinct outcome groups\n")
+  cat("based on their comprehensive vision and OCTA response patterns.\n")
   
   # Return results
   return(list(
@@ -801,7 +1005,7 @@ interpret_WF_clusters <- function(stats_results) {
 }
 
 # Execute cluster interpretation
-cluster_interpretation <- interpret_WF_clusters(comprehensive_stats)
+cluster_interpretation <- interpret_comprehensive_clusters(comprehensive_stats)
 
 # Add outcome labels to cluster results
 if(!is.null(cluster_interpretation)) {
@@ -812,17 +1016,17 @@ if(!is.null(cluster_interpretation)) {
   )
   
   # Save final results with outcome labels
-  write.csv(comprehensive_clusters_result, "ppv_WF_cluster_results_with_outcomes.csv", row.names = FALSE)
+  write.csv(comprehensive_clusters_result, "ppv_comprehensive_cluster_results_with_outcomes.csv", row.names = FALSE)
   
   cat("\nCluster outcome labels have been added and saved to:\n")
-  cat("'ppv_WF_cluster_results_with_outcomes.csv'\n")
+  cat("'ppv_comprehensive_cluster_results_with_outcomes.csv'\n")
 } else {
   cat("\nWarning: Could not determine cluster interpretation due to insufficient statistical results.\n")
 }
 
 # -------------------- 13. Parameter importance analysis --------------------
-# Analyze which WF parameters contribute most to cluster separation
-analyze_WF_parameter_importance <- function(stats_results) {
+# Analyze which parameters contribute most to cluster separation
+analyze_parameter_importance <- function(stats_results) {
   if(nrow(stats_results) == 0) {
     return(data.frame())
   }
@@ -840,14 +1044,14 @@ analyze_WF_parameter_importance <- function(stats_results) {
     head(3)
   
   top_bloodflow <- importance_scores %>%
-    filter(Data_Type == "Blood Flow - WF") %>%
+    filter(Data_Type == "Blood Flow") %>%
     head(5)
   
   top_thickness <- importance_scores %>%
-    filter(Data_Type == "Thickness - WF") %>%
+    filter(Data_Type == "Thickness") %>%
     head(5)
   
-  cat("\n===== WF Parameter Importance Analysis =====\n")
+  cat("\n===== Parameter Importance Analysis =====\n")
   
   if(nrow(top_vision) > 0) {
     cat("\nTop Vision parameters:\n")
@@ -855,26 +1059,26 @@ analyze_WF_parameter_importance <- function(stats_results) {
   }
   
   if(nrow(top_bloodflow) > 0) {
-    cat("\nTop WF Blood Flow parameters:\n")
+    cat("\nTop Blood Flow parameters:\n")
     print(top_bloodflow %>% dplyr::select(Parameter, Data_Type, Mean_Difference, P_Value, Importance_Score, Significant))
   }
   
   if(nrow(top_thickness) > 0) {
-    cat("\nTop WF Thickness parameters:\n")
+    cat("\nTop Thickness parameters:\n")
     print(top_thickness %>% dplyr::select(Parameter, Data_Type, Mean_Difference, P_Value, Importance_Score, Significant))
   }
   
   # Save importance analysis
-  write.csv(importance_scores, "ppv_WF_parameter_importance.csv", row.names = FALSE)
+  write.csv(importance_scores, "ppv_comprehensive_parameter_importance.csv", row.names = FALSE)
   
   return(importance_scores)
 }
 
 # Perform parameter importance analysis
-parameter_importance <- analyze_WF_parameter_importance(comprehensive_stats)
+parameter_importance <- analyze_parameter_importance(comprehensive_stats)
 
-# -------------------- 14. Create WF summary --------------------
-# Final summary statistics for WF analysis
+# -------------------- 14. Create comprehensive summary --------------------
+# Final summary statistics
 final_summary <- comprehensive_data_with_clusters %>%
   group_by(max_cluster) %>%
   summarise(
@@ -884,7 +1088,7 @@ final_summary <- comprehensive_data_with_clusters %>%
     Mean_Vision_Improvement = mean(vision_improvement_1m, na.rm = TRUE),
     Mean_Pre_Vision = mean(pre_vision, na.rm = TRUE),
     Mean_Age = mean(age, na.rm = TRUE),
-    # Summary of WF OCTA improvements
+    # Summary of OCTA improvements (count of positive improvements)
     Positive_BF_Improvements = rowSums(across(all_of(bloodflow_params), ~ .x > 0), na.rm = TRUE),
     Positive_TH_Improvements = rowSums(across(all_of(thickness_params), ~ .x > 0), na.rm = TRUE),
     .groups = 'drop'
@@ -893,31 +1097,31 @@ final_summary <- comprehensive_data_with_clusters %>%
     Outcome_Quality = ifelse(max_cluster == cluster_interpretation$better_cluster, "Better", "Worse")
   )
 
-cat("\n===== Final WF Summary =====\n")
+cat("\n===== Final Comprehensive Summary =====\n")
 print(final_summary)
 
-write.csv(final_summary, "ppv_WF_cluster_summary.csv", row.names = FALSE)
+write.csv(final_summary, "ppv_comprehensive_cluster_summary.csv", row.names = FALSE)
 
-# -------------------- 15. Generate WF report --------------------
-generate_WF_report <- function() {
+# -------------------- 15. Generate comprehensive report --------------------
+generate_comprehensive_report <- function() {
   vision_sig <- sum(comprehensive_stats$Data_Type == "Vision" & comprehensive_stats$Significant == "Yes")
-  bf_mac_sig <- sum(comprehensive_stats$Data_Type == "Blood Flow - WF" & comprehensive_stats$Significant == "Yes")
-  th_mac_sig <- sum(comprehensive_stats$Data_Type == "Thickness - WF" & comprehensive_stats$Significant == "Yes")
+  bf_mac_sig <- sum(comprehensive_stats$Data_Type == "Blood Flow" & comprehensive_stats$Region == "Macular" & comprehensive_stats$Significant == "Yes")
+  th_mac_sig <- sum(comprehensive_stats$Data_Type == "Thickness" & comprehensive_stats$Region == "Macular" & comprehensive_stats$Significant == "Yes")
   total_sig <- sum(comprehensive_stats$Significant == "Yes")
   
   report <- paste0(
     "========================================\n",
-    "PPV Group WF-Focused Clustering Analysis Report\n",
-    "Vision + OCTA (WF Region 0_21 Only)\n",
+    "PPV Group Comprehensive Clustering Analysis Report\n",
+    "Vision + OCTA (Macular Region 0_21 Only)\n",
     "========================================\n\n",
     
     "1. Data Overview:\n",
     "   - Total patients analyzed: ", nrow(complete_data), "\n",
     "   - Vision parameters: ", length(vision_params), " (improvement, baseline vision, age)\n",
-    "   - OCTA blood flow - WF only: ", length(bloodflow_WF), " parameters\n",
-    "   - OCTA thickness - WF only: ", length(thickness_WF), " parameters\n",
+    "   - OCTA blood flow - Macular: ", length(bloodflow_macular), " parameters\n",
+    "   - OCTA thickness - Macular: ", length(thickness_macular), " parameters\n",
     "   - Total parameters: ", ncol(complete_data), "\n",
-    "   - Focus: Central WF region (0_21) only\n\n",
+    "   - Focus: Central retinal region (0_21) analysis\n\n",
     
     "2. Clustering Results:\n",
     "   - Number of clusters: 2\n",
@@ -929,58 +1133,58 @@ generate_WF_report <- function() {
     
     "3. Statistical Significance:\n",
     "   - Significant vision parameters: ", vision_sig, "\n",
-    "   - Significant WF blood flow parameters: ", bf_mac_sig, "\n",
-    "   - Significant WF thickness parameters: ", th_mac_sig, "\n",
+    "   - Significant BF macular parameters: ", bf_mac_sig, "\n",
+    "   - Significant TH macular parameters: ", th_mac_sig, "\n",
     "   - Total significant parameters: ", total_sig, "\n\n",
     
-    "4. Key WF Findings:\n",
+    "4. Key Findings:\n",
     "   - Vision improvements: Better cluster advantages in ", 
     cluster_interpretation$vision_cluster2_better + cluster_interpretation$vision_cluster1_better, " parameters\n",
-    "   - WF blood flow: Better cluster advantages in ", 
+    "   - Blood flow macular: Better cluster advantages in ", 
     ifelse(cluster_interpretation$better_cluster == 2, cluster_interpretation$bf_mac_cluster2_better, cluster_interpretation$bf_mac_cluster1_better), " parameters\n",
-    "   - WF thickness: Better cluster advantages in ", 
+    "   - Thickness macular: Better cluster advantages in ", 
     ifelse(cluster_interpretation$better_cluster == 2, cluster_interpretation$th_mac_cluster2_better, cluster_interpretation$th_mac_cluster1_better), " parameters\n",
-    "   - Focus on central 0_21 region provides detailed WF assessment\n\n",
+    "   - This analysis focuses on central retinal changes\n\n",
     
     "5. Clinical Implications:\n",
-    "   - Identifies patients with good central WF outcomes\n",
-    "   - Focused on clinically most important retinal region\n",
-    "   - Provides detailed assessment of WF vascular changes\n",
-    "   - Suitable for WF-specific treatment decisions\n\n",
+    "   - Identifies patients with comprehensive good outcomes\n",
+    "   - Focuses on macular region most relevant for visual function\n",
+    "   - Provides targeted assessment of central retinal recovery\n",
+    "   - Can guide macular-specific follow-up strategies\n\n",
     
-    "6. WF Analysis Advantages:\n",
-    "   - Concentrated assessment of central vision-critical area\n",
-    "   - Higher data completeness due to focus on single region\n",
-    "   - Clinically relevant for central vision outcomes\n",
-    "   - Reduced complexity while maintaining clinical relevance\n\n",
+    "6. Analysis Advantages:\n",
+    "   - Focused assessment of vision-critical central retina\n",
+    "   - Higher data completeness due to fewer missing parameters\n",
+    "   - Direct relevance to visual function outcomes\n",
+    "   - Simplified interpretation for clinical decision-making\n\n",
     
     "7. Output Files:\n",
-    "   - ppv_WF_cluster_results_with_outcomes.csv: Main clustering results\n",
-    "   - ppv_WF_cluster_statistics.csv: Statistical analysis\n",
-    "   - ppv_WF_parameter_importance.csv: Parameter importance ranking\n",
-    "   - ppv_WF_cluster_summary.csv: Cluster summary statistics\n",
-    "   - plots/: WF-focused visualizations\n\n",
+    "   - ppv_comprehensive_cluster_results_with_outcomes.csv: Main clustering results\n",
+    "   - ppv_comprehensive_cluster_statistics.csv: Statistical analysis\n",
+    "   - ppv_comprehensive_parameter_importance.csv: Parameter importance ranking\n",
+    "   - ppv_comprehensive_cluster_summary.csv: Cluster summary statistics\n",
+    "   - plots/: Comprehensive visualizations\n\n",
     
-    "8. Advantages of WF-Only Analysis:\n",
-    "   - Focused on central vision-critical region\n",
-    "   - Higher patient inclusion due to better data completeness\n",
-    "   - Clinically relevant for central visual function\n",
-    "   - Simplified interpretation while maintaining relevance\n",
-    "   - Optimal for WF-specific surgical outcome assessment\n\n"
+    "8. Advantages of This Approach:\n",
+    "   - CLINICAL RELEVANCE: Focuses on vision-critical central retina\n",
+    "   - HIGHER COMPLETENESS: More patients with complete macular data\n",
+    "   - FUNCTIONAL CORRELATION: Direct relationship to visual outcomes\n",
+    "   - SIMPLIFIED INTERPRETATION: Focused on anatomically relevant region\n",
+    "   - ROBUST CLUSTERING: Based on maximum available central retinal information\n\n"
   )
   
   # Save report
-  writeLines(report, "PPV_WF_Clustering_Report.txt")
+  writeLines(report, "PPV_Comprehensive_Clustering_Report.txt")
   cat(report)
 }
 
-# Generate WF report
-generate_WF_report()
+# Generate comprehensive report
+generate_comprehensive_report()
 
 # -------------------- 16. Quality control and validation --------------------
-# Perform quality control checks for WF analysis
-quality_control_WF <- function() {
-  cat("===== WF Analysis Quality Control Summary =====\n")
+# Perform quality control checks
+quality_control <- function() {
+  cat("===== Quality Control Summary =====\n")
   
   # Check cluster stability
   membership_stability <- comprehensive_clusters_result %>%
@@ -1004,63 +1208,14 @@ quality_control_WF <- function() {
       Sig_Percentage = round(sum(Significant == "Yes")/n()*100, 1)
     )
   
-  cat("WF parameter significance by type:\n")
+  cat("Parameter significance by type:\n")
   print(param_summary)
   
   # Save quality control results
-  write.csv(membership_stability, "quality_control_WF_membership.csv", row.names = FALSE)
-  write.csv(param_summary, "quality_control_WF_parameters.csv", row.names = FALSE)
+  write.csv(membership_stability, "quality_control_membership.csv", row.names = FALSE)
+  write.csv(param_summary, "quality_control_parameters.csv", row.names = FALSE)
 }
 
 # Perform quality control
-quality_control_WF()
+quality_control()
 
-# -------------------- 17. Final completion message --------------------
-cat("\n========================================\n")
-cat("WF-FOCUSED PPV CLUSTERING ANALYSIS COMPLETE!\n")
-cat("========================================\n")
-
-cat("\nThis analysis successfully integrated:\n")
-cat("✓ Vision improvement parameters (functional outcomes)\n")
-cat("✓ OCTA blood flow - WF region (0_21) parameters only\n")
-cat("✓ OCTA thickness - WF region (0_21) parameters only\n")
-cat("✓ Patient baseline characteristics\n\n")
-
-cat("WF parameter breakdown:\n")
-cat("- Vision parameters: ", length(vision_params), "\n")
-cat("- Blood flow WF: ", length(bloodflow_WF), "\n")
-cat("- Thickness WF: ", length(thickness_WF), "\n")
-cat("- Total parameters: ", ncol(complete_data), "\n\n")
-
-cat("Key outputs generated:\n")
-cat("1. WF clustering results with outcome predictions\n")
-cat("2. WF-focused statistical analysis\n")
-cat("3. Parameter importance ranking for WF region\n")
-cat("4. WF-specific visualizations\n")
-cat("5. Quality control assessments\n")
-cat("6. Detailed WF analysis report\n\n")
-
-cat("Files saved:\n")
-cat("- ppv_WF_cluster_results_with_outcomes.csv\n")
-cat("- ppv_WF_cluster_statistics.csv\n")
-cat("- ppv_WF_parameter_importance.csv\n")
-cat("- ppv_WF_cluster_summary.csv\n")
-cat("- PPV_WF_Clustering_Report.txt\n")
-cat("- plots/ directory with WF visualizations:\n")
-cat("  * WF_comprehensive_heatmap.pdf/png\n")
-cat("  * WF_heatmap.pdf/png\n")
-cat("  * WF_pca.pdf\n")
-cat("  * WF_loadings.pdf\n")
-cat("- quality_control_WF_*.csv files\n\n")
-
-cat("ADVANTAGES OF THIS WF-ONLY APPROACH:\n")
-cat("1. FOCUSED ANALYSIS: Concentrated on central vision-critical region\n")
-cat("2. HIGHER COMPLETENESS: Better data availability for single region\n")
-cat("3. CLINICAL RELEVANCE: Central WF region most important for vision\n")
-cat("4. SIMPLIFIED INTERPRETATION: Easier to understand single-region results\n")
-cat("5. SURGICAL RELEVANCE: Directly related to central visual outcomes\n")
-cat("6. ROBUST CLUSTERING: Based on most complete and relevant data\n\n")
-
-cat("This WF-focused approach provides clinically relevant patient\n")
-cat("stratification by concentrating on the central retinal region most\n")
-cat("critical for visual function after PPV surgery.\n")

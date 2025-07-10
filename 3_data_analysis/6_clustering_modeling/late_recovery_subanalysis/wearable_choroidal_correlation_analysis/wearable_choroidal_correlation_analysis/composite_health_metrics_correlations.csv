@@ -1,0 +1,10 @@
+"Composite_Metric","Outcome","N","Correlation","P_Value","Significant"
+"cardio_health_index","PA_Choroid_0_21_improvement",12,0.337674791999154,0.283065089287598,FALSE
+"cardio_health_index","PA_Choroid_0_6_improvement",12,0.00665401741916812,0.983625845667665,FALSE
+"cardio_health_index","total_choroidal_improvement",12,0.32015326403826,0.310339739127616,FALSE
+"activity_index","PA_Choroid_0_21_improvement",12,0.424429289785839,0.169073436627304,FALSE
+"activity_index","PA_Choroid_0_6_improvement",12,0.638026309440518,0.0255875551007799,TRUE
+"activity_index","total_choroidal_improvement",12,0.524711381445219,0.0798591893334503,FALSE
+"composite_health_index","PA_Choroid_0_21_improvement",12,0.547637804855667,0.0653123373444793,FALSE
+"composite_health_index","PA_Choroid_0_6_improvement",12,0.458936478491188,0.133419285426047,FALSE
+"composite_health_index","total_choroidal_improvement",12,0.606268901517814,0.0366349377087212,TRUE

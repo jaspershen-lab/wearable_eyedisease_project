@@ -1,0 +1,6 @@
+"window","n_patients","n_clusters","mean_membership","silhouette_score","quality_status","was_remapped"
+"baseline",14,2,0.909694634240095,0.260911390761427,"Good Quality",FALSE
+"acute_recovery",15,3,0.677963467121935,-0.0616736884240282,"Good Quality",FALSE
+"early_recovery",15,2,0.931108156354559,0.197244216828179,"Good Quality",FALSE
+"mid_recovery",14,2,0.922934985377351,0.153390963335648,"Good Quality",FALSE
+"late_recovery",15,1,1,NA,"Single Cluster",FALSE

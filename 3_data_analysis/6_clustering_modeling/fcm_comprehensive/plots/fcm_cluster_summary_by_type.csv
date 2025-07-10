@@ -1,0 +1,11 @@
+"max_cluster","Data_Type","Parameter_Count","Mean_Improvement","Positive_Changes","Negative_Changes"
+"1","Blood Flow - Macular",7,0.361141836734694,3,4
+"1","Blood Flow - Wide-field",7,-0.248276530612245,3,4
+"1","Thickness - Macular",4,-4.52452857142857,0,4
+"1","Thickness - Wide-field",4,-8.99498392857143,0,4
+"1","Vision",3,19.8052380952381,3,0
+"2","Blood Flow - Macular",7,-4.53062857142858,1,6
+"2","Blood Flow - Wide-field",7,-4.8948,0,7
+"2","Thickness - Macular",4,48.291475,4,0
+"2","Thickness - Wide-field",4,85.13165,4,0
+"2","Vision",3,14.2666666666667,3,0

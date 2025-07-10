@@ -42,8 +42,8 @@ available_metrics <- check_metrics(ppv_data, metrics)
 cat("可用的指标:", paste(available_metrics, collapse = ", "), "\n")
 
 # 我们将选择4个关键指标来平衡信息量和维度
-# selected_metrics <- c("cv_rhr_1","steps_max")
-selected_metrics <- c("cv_rhr_1","cv_bo", "steps_max")
+selected_metrics <- c("cv_rhr_1","steps_max")
+# selected_metrics <- c("cv_rhr_1","cv_bo", "steps_max")
 # selected_metrics <- c("cv_rhr_1","cv_bo", "steps_max","deep_sleep")
 selected_metrics <- intersect(selected_metrics, available_metrics)
 
@@ -58,16 +58,6 @@ cat("最终选择的指标:", paste(selected_metrics, collapse = ", "), "\n")
 
 # -------------------- 2. 基于时间窗口均值的数据提取（新方法） --------------------
 # 定义时间窗口方案
-# Try these more targeted windows
-# More clinically-focused time windows
-# time_windows_weekly <- list(
-#   baseline = list(days = -4:-1, name = "baseline"),               # Pre-surgical baseline
-#   acute_recovery = list(days = 0:7, name = "acute_recovery"),     # Immediate post-op recovery
-#   early_recovery = list(days = 8:14, name = "early_recovery"),     # First week recovery
-#   mid_recovery = list(days = 15:22, name = "mid_recovery"),        # Second week
-#   late_recovery = list(days = 23:30, name = "late_recovery")      # Later recovery
-# )
-
 time_windows_weekly <- list(
   baseline = list(days = -4:-1, name = "baseline"),               # Pre-surgical baseline
   acute_recovery = list(days = 0:3, name = "acute_recovery"),     # Immediate post-op recovery
@@ -75,15 +65,6 @@ time_windows_weekly <- list(
   mid_recovery = list(days = 8:15, name = "mid_recovery"),        # Second week
   late_recovery = list(days = 16:30, name = "late_recovery")      # Later recovery
 )
-
-# # Try these more targeted windows
-# time_windows_weekly <- list(
-#   baseline = list(days = -4:-1, name = "baseline"),               # Pre-surgical baseline
-#   perioperative = list(days = 0:1, name = "perioperative"),       # Immediate perioperative period
-#   early_recovery = list(days = 2:5, name = "early_recovery"),     # First few days post-op
-#   mid_recovery = list(days = 6:14, name = "mid_recovery"),        # Week 1-2
-#   late_recovery = list(days = 15:30, name = "late_recovery")      # Later recovery
-# )
 
 # 基于时间窗口提取数据的函数
 extract_periop_data_windows <- function(data, metric, time_windows = time_windows_weekly) {
@@ -455,9 +436,9 @@ cat("计算白内障组的最佳聚类数...\n")
 cat_dmin_values <- optimal_cluster(cat_eset_std, max_c = 6, m = cat_m)
 
 # 执行聚类
-perform_clustering <- function(eset_std, m, group_name, max_clusters = 3) {
+perform_clustering <- function(eset_std, m, group_name, max_clusters = 2) {
   # 由于使用了时间窗口，数据维度降低，可以尝试更多聚类
-  n_clusters <- min(3, nrow(eset_std) / 5)  # 确保每个聚类至少有4个样本
+  n_clusters <- min(2, nrow(eset_std) / 5)  # 确保每个聚类至少有4个样本
   n_clusters <- max(2, round(n_clusters))    # 至少使用2个聚类
   
   cat(sprintf("\n尝试对%s使用%d个聚类...\n", group_name, n_clusters))
@@ -535,15 +516,15 @@ cat_results <- cat_multi %>%
 
 # 时间窗口聚类趋势可视化函数
 visualize_time_window_clusters <- function(results_df, clustering_result, metrics, group_prefix, time_windows) {
-  # 创建图形目录
+  # Create plots directory
   dir.create("plots/cluster_profiles_time_windows", recursive = TRUE, showWarnings = FALSE)
   
-  # 获取聚类数
+  # Get number of clusters
   n_clusters <- ncol(clustering_result$cl$membership)
   
-  # 对每个聚类创建图
+  # Create plots for each cluster
   for (cluster_id in 1:n_clusters) {
-    # 筛选该聚类的数据
+    # Filter data for this cluster
     cluster_data <- results_df %>% 
       filter(max_cluster == cluster_id)
     
@@ -552,23 +533,23 @@ visualize_time_window_clusters <- function(results_df, clustering_result, metric
       next
     }
     
-    # 提取成员度值
+    # Extract membership values
     membership_df <- data.frame(
       subject_id = rownames(clustering_result$cl$membership),
       membership = clustering_result$cl$membership[, cluster_id],
       stringsAsFactors = FALSE
     )
     
-    # 为所有指标创建图形数据
+    # Create plot data for all metrics
     plot_data <- data.frame()
     
     for (metric in metrics) {
-      # 找到指标相关列（时间窗口版本）
+      # Find metric-related columns (time window version)
       metric_cols <- grep(paste0("_", metric, "$"), colnames(results_df), value = TRUE)
       
       if (length(metric_cols) == 0) next
       
-      # 准备该指标的数据
+      # Prepare data for this metric
       metric_data <- cluster_data %>%
         dplyr::select(subject_id, all_of(metric_cols)) %>%
         pivot_longer(
@@ -579,39 +560,39 @@ visualize_time_window_clusters <- function(results_df, clustering_result, metric
         mutate(
           window = gsub(paste0("_", metric, "$"), "", window_metric),
           metric = metric,
-          # 为时间窗口分配数值以便绘图
+          # Assign numerical values to time windows for plotting
           window_order = case_when(
-            window == "preop_week" ~ 1,
-            window == "surgery_period" ~ 2,
-            window == "postop_week1" ~ 3,
-            window == "postop_week2" ~ 4,
-            window == "postop_week3_4" ~ 5,
+            window == "baseline" ~ 1,
+            window == "acute_recovery" ~ 2,
+            window == "early_recovery" ~ 3,
+            window == "mid_recovery" ~ 4,
+            window == "late_recovery" ~ 5,
             TRUE ~ as.numeric(factor(window))
           )
         ) %>%
-        # 连接成员度值
+        # Join with membership values
         left_join(membership_df, by = "subject_id")
       
       plot_data <- bind_rows(plot_data, metric_data)
     }
     
-    # 计算每个指标和时间窗口的平均趋势
+    # Calculate mean profile for each metric and time window
     mean_profile <- plot_data %>%
       group_by(metric, window, window_order) %>%
-      summarize(value = mean(value, na.rm = TRUE), .groups = "drop")
+      summarise(value = mean(value, na.rm = TRUE), .groups = "drop")
     
-    # 创建图形
+    # Create the plot
     p <- ggplot() +
-      # 个体线条，按成员度着色
+      # Individual lines colored by membership
       geom_line(data = plot_data, 
                 aes(x = window_order, y = value, group = subject_id, color = membership),
                 size = 0.8, alpha = 0.6) +
-      # 平均趋势线（粗黑线）
+      # Mean trend line (thick black line)
       geom_line(data = mean_profile,
                 aes(x = window_order, y = value, group = metric),
                 color = "black",  
                 size = 1.2) +
-      # 成员度颜色梯度
+      # Membership color gradient
       scale_color_gradientn(
         colors = c("#4575B4", "#74ADD1", "#ABD9E9", "#E0F3F8", 
                    "#FFFFBF", "#FEE090", "#FDAE61", "#F46D43", "#D73027"),
@@ -620,16 +601,16 @@ visualize_time_window_clusters <- function(results_df, clustering_result, metric
         breaks = seq(0.2, 1.0, by = 0.1),
         name = "Membership"
       ) +
-      # 按指标分面
+      # Facet by metric
       facet_wrap(~ metric, scales = "free_y", ncol = 1) +
-      # 手术期垂直线
+      # Surgery period vertical line
       geom_vline(xintercept = 2, linetype = "dashed", color = "gray40") +
-      # 设置x轴刻度和标签
+      # Set x-axis ticks and labels
       scale_x_continuous(
         breaks = 1:5,
-        labels = c("Preop week", "Perioperative", "Postop week 1", "Postop week 2", "Postop weeks 3-4")
+        labels = c("Baseline", "Acute Recovery", "Early Recovery", "Mid Recovery", "Late Recovery")
       ) +
-      # 标签和主题
+      # Labels and theme
       labs(
         title = paste(group_prefix, "Cluster", cluster_id, 
                       "(n=", nrow(cluster_data), ") - Time Windows"),
@@ -649,15 +630,148 @@ visualize_time_window_clusters <- function(results_df, clustering_result, metric
         axis.text.x = element_text(angle = 45, hjust = 1)
       )
     
-    # 保存图形
+    # Save plots
     ggsave(paste0("plots/cluster_profiles_time_windows/", group_prefix, "_cluster_", cluster_id, "_windows_profile.pdf"),
            p, width = 10, height = 8)
     ggsave(paste0("plots/cluster_profiles_time_windows/", group_prefix, "_cluster_", cluster_id, "_windows_profile.png"),
            p, width = 10, height = 8, dpi = 300)
     
-    # 打印图形
+    # Print the plot
     print(p)
   }
+}
+
+# 创建组合指标趋势图函数（包含自定义颜色）
+create_combined_trends <- function(data, metrics, group_name, time_windows = time_windows_weekly) {
+  # Check if data has clustering information
+  if (!("max_cluster" %in% colnames(data))) {
+    cat("Error: No clustering information (max_cluster column) found in data\n")
+    return(NULL)
+  }
+  
+  plot_list <- list()
+  valid_metrics <- c()
+  
+  for (metric in metrics) {
+    # Find columns related to this metric
+    metric_cols <- grep(paste0("_", metric, "$"), colnames(data), value = TRUE)
+    
+    # Skip if no relevant columns found
+    if (length(metric_cols) == 0) {
+      cat(sprintf("Warning: No columns found for metric %s, skipping in combined plot\n", metric))
+      next
+    }
+    
+    # Add to valid metrics list
+    valid_metrics <- c(valid_metrics, metric)
+    
+    # Prepare plot data
+    metric_data <- data %>%
+      group_by(max_cluster) %>%
+      summarise(across(all_of(metric_cols), mean, na.rm = TRUE), .groups = "drop") %>%
+      pivot_longer(
+        cols = all_of(metric_cols),
+        names_to = "window_metric",
+        values_to = "value"
+      ) %>%
+      # Extract time window information
+      mutate(
+        window = gsub(paste0("_", metric, "$"), "", window_metric),
+        metric = metric,
+        # Assign numerical values to time windows for plotting
+        window_order = case_when(
+          window == "baseline" ~ 1,
+          window == "acute_recovery" ~ 2,
+          window == "early_recovery" ~ 3,
+          window == "mid_recovery" ~ 4,
+          window == "late_recovery" ~ 5,
+          TRUE ~ as.numeric(factor(window))
+        )
+      )
+    
+    plot_list[[metric]] <- metric_data
+  }
+  
+  # Return NULL if no valid metric data found
+  if (length(plot_list) == 0) {
+    cat("Warning: No usable metric data found for plotting\n")
+    return(NULL)
+  }
+  
+  # Combine all metric data
+  combined_data <- bind_rows(plot_list)
+  
+  # Standardize values for each metric to allow comparison on same plot
+  combined_data <- combined_data %>%
+    group_by(metric) %>%
+    mutate(
+      # Standardize values to z-scores
+      value_std = (value - mean(value, na.rm = TRUE)) / sd(value, na.rm = TRUE)
+    ) %>%
+    ungroup()
+  
+  # Get number of clusters
+  n_clusters <- length(unique(data$max_cluster))
+  
+  # Create standardized trend plot with custom colors
+  plot_std <- ggplot(combined_data, aes(x = window_order, y = value_std, color = factor(max_cluster), group = interaction(max_cluster, metric))) +
+    geom_line(size = 1.2) +
+    geom_point(size = 2.5) +
+    geom_vline(xintercept = 2, linetype = "dashed", color = "gray40") +
+    facet_wrap(~ metric, scales = "free_y", ncol = 1) +
+    scale_color_manual(values = c("1" = "#df8859", "2" = "#0fb292")) +
+    scale_x_continuous(
+      breaks = 1:5,
+      labels = c("Baseline", "Acute Recovery", "Early Recovery", "Mid Recovery", "Late Recovery")
+    ) +
+    labs(
+      title = paste(group_name, "Perioperative Metrics by Cluster (Standardized)"),
+      x = "Time Window",
+      y = "Standardized Value (Z-score)",
+      color = "Cluster"
+    ) +
+    theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      legend.position = "bottom",
+      strip.text = element_text(size = 12, face = "bold"),
+      axis.title = element_text(size = 12),
+      axis.text = element_text(size = 10),
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    )
+  
+  # Create raw values trend plot with custom colors
+  plot_raw <- ggplot(combined_data, aes(x = window_order, y = value, color = factor(max_cluster), group = interaction(max_cluster, metric))) +
+    geom_line(size = 1.2) +
+    geom_point(size = 2.5) +
+    geom_vline(xintercept = 2, linetype = "dashed", color = "gray40") +
+    facet_wrap(~ metric, scales = "free_y", ncol = 1) +
+    scale_color_manual(values = c("1" = "#df8859", "2" = "#0fb292")) +
+    scale_x_continuous(
+      breaks = 1:5,
+      labels = c("Baseline", "Acute Recovery", "Early Recovery", "Mid Recovery", "Late Recovery")
+    ) +
+    labs(
+      title = paste(group_name, "Perioperative Metrics by Cluster (Raw Values)"),
+      x = "Time Window",
+      y = "Value",
+      color = "Cluster"
+    ) +
+    theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      legend.position = "bottom",
+      strip.text = element_text(size = 12, face = "bold"),
+      axis.title = element_text(size = 12),
+      axis.text = element_text(size = 10),
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    )
+  
+  return(list(
+    standardized = plot_std,
+    raw = plot_raw,
+    metrics = valid_metrics
+  ))
 }
 
 # 创建聚类趋势可视化
@@ -712,137 +826,6 @@ if (exists("ppv_pca") && exists("cat_pca")) {
 }
 
 # -------------------- 9. 创建组合指标趋势图 --------------------
-# 创建一个综合图，在一张图上显示所有指标的聚类趋势
-create_combined_trends <- function(data, metrics, group_name, time_windows = time_windows_weekly) {
-  # 检查数据是否有聚类信息
-  if (!("max_cluster" %in% colnames(data))) {
-    cat("错误: 数据中没有聚类信息(max_cluster列)\n")
-    return(NULL)
-  }
-  
-  plot_list <- list()
-  valid_metrics <- c()
-  
-  for (metric in metrics) {
-    # 找出与该指标相关的列
-    metric_cols <- grep(paste0("_", metric, "$"), colnames(data), value = TRUE)
-    
-    # 如果没找到相关列，跳过这个指标
-    if (length(metric_cols) == 0) {
-      cat(sprintf("警告: 找不到与指标 %s 相关的列，将在组合图中跳过\n", metric))
-      next
-    }
-    
-    # 添加到有效指标列表
-    valid_metrics <- c(valid_metrics, metric)
-    
-    # 准备绘图数据
-    metric_data <- data %>%
-      group_by(max_cluster) %>%
-      summarise(across(all_of(metric_cols), mean, na.rm = TRUE)) %>%
-      pivot_longer(
-        cols = all_of(metric_cols),
-        names_to = "window_metric",
-        values_to = "value"
-      ) %>%
-      # 提取时间窗口信息
-      mutate(
-        window = gsub(paste0("_", metric, "$"), "", window_metric),
-        metric = metric,
-        # 为时间窗口分配数值以便绘图
-        window_order = case_when(
-          window == "preop_week" ~ 1,
-          window == "surgery_period" ~ 2,
-          window == "postop_week1" ~ 3,
-          window == "postop_week2" ~ 4,
-          window == "postop_week3_4" ~ 5,
-          TRUE ~ as.numeric(factor(window))
-        )
-      )
-    
-    plot_list[[metric]] <- metric_data
-  }
-  
-  # 如果没有有效的指标数据，返回NULL
-  if (length(plot_list) == 0) {
-    cat("警告: 没有找到任何可用于绘图的指标数据\n")
-    return(NULL)
-  }
-  
-  # 合并所有指标数据
-  combined_data <- bind_rows(plot_list)
-  
-  # 标准化每个指标的值，以便在同一图上比较
-  combined_data <- combined_data %>%
-    group_by(metric) %>%
-    mutate(
-      # 标准化值为z-score
-      value_std = (value - mean(value, na.rm = TRUE)) / sd(value, na.rm = TRUE)
-    ) %>%
-    ungroup()
-  
-  # 获取聚类数
-  n_clusters <- length(unique(data$max_cluster))
-  
-  # 绘制标准化趋势图
-  plot_std <- ggplot(combined_data, aes(x = window_order, y = value_std, color = factor(max_cluster), group = interaction(max_cluster, metric))) +
-    geom_line(size = 1.2) +
-    geom_point(size = 2.5) +
-    geom_vline(xintercept = 2, linetype = "dashed", color = "gray40") +
-    facet_wrap(~ metric, scales = "free_y", ncol = 1) +
-    scale_x_continuous(
-      breaks = 1:5,
-      labels = c("Preop week", "Perioperative", "Postop week 1", "Postop week 2", "Postop weeks 3-4")
-    ) +
-    labs(
-      title = paste(group_name, "PPV Group Perioperative Metrics by Cluster"),
-      x = "Time Window",
-      y = "Value",
-      color = "Cluster"
-    ) +
-    theme_bw() +
-    theme(
-      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-      legend.position = "bottom",
-      strip.text = element_text(size = 12, face = "bold"),
-      axis.title = element_text(size = 12),
-      axis.text = element_text(size = 10),
-      axis.text.x = element_text(angle = 45, hjust = 1)
-    )
-  
-  # 绘制原始值趋势图
-  plot_raw <- ggplot(combined_data, aes(x = window_order, y = value, color = factor(max_cluster), group = interaction(max_cluster, metric))) +
-    geom_line(size = 1.2) +
-    geom_point(size = 2.5) +
-    geom_vline(xintercept = 2, linetype = "dashed", color = "gray40") +
-    facet_wrap(~ metric, scales = "free_y", ncol = 1) +
-    scale_x_continuous(
-      breaks = 1:5,
-      labels = c("Preop week", "Perioperative", "Postop week 1", "Postop week 2", "Postop weeks 3-4")
-    ) +
-    labs(
-      title = paste(group_name, "PPV Group Perioperative Metrics by Cluster"),
-      x = "Time Window",
-      y = "Value",
-      color = "Cluster"
-    ) +
-    theme_bw() +
-    theme(
-      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-      legend.position = "bottom",
-      strip.text = element_text(size = 12, face = "bold"),
-      axis.title = element_text(size = 12),
-      axis.text = element_text(size = 10),
-      axis.text.x = element_text(angle = 45, hjust = 1)
-    )
-  
-  return(list(
-    standardized = plot_std,
-    raw = plot_raw,
-    metrics = valid_metrics
-  ))
-}
-
 # 创建输出目录
 dir.create("plots/combined_time_windows", recursive = TRUE, showWarnings = FALSE)
 
@@ -902,11 +885,11 @@ cat("\n组合指标趋势图创建完成，保存在plots/combined_time_windows�
 
 cat("\n========== 基于时间窗口的聚类分析完成 ==========\n")
 cat("使用的时间窗口：\n")
-cat("1. 术前1周 (day -7 to -1)\n")
-cat("2. 手术期 (day -1 to 1)\n")
-cat("3. 术后第1周 (day 2 to 7)\n")
-cat("4. 术后第2周 (day 8 to 14)\n")
-cat("5. 术后第3-4周 (day 15 to 28)\n")
+cat("1. 基线期 (day -4 to -1)\n")
+cat("2. 急性恢复期 (day 0 to 3)\n")
+cat("3. 早期恢复期 (day 4 to 7)\n")
+cat("4. 中期恢复期 (day 8 to 15)\n")
+cat("5. 晚期恢复期 (day 16 to 30)\n")
 cat("聚类结果已保存到：\n")
 cat("- ppv_cluster_results_time_windows.csv\n")
 cat("- cataract_cluster_results_time_windows.csv\n")

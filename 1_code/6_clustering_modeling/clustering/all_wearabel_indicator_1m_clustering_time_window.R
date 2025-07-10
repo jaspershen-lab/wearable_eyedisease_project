@@ -34,7 +34,7 @@ time_windows <- list(
 ppv_data <- read.csv("3_data_analysis/6_clustering_modeling/data_prepare/1m/mfuzz_D_Surg1_8h_filtered.csv", check.names = FALSE)
 
 # Key metrics for clustering
-key_metrics <- c("cv_rhr_1", "steps_max")
+key_metrics <- c("cv_rhr_1", "steps_mean")
 
 # Create output directory
 dir.create("3_data_analysis/6_clustering_modeling/time_window_clustering", 
@@ -995,6 +995,254 @@ create_cross_window_cluster_centers(window_memberships, key_metrics)
 # 3. 创建时间窗口聚类质量总览
 cat("\n=== 创建时间窗口聚类质量总览 ===\n")
 quality_overview <- create_window_quality_overview(window_memberships)
+
+
+# ================== 新增：基于聚类特征的颜色统一分析 ==================
+
+# 函数1：分析聚类特征模式
+standardize_cluster_patterns <- function(window_memberships) {
+  
+  cat("=== 分析各时间窗口的聚类特征模式 ===\n")
+  
+  # 存储每个时间窗口的聚类特征
+  window_cluster_features <- list()
+  
+  for(window_name in names(window_memberships)) {
+    window_data <- window_memberships[[window_name]]
+    if(is.null(window_data)) next
+    
+    cat(sprintf("分析 %s 窗口的聚类特征...\n", window_name))
+    
+    # 计算每个聚类的特征均值
+    cluster_features <- window_data$original_data %>%
+      left_join(window_data$membership_data %>% 
+                  dplyr::select(subject_id, max_cluster), by = "subject_id") %>%
+      group_by(max_cluster) %>%
+      summarise(across(contains("cv_rhr"), mean, na.rm = TRUE),
+                across(contains("steps_mean"), mean, na.rm = TRUE),
+                .groups = 'drop') %>%
+      mutate(window = window_name)
+    
+    # 标准化特征值 (Z-score)
+    cv_col <- names(cluster_features)[grep("cv_rhr", names(cluster_features))]
+    steps_col <- names(cluster_features)[grep("steps_mean", names(cluster_features))]
+    
+    if(length(cv_col) > 0 && length(steps_col) > 0) {
+      cluster_features <- cluster_features %>%
+        mutate(
+          cv_rhr_z = scale(!!sym(cv_col))[,1],
+          steps_mean_z = scale(!!sym(steps_col))[,1]
+        )
+      
+      # 根据特征模式分类
+      cluster_features <- cluster_features %>%
+        mutate(
+          pattern_type = case_when(
+            cv_rhr_z < -0.5 & steps_mean_z > 0.5 ~ "Good_Pattern",      # 低CV，高Steps = 良好模式
+            cv_rhr_z > 0.5 & steps_mean_z < -0.5 ~ "Poor_Pattern",      # 高CV，低Steps = 较差模式  
+            cv_rhr_z < 0 & steps_mean_z < 0 ~ "Low_Activity",            # 低CV，低Steps = 低活动
+            cv_rhr_z > 0 & steps_mean_z > 0 ~ "High_Variability",       # 高CV，高Steps = 高变异
+            TRUE ~ "Mixed_Pattern"                                       # 其他混合模式
+          ),
+          # 为模式分配统一颜色
+          unified_color = case_when(
+            pattern_type == "Good_Pattern" ~ "#4575B4",        # 蓝色 - 良好模式
+            pattern_type == "Poor_Pattern" ~ "#D73027",        # 红色 - 较差模式
+            pattern_type == "Low_Activity" ~ "#74ADD1",        # 浅蓝 - 低活动
+            pattern_type == "High_Variability" ~ "#F46D43",    # 橙色 - 高变异
+            TRUE ~ "#ABD9E9"                                   # 浅蓝灰 - 混合
+          )
+        )
+      
+      cat(sprintf("窗口 %s 的聚类模式:\n", window_name))
+      print(cluster_features %>% dplyr::select(max_cluster, pattern_type, unified_color, cv_rhr_z, steps_mean_z))
+      
+      window_cluster_features[[window_name]] <- cluster_features
+    }
+  }
+  
+  return(window_cluster_features)
+}
+
+# 函数2：创建模式统一的可视化
+create_pattern_unified_visualizations <- function(window_memberships, ppv_data, time_windows, 
+                                                  cluster_patterns) {
+  
+  cat("=== 创建基于模式统一颜色的可视化 ===\n")
+  
+  # 创建输出目录
+  dir.create("plots/pattern_unified_trends", recursive = TRUE, showWarnings = FALSE)
+  
+  # 为每个时间窗口创建统一颜色的图
+  for(window_name in names(window_memberships)) {
+    window_data <- window_memberships[[window_name]]
+    window_info <- time_windows[[window_name]]
+    pattern_info <- cluster_patterns[[window_name]]
+    
+    if(is.null(window_data) || is.null(pattern_info)) next
+    
+    cat(sprintf("创建 %s 窗口的模式统一图...\n", window_name))
+    
+    # 获取时间序列数据
+    window_days <- window_info$days
+    metrics <- window_data$metrics
+    
+    window_cols <- c()
+    for(metric in metrics) {
+      for(day in window_days) {
+        day_str <- paste0("day_", day, "_", metric)
+        if(day_str %in% colnames(ppv_data)) {
+          window_cols <- c(window_cols, day_str)
+        }
+      }
+    }
+    
+    # 提取时间序列数据并添加模式信息
+    patients_in_window <- window_data$membership_data$subject_id
+    window_timeseries <- ppv_data %>%
+      filter(subject_id %in% patients_in_window) %>%
+      dplyr::select(subject_id, all_of(window_cols)) %>%
+      left_join(window_data$membership_data %>% 
+                  dplyr::select(subject_id, max_cluster), by = "subject_id") %>%
+      left_join(pattern_info %>% 
+                  dplyr::select(max_cluster, pattern_type, unified_color), by = "max_cluster")
+    
+    # 为每个指标创建图
+    for(metric in metrics) {
+      
+      metric_cols <- window_cols[grep(paste0("_", metric, "$"), window_cols)]
+      if(length(metric_cols) == 0) next
+      
+      # 计算聚类中心数据
+      cluster_centers_data <- window_timeseries %>%
+        dplyr::select(max_cluster, pattern_type, unified_color, all_of(metric_cols)) %>%
+        group_by(max_cluster, pattern_type, unified_color) %>%
+        summarise(across(all_of(metric_cols), mean, na.rm = TRUE), .groups = 'drop')
+      
+      # 转换为长格式
+      plot_data <- cluster_centers_data %>%
+        pivot_longer(
+          cols = all_of(metric_cols),
+          names_to = "day_metric",
+          values_to = "value"
+        ) %>%
+        mutate(
+          day = as.numeric(gsub("^day_(-?\\d+)_.*$", "\\1", day_metric))
+        )
+      
+      if(nrow(plot_data) == 0) next
+      
+      # 创建模式统一颜色的图
+      p_unified <- ggplot(plot_data, aes(x = day, y = value)) +
+        # 连接线 - 使用统一颜色
+        geom_line(aes(color = I(unified_color)), size = 2, alpha = 0.8) +
+        # 数据点 - 使用统一颜色
+        geom_point(aes(color = I(unified_color)), size = 4, alpha = 0.9) +
+        # x轴设置
+        scale_x_continuous(
+          breaks = window_days,
+          labels = window_days,
+          name = "Time Point (Relative Days)"
+        ) +
+        # 添加聚类编号标注
+        geom_text(aes(label = paste0("C", max_cluster), color = I(unified_color)),
+                  nudge_y = max(plot_data$value) * 0.05,
+                  size = 3, fontface = "bold", show.legend = FALSE) +
+        # 标题
+        labs(
+          title = paste(toupper(window_name), "Pattern-Unified Trends:", toupper(gsub("_", " ", metric))),
+          subtitle = "Colors unified by physiological patterns (Blue=Good, Red=Poor)",
+          y = paste(toupper(gsub("_", " ", metric))),
+          caption = "Blue = Good Pattern (Low CV, High Steps) | Red = Poor Pattern (High CV, Low Steps)"
+        ) +
+        # 主题
+        theme_bw() +
+        theme(
+          plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+          plot.subtitle = element_text(hjust = 0.5, size = 12),
+          axis.title = element_text(size = 14, face = "bold"),
+          axis.text = element_text(size = 12),
+          panel.grid.major = element_line(color = "grey90", size = 0.5),
+          panel.grid.minor = element_blank(),
+          plot.caption = element_text(size = 10, hjust = 0.5)
+        )
+      
+      # 保存统一颜色版本
+      ggsave(paste0("plots/pattern_unified_trends/", 
+                    window_name, "_", metric, "_pattern_unified.pdf"),
+             p_unified, width = 10, height = 6, device = "pdf")
+      ggsave(paste0("plots/pattern_unified_trends/", 
+                    window_name, "_", metric, "_pattern_unified.png"),
+             p_unified, width = 10, height = 6, dpi = 300)
+    }
+  }
+  
+  cat("模式统一颜色图创建完成\n")
+}
+
+# 函数3：创建跨时间窗口模式对比
+create_cross_window_pattern_comparison <- function(cluster_patterns, key_metrics) {
+  
+  cat("=== 创建跨时间窗口模式对比 ===\n")
+  
+  dir.create("plots/pattern_unified_trends", recursive = TRUE, showWarnings = FALSE)
+  
+  # 合并所有窗口的模式数据
+  all_patterns <- bind_rows(cluster_patterns) %>%
+    dplyr::select(window, max_cluster, pattern_type, unified_color, cv_rhr_z, steps_mean_z)
+  
+  if(nrow(all_patterns) == 0) {
+    cat("警告：没有找到模式数据\n")
+    return(NULL)
+  }
+  
+  # 创建特征空间图 (CV vs Steps)
+  p_feature_space <- ggplot(all_patterns, aes(x = cv_rhr_z, y = steps_mean_z)) +
+    geom_point(aes(color = I(unified_color)), size = 4, alpha = 0.8) +
+    geom_text(aes(label = paste0(substr(window, 1, 4), "\nC", max_cluster)),
+              nudge_y = 0.1, size = 3, fontface = "bold", show.legend = FALSE) +
+    geom_hline(yintercept = 0, linetype = "dashed", alpha = 0.5) +
+    geom_vline(xintercept = 0, linetype = "dashed", alpha = 0.5) +
+    labs(
+      title = "Cluster Patterns in Standardized Feature Space",
+      subtitle = "All time windows and clusters shown with unified colors",
+      x = "CV RHR (Standardized)",
+      y = "Steps Max (Standardized)",
+      caption = "Blue = Good Pattern | Red = Poor Pattern | Light Blue = Low Activity | Orange = High Variability"
+    ) +
+    theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 12),
+      plot.caption = element_text(size = 10, hjust = 0.5)
+    )
+  
+  # 保存对比图
+  ggsave("plots/pattern_unified_trends/feature_space_unified_colors.pdf",
+         p_feature_space, width = 12, height = 8)
+  ggsave("plots/pattern_unified_trends/feature_space_unified_colors.png",
+         p_feature_space, width = 12, height = 8, dpi = 300)
+  
+  cat("跨时间窗口模式对比图创建完成\n")
+  
+  return(p_feature_space)
+}
+
+# ================== 执行颜色统一分析 ==================
+
+cat("开始基于聚类特征的颜色统一分析...\n")
+
+# 1. 分析聚类特征模式
+cluster_patterns <- standardize_cluster_patterns(window_memberships)
+
+# 2. 创建模式统一的可视化
+create_pattern_unified_visualizations(window_memberships, ppv_data, time_windows, cluster_patterns)
+
+# 3. 创建跨时间窗口模式对比
+pattern_comparison <- create_cross_window_pattern_comparison(cluster_patterns, key_metrics)
+
+cat("基于模式的颜色统一分析完成！\n")
+cat("查看 plots/pattern_unified_trends/ 目录获取统一颜色的图表\n")
 
 # ================== 8. 保存详细的聚类结果 ==================
 

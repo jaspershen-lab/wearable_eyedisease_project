@@ -1,0 +1,9 @@
+"Cluster","Wearable_Metric","Choroidal_Metric","N","Pearson_r","Pearson_p","Effect_Size","Significant"
+1,"late_recovery_cv_rhr_1","PA_Choroid_0_21_improvement",4,0.498954292183463,0.501045707816537,"Medium",FALSE
+1,"late_recovery_cv_rhr_1","PA_Choroid_0_6_improvement",4,0.354654599755749,0.645345400244251,"Medium",FALSE
+1,"late_recovery_steps_max","PA_Choroid_0_21_improvement",4,0.125221986896899,0.874778013103101,"Small",FALSE
+1,"late_recovery_steps_max","PA_Choroid_0_6_improvement",4,0.747537817018171,0.252462182981829,"Large",FALSE
+2,"late_recovery_cv_rhr_1","PA_Choroid_0_21_improvement",8,-0.208510947874513,0.620225912327858,"Small",FALSE
+2,"late_recovery_cv_rhr_1","PA_Choroid_0_6_improvement",8,0.144931805762198,0.732034291251303,"Small",FALSE
+2,"late_recovery_steps_max","PA_Choroid_0_21_improvement",8,-0.380239755937837,0.352789663181471,"Medium",FALSE
+2,"late_recovery_steps_max","PA_Choroid_0_6_improvement",8,0.350337897187801,0.394886468190296,"Medium",FALSE

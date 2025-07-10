@@ -1,0 +1,52 @@
+=========================================
+PPV聚类分析 - 指标选择报告
+选择方法: combined
+=========================================
+
+1. 指标选择概述:
+   - 选择方法: combined
+   - 选择指标总数: 14
+   - 视力相关指标: 3
+   - 血流相关指标: 7
+   - 厚度相关指标: 4
+
+2. 统计分析结果:
+   - 分析指标数量: 14
+   - 显著性指标数量: 3
+   - 显著性比例: 21.4%
+
+3. 选择指标列表:
+   -  vision_improvement_1m
+   -  pre_vision
+   -  age
+   -  Thickness_Retina_0_21_improvement
+   -  VD_SVP_0_21_improvement
+   -  PA_Choroid_0_21_improvement
+   -  VD_ICP_0_21_improvement
+   -  Thickness_OuterRetina_0_21_improvement
+   -  Thickness_INL_0_21_improvement
+   -  PA_ICP_0_21_improvement
+   -  PA_DCP_0_21_improvement
+   -  VD_DCP_0_21_improvement
+   -  Thickness_GCL.IPL_0_21_improvement
+   -  PA_SVP_0_21_improvement
+
+4. 方法优势:
+   - 综合考虑显著性和效应大小
+   - 平衡统计意义和临床意义
+   - 推荐使用的方法
+
+5. 输出文件:
+   - selected_parameters_combined.csv: 选择的指标列表
+   - ppv_selected_cluster_results_combined.csv: 聚类结果
+   - selected_features_statistics_combined.csv: 统计分析
+   - feature_selection_evaluation_combined.csv: 效果评估
+   - plots/selected_features_heatmap_combined.pdf: 可视化结果
+
+6. 建议:
+   - 选择的指标数量合理，避免过度简化或复杂化
+   - 保持视力指标以确保临床相关性
+   - 可以尝试不同方法并比较结果
+   - 考虑领域专家意见进行最终选择
+
+

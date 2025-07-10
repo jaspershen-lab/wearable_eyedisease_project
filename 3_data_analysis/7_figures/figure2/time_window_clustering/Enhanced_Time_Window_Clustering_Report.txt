@@ -1,0 +1,98 @@
+========================================
+增强版时间窗口聚类分析报告
+========================================
+
+🔧 增强功能:
+✅ 动态聚类数量确定 (2-4个聚类)
+✅ 聚类质量评估 (Membership + Silhouette)
+✅ 自动聚类标签修正 (确保连续性)
+✅ 低质量聚类的特殊处理 (单一聚类)
+✅ 可重复性保证 (固定随机种子)
+✅ 详细的质量报告和可视化
+
+📊 分析设置:
+- 随机种子: 123 (确保完全可重复)
+- 聚类方法: Fuzzy C-means with Quality Assessment
+- 质量阈值: Mean Membership >= 0.6
+- 分析指标: cv_rhr_1, steps_max
+- 时间窗口数: 5
+- 分析日期: 2025-07-08
+
+📈 各时间窗口聚类结果:
+
+1. BASELINE:
+   - 患者数量: 14
+   - 聚类数量: 2
+   - 聚类质量: Good Quality
+   - 平均Max Membership: 0.910
+   - Silhouette Score: 0.261
+
+2. ACUTE_RECOVERY:
+   - 患者数量: 15
+   - 聚类数量: 3
+   - 聚类质量: Good Quality
+   - 平均Max Membership: 0.678
+   - Silhouette Score: -0.062
+
+3. EARLY_RECOVERY:
+   - 患者数量: 15
+   - 聚类数量: 2
+   - 聚类质量: Good Quality
+   - 平均Max Membership: 0.931
+   - Silhouette Score: 0.197
+
+4. MID_RECOVERY:
+   - 患者数量: 14
+   - 聚类数量: 2
+   - 聚类质量: Good Quality
+   - 平均Max Membership: 0.923
+   - Silhouette Score: 0.153
+
+5. LATE_RECOVERY:
+   - 患者数量: 15
+   - 聚类数量: 1
+   - 聚类质量: Single Cluster
+   - 平均Max Membership: 1.000
+   - 特殊处理: Low clustering quality - used single cluster
+
+📊 聚类质量统计:
+- 高质量聚类: 4/5 (80.0%)
+- 中等质量聚类: 0/5 (0.0%)
+- 单一聚类: 1/5 (20.0%)
+- 标签重新映射: 0/5 窗口
+- 平均聚类质量: 0.888
+
+🎨 生成的增强版可视化:
+📁 plots/cluster_center_trends/: 增强版聚类中心趋势图
+📁 plots/window_individual_profiles/: 增强版个体轨迹图
+📁 plots/quality_analysis/: 聚类质量分析报告
+📁 plots/cross_window_analysis/: 增强版跨窗口对比
+
+🔍 关键改进:
+✅ 自动检测并处理聚类质量差的时间窗口
+✅ 动态确定最佳聚类数量，避免强制分割
+✅ 修正聚类标签不连续问题
+✅ 提供详细的质量评估和报告
+✅ 特殊标注单一聚类和处理原因
+
+💡 针对Late Recovery的解决方案:
+- 如果该窗口聚类质量过低，自动使用单一聚类
+- 提供清晰的质量状态标识
+- 在可视化中特殊标注处理方式
+- 避免误导性的强制聚类结果
+
+📝 主要数据文件:
+- enhanced_time_window_clustering_results.csv: 增强版宽格式结果
+- enhanced_time_window_clustering_long.csv: 增强版长格式结果
+- enhanced_clustering_quality_data.csv: 聚类质量评估数据
+- enhanced_[window]_clustering_results.csv: 各窗口详细结果
+
+🚀 使用建议:
+1. 优先使用高质量聚类的结果进行临床解读
+2. 对单一聚类窗口进行不同的分析策略
+3. 利用质量指标评估聚类可信度
+4. 基于连续标签进行跨窗口比较
+
+报告生成时间: 2025-07-08 22:24:13.429052
+========================================
+

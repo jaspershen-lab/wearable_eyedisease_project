@@ -1,0 +1,7 @@
+"Difference_Type","Parameter","Difference","Parameter_Type","Parameter_Clean"
+"Cluster 2 vs Cluster 1","VD_SVP_0_21_improvement",-0.228629999999999,"Blood Flow - WF","VD SVP"
+"Cluster 2 vs Cluster 1","vision_improvement_1m",-0.0715476190476191,"Vision","vision"
+"Cluster 2 vs Cluster 1","PA_DCP_0_21_improvement",-4.074825,"Blood Flow - WF","PA DCP"
+"Cluster 2 vs Cluster 1","PA_SVP_0_21_improvement",-3.33462,"Blood Flow - WF","PA SVP"
+"Cluster 2 vs Cluster 1","Thickness_Retina_0_21_improvement",12.613575,"Thickness - WF","Retina"
+"Cluster 2 vs Cluster 1","Thickness_OuterRetina_0_21_improvement",5.21142499999999,"Thickness - WF","OuterRetina"

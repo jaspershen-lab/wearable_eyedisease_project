@@ -1,6 +1,6 @@
 "Time_Window","N_Patients","Fisher_P","Fisher_Significant","Odds_Ratio","OR_CI_Lower","OR_CI_Upper","Cramers_V","Association_Strength","Pearson_R","Pearson_P","Pearson_Significant","Spearman_R","Spearman_P","Spearman_Significant"
-"baseline",10,1,FALSE,"NA","NULL","NULL",0.356,"中等",0.044,0.9037,FALSE,-0.288,0.4191,FALSE
-"acute_recovery",11,1,FALSE,"2.094","0.095","156.695",0.179,"弱",-0.663,0.0262,TRUE,-0.671,0.0239,TRUE
-"early_recovery",11,0.2424,FALSE,"0.165","0.002","3.502",0.449,"中等",0.579,0.0619,FALSE,0.554,0.0771,FALSE
-"mid_recovery",11,1,FALSE,"NA","NULL","NULL",0.134,"弱",-0.574,0.0646,FALSE,-0.32,0.3368,FALSE
+"baseline",10,1,FALSE,"2.646","0.026","273.196",0.218,"弱",0.103,0.7774,FALSE,0.143,0.6937,FALSE
+"acute_recovery",11,1,FALSE,"2.094","0.095","156.695",0.179,"弱",-0.66,0.0272,TRUE,-0.671,0.0239,TRUE
+"early_recovery",11,0.2424,FALSE,"0.165","0.002","3.502",0.449,"中等",-0.135,0.6917,FALSE,-0.4,0.2226,FALSE
+"mid_recovery",11,1,FALSE,"0.77","0.034","16.929",0.069,"很弱",0.005,0.9878,FALSE,-0.379,0.2497,FALSE
 "late_recovery",11,0.0242,TRUE,"Inf","1.016","Inf",0.81,"强",-0.401,0.2221,FALSE,-0.17,0.617,FALSE

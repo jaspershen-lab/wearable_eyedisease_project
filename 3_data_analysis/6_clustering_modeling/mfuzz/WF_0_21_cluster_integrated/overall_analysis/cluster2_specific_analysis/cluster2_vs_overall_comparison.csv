@@ -1,0 +1,3 @@
+"Wearable_Metric","Choroidal_Metric","Pearson_r_Cluster_2","Pearson_r_Overall","Pearson_p_Cluster_2","Pearson_p_Overall","N_Cluster_2","N_Overall","Significant_Cluster_2","Significant_Overall","r_difference","p_difference","Sig_Pattern","Effect_Comparison"
+"late_recovery_steps_max","PA_Choroid_0_21_improvement",-0.380239755937837,0.424429289785839,0.352789663181471,0.169073436627304,8,12,FALSE,FALSE,-0.804669045723677,0.183716226554167,"Neither_Significant","Overall_Stronger"
+"late_recovery_cv_rhr_1","PA_Choroid_0_21_improvement",-0.208510947874513,-0.386571057992656,0.620225912327858,0.214492302224371,8,12,FALSE,FALSE,0.178060110118143,0.405733610103487,"Neither_Significant","Overall_Stronger"

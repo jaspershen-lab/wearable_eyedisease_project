@@ -1,0 +1,5 @@
+"Cluster","Wearable_Metric","Choroidal_Metric","N","Pearson_r","Pearson_p","Pearson_CI_Lower","Pearson_CI_Upper","Spearman_rho","Spearman_p","Effect_Size","Significant","Highly_Significant","Abs_Pearson_r"
+1,"late_recovery_cv_rhr_1","PA_Choroid_0_21_improvement",4,0.498954292183463,0.501045707816537,-0.887928910362252,0.986822140868873,0.8,0.333333333333333,"Medium",FALSE,FALSE,0.498954292183463
+1,"late_recovery_steps_max","PA_Choroid_0_21_improvement",4,0.125221986896899,0.874778013103101,-0.950223802476636,0.969616469965979,0,1,"Small",FALSE,FALSE,0.125221986896899
+2,"late_recovery_steps_max","PA_Choroid_0_21_improvement",8,-0.380239755937837,0.352789663181471,-0.85564671441168,0.443181212950729,-0.619047619047619,0.114980158730159,"Medium",FALSE,FALSE,0.380239755937837
+2,"late_recovery_cv_rhr_1","PA_Choroid_0_21_improvement",8,-0.208510947874513,0.620225912327858,-0.79619703712836,0.581620682453278,-0.5,0.216170634920635,"Small",FALSE,FALSE,0.208510947874513

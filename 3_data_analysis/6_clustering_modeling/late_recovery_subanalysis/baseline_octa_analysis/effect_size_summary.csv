@@ -1,0 +1,7 @@
+"Data_Type","Effect_Magnitude","Count","Mean_Effect_Size","Significant_Count"
+"Baseline","Large (≥ 0.8)",1,1.1269326971654,0
+"Baseline","Medium (0.5-0.8)",1,0.631760969816511,0
+"Baseline","Negligible (< 0.2)",1,0,0
+"Blood Flow","Large (≥ 0.8)",4,1.29211553514086,3
+"Blood Flow","Medium (0.5-0.8)",3,0.560064725520092,0
+"Thickness","Large (≥ 0.8)",4,0.965715054016291,0

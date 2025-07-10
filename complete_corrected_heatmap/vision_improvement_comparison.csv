@@ -1,0 +1,4 @@
+"Comparison","Cluster_1","Cluster_2","Better_Cluster","Status"
+"Original Heatmap (WRONG)","0.17","0.09","Cluster 1 ❌","INCORRECT"
+"Corrected Heatmap (RIGHT)","-0.063","0.210","Cluster 2 ✅","CORRECT"
+"Validation Script","-0.063","0.210","Cluster 2 ✅","VERIFIED"

@@ -6,6 +6,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(factoextra) # For PCA visualization
+library(r4projects)
 setwd(get_project_wd())
 rm(list = ls())
 
@@ -414,9 +415,9 @@ cat_dmin_values <- optimal_cluster(
 
 # 执行聚类
 # 考虑到小样本量，我们限制最大聚类数为3
-perform_clustering <- function(eset_std, m, group_name, max_clusters = 2) {
+perform_clustering <- function(eset_std, m, group_name, max_clusters = 3) {
   # 初始尝试的聚类数
-  n_clusters <- min(2, nrow(eset_std) / 5)  # 确保每个聚类至少有5个样本
+  n_clusters <- min(3, nrow(eset_std) / 5)  # 确保每个聚类至少有5个样本
   n_clusters <- max(2, round(n_clusters))    # 至少使用2个聚类
 
   cat(sprintf("\n尝试对%s使用%d个聚类...\n", group_name, n_clusters))

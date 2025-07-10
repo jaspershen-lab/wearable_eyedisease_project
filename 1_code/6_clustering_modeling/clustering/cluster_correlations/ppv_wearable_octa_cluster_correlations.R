@@ -14,11 +14,11 @@ setwd(get_project_wd())
 rm(list = ls())
 
 # Step 1: Load the clustering results from both analyses
-# wearable_clusters  <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/less_timepoint/ppv_cluster_results_time_windows.csv", check.names = FALSE)
-wearable_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/ppv_cluster_results_all_metrics.csv")
-# octa_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/comprehensive_cluster/ppv_comprehensive_cluster_results.csv")
+wearable_clusters  <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/less_timepoint/ppv_cluster_results_time_windows.csv", check.names = FALSE)
+# wearable_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/ppv_cluster_results_all_metrics.csv")
 octa_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/WF_only_cluster/ppv_WF_cluster_results.csv")
-
+# octa_clusters <- read.csv("3_data_analysis/6_clustering_modeling/fcm_octa/WF_only_cluster/fcm_all_parameters_results.csv")
+ 
 dir.create("3_data_analysis/6_clustering_modeling/cluster_association_analysis/ppv_octa/timepoint",
            recursive = TRUE, showWarnings = FALSE)
 setwd("3_data_analysis/6_clustering_modeling/cluster_association_analysis/ppv_octa/timepoint")
@@ -92,7 +92,7 @@ contingency_df$Percentage <- contingency_df$Frequency / sum(contingency_df$Frequ
 heatmap_plot <- ggplot(contingency_df, aes(x = OCTA_Cluster, y = Wearable_Cluster, fill = Frequency)) +
   geom_tile(color = "white") +
   geom_text(aes(label = sprintf("%d\n(%.1f%%)", Frequency, Percentage)), color = "black", size = 4) +
-  scale_fill_gradient(low = "white", high = "steelblue") +
+  scale_fill_gradient(low = "white", high = "#a488bf") +
   labs(title = "Association Between Wearable Device Clusters and OCTA Improvement Clusters",
        x = "OCTA Improvement Cluster",
        y = "Wearable Device Cluster",

@@ -1,0 +1,7 @@
+"FCM_Cluster","Parameter","Value","Parameter_Clean","Cluster_Label"
+1,"vision_improvement_1m",-0.0628571428571429,"Vision Improvement","Cluster 1"
+1,"pre_vision",0.465714285714286,"Pre Vision","Cluster 1"
+1,"age",60.7142857142857,"Age","Cluster 1"
+2,"vision_improvement_1m",0.21,"Vision Improvement","Cluster 2"
+2,"pre_vision",0.39,"Pre Vision","Cluster 2"
+2,"age",55.25,"Age","Cluster 2"

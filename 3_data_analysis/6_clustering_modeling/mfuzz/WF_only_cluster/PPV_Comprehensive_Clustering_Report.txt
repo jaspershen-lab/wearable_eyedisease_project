@@ -1,0 +1,58 @@
+========================================
+PPV Group Comprehensive Clustering Analysis Report
+Vision + OCTA (Macular Region 0_21 Only)
+========================================
+
+1. Data Overview:
+   - Total patients analyzed: 15
+   - Vision parameters: 3 (improvement, baseline vision, age)
+   - OCTA blood flow - Macular: 7 parameters
+   - OCTA thickness - Macular: 4 parameters
+   - Total parameters: 14
+   - Focus: Central retinal region (0_21) analysis
+
+2. Clustering Results:
+   - Number of clusters: 2
+   - Fuzzy coefficient (m): 2.186
+   - Better outcome group (Cluster 1): 7 patients
+   - Worse outcome group (Cluster 2): 8 patients
+
+3. Statistical Significance:
+   - Significant vision parameters: 1
+   - Significant BF macular parameters: 2
+   - Significant TH macular parameters: 0
+   - Total significant parameters: 3
+
+4. Key Findings:
+   - Vision improvements: Better cluster advantages in 1 parameters
+   - Blood flow macular: Better cluster advantages in 2 parameters
+   - Thickness macular: Better cluster advantages in 0 parameters
+   - This analysis focuses on central retinal changes
+
+5. Clinical Implications:
+   - Identifies patients with comprehensive good outcomes
+   - Focuses on macular region most relevant for visual function
+   - Provides targeted assessment of central retinal recovery
+   - Can guide macular-specific follow-up strategies
+
+6. Analysis Advantages:
+   - Focused assessment of vision-critical central retina
+   - Higher data completeness due to fewer missing parameters
+   - Direct relevance to visual function outcomes
+   - Simplified interpretation for clinical decision-making
+
+7. Output Files:
+   - ppv_comprehensive_cluster_results_with_outcomes.csv: Main clustering results
+   - ppv_comprehensive_cluster_statistics.csv: Statistical analysis
+   - ppv_comprehensive_parameter_importance.csv: Parameter importance ranking
+   - ppv_comprehensive_cluster_summary.csv: Cluster summary statistics
+   - plots/: Comprehensive visualizations
+
+8. Advantages of This Approach:
+   - CLINICAL RELEVANCE: Focuses on vision-critical central retina
+   - HIGHER COMPLETENESS: More patients with complete macular data
+   - FUNCTIONAL CORRELATION: Direct relationship to visual outcomes
+   - SIMPLIFIED INTERPRETATION: Focused on anatomically relevant region
+   - ROBUST CLUSTERING: Based on maximum available central retinal information
+
+

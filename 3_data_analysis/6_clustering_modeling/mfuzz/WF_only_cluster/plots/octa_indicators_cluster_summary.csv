@@ -1,0 +1,7 @@
+"max_cluster","Indicator_Type","Parameter_Count","Mean_Improvement","Median_Improvement","SD_Improvement","Positive_Improvements","Negative_Improvements"
+"1","Perfusion Area (PA)",28,-3.04254642857143,-1.26665,7.99025058358655,9,19
+"1","Retinal Thickness",28,-8.27155357142857,-3.92955,15.6108141490177,8,20
+"1","Vessel Density (VD)",21,0.691504761904762,0.458600000000001,1.40112389583369,14,7
+"2","Perfusion Area (PA)",32,3.316484375,1.06805,13.6869694957227,20,12
+"2","Retinal Thickness",32,5.35611875,0.1729,22.120835580634,17,15
+"2","Vessel Density (VD)",24,-1.32417916666667,-1.0504,1.83229367946516,4,20

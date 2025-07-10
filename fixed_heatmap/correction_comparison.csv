@@ -1,0 +1,7 @@
+"Metric","Cluster","Original_Heatmap","Corrected_Value","Status"
+"Vision Improvement","Cluster 1","0.17","-0.063","WRONG"
+"Vision Improvement","Cluster 2","0.09","0.210","WRONG"
+"Pre Vision","Cluster 1","0.26","0.466","Different"
+"Pre Vision","Cluster 2","0.28","0.390","Different"
+"Age","Cluster 1","58.7","60.7","Close"
+"Age","Cluster 2","53.9","55.2","Close"
