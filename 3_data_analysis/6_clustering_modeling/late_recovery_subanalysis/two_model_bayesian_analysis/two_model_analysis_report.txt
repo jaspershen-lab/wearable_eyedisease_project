@@ -1,0 +1,89 @@
+========================================================
+Wearable Device Metrics for OCTA Prognosis Prediction
+Two-Model Bayesian Analysis Report
+========================================================
+
+STUDY DESIGN
+- Analysis Strategy: Two-model comparison
+- Primary Analysis: Wearable device model
+- Sensitivity Analysis: Combined model (wearable + clinical)
+- Analysis Date: 2025-07-31
+
+SAMPLE CHARACTERISTICS
+- Total Sample Size: 11
+- Good Prognosis (OCTA Cluster 2): 7 cases (63.6%)
+- Poor Prognosis (OCTA Cluster 1): 4 cases (36.4%)
+- Time Window: Late Recovery Period (Days 16-30 post-surgery)
+
+PREDICTIVE FEATURES
+- CV RHR (Coefficient of Variation of Resting Heart Rate)
+- Steps Max (Maximum daily steps)
+- Age and Gender (combined model only)
+- Note: HbA1c excluded due to small sample anomalies
+
+BAYESIAN METHODOLOGY
+- Prior Distributions: Weakly informative priors
+  * Coefficients: Normal(0, 2.5)
+  * Intercept: Normal(0, 5)
+- MCMC: 4 chains, 4000 iterations, 2000 warmup
+- Convergence: All R-hat < 1.1
+
+MODEL PERFORMANCE RESULTS
+
+Wearable Devices:
+- AUC: 0.821
+- Accuracy: 0.909
+- Sensitivity: 1.000
+- Specificity: 0.750
+
+Combined Model:
+- AUC: 0.893
+- Accuracy: 0.909
+- Sensitivity: 1.000
+- Specificity: 0.750
+
+KEY FINDINGS
+1. Wearable device metrics demonstrate independent predictive value
+   - Standalone AUC: 0.821
+2. Combined model shows potential improvement: +0.071 AUC
+3. CV RHR and Steps Max provide complementary information
+4. Age and gender contribute additional predictive value
+
+CLINICAL IMPLICATIONS
+1. Late Recovery monitoring (Days 16-30) is clinically meaningful
+2. Wearable devices provide objective, continuous assessment
+3. CV RHR reflects autonomic recovery patterns
+4. Steps Max indicates functional recovery capacity
+5. Non-invasive approach suitable for routine implementation
+
+STATISTICAL INTERPRETATION
+- CV RHR: Higher variability associated with poorer prognosis
+- Steps Max: Higher activity levels associated with better prognosis
+- 90% credible intervals exclude zero for key predictors
+- Bayesian approach provides uncertainty quantification
+
+STUDY LIMITATIONS
+1. Small sample size (n=11) limits generalizability
+2. Single-center, retrospective design
+3. Cross-validation may overestimate performance
+4. Need for prospective validation in larger cohorts
+5. HbA1c relationship requires further investigation
+
+RECOMMENDATIONS
+1. Validate findings in multi-center prospective study
+2. Investigate optimal prediction time windows
+3. Explore additional wearable-derived metrics
+4. Develop clinical decision support algorithms
+5. Consider integration with standard clinical assessments
+
+CONCLUSION
+This study demonstrates the potential of wearable device metrics
+for predicting OCTA surgical outcomes during the Late Recovery
+period. The independent predictive value of CV RHR and Steps Max
+supports the clinical utility of continuous monitoring approaches.
+Combined with basic clinical information, these metrics may
+enhance personalized prognosis assessment, though validation
+in larger samples is essential.
+
+Generated: 2025-07-31 13:50:48.111521
+========================================================
