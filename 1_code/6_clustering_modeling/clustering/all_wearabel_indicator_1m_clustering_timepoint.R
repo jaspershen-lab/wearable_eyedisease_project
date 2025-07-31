@@ -23,7 +23,7 @@ setwd("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/less_timepoi
 # -------------------- 1. 准备用于聚类的多指标数据 --------------------
 # 定义我们要使用的指标列表
 metrics <- c("mean_rhr_1", "max_rhr_1", "min_rhr_1", "sd_rhr_1", "skew_rhr_1", "cv_rhr_1", "kurt_rhr_1",
-             "mean_bo","cv_bo","steps_max", "steps_total", "deep_sleep", "total_sleep")
+             "mean_bo","cv_bo","steps_max", "steps_total", "steps_mean","deep_sleep", "total_sleep")
 
 # 检查这些指标是否在数据集中
 check_metrics <- function(data, metrics, day = "day_0") {

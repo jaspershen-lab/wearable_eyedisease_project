@@ -1,0 +1,49 @@
+========================================
+Daily Steps Max Analysis Report - Wearable Cohort
+========================================
+
+📊 Wearable Cohort Information:
+- Cohort type: Clustering analysis wearable device users (mfuzz_D_Surg1_8h_filtered.csv)
+- Analysis period: Day -4 to Day +30 (relative to surgery)
+- Total daily observations: 507
+- Number of subjects: 15 (clustering wearable cohort)
+- Subject IDs: SH012, SH019, SH032, SH035, SH055, SH058, SH060, SH061, SH064, SH067, SH068, SH071, SH072, SH073, SH074
+- Day range in data: -4 to 30
+- Overall mean steps max: 117
+- Overall median steps max: 119
+- Overall range: 0 - 233 steps
+
+📈 Recovery Period Summary:
+Pre-Surgery (-4 to -1d): Mean=119, Median=120, SD=39 (n=15 subjects, 60 observations)
+Acute Recovery (0-3d): Mean=120, Median=120, SD=33 (n=15 subjects, 59 observations)
+Early Recovery (4-7d): Mean=115, Median=116, SD=34 (n=15 subjects, 60 observations)
+Mid Recovery (8-14d): Mean=123, Median=122, SD=35 (n=15 subjects, 98 observations)
+Late Recovery (15-30d): Mean=115, Median=119, SD=38 (n=15 subjects, 230 observations)
+
+🔄 Recovery Analysis:
+- Subjects with both pre/post data: 15
+- Mean recovery ratio (Post/Pre): 1.01
+- Subjects with recovery ratio > 1: 7 (46.7%)
+
+🎯 Key Findings for Wearable Cohort:
+1. Daily progression of steps max from pre-surgery to 30 days post
+2. Individual patient trajectories from matched wearable cohort
+3. Recovery patterns show immediate post-surgical impact
+4. High-resolution view of wearable device users' activity patterns
+5. Consistent with time window analysis from code 2
+
+📁 Generated Visualization Files:
+- daily_steps_max_trend: Day-by-day trend analysis
+- daily_steps_max_trajectories: Individual patient paths
+- period_steps_max_boxplot: Recovery period comparisons
+- period_steps_max_ridge: Distribution shapes by period
+- recovery_scatter_plot: Pre vs post surgery comparison
+- recovery_ratio_distribution: Recovery ratio analysis
+- seasonal_steps_max_analysis: Seasonal patterns
+- daily_steps_max_comprehensive_panel: Overview panel
+
+📝 Data Source: daily_steps_result_assigned.rda (filtered for wearable cohort)
+📝 Cohort Source: mfuzz_D_Surg1_8h_filtered.csv (clustering analysis wearable subjects)
+📅 Analysis period: -4 to +30 days relative to surgery
+Generated on: 2025-07-24 14:21:16.397903
+========================================

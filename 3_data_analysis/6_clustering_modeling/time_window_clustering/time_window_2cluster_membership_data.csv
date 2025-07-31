@@ -1,0 +1,16 @@
+"subject_id","cluster_baseline","cluster_acute_recovery","cluster_early_recovery","cluster_mid_recovery","cluster_late_recovery","membership_baseline","membership_acute_recovery","membership_early_recovery","membership_mid_recovery","membership_late_recovery"
+"SH012",2,2,1,2,1,1,1,1,1,1
+"SH019",2,1,1,1,2,1,1,1,1,1
+"SH032",2,1,2,1,1,1,1,1,1,1
+"SH055",1,2,2,2,1,1,1,1,1,1
+"SH058",2,1,1,1,2,1,1,1,1,1
+"SH060",1,2,2,2,2,1,1,1,1,1
+"SH061",2,1,1,1,2,1,1,1,1,1
+"SH064",1,2,2,NA,1,1,1,1,NA,1
+"SH067",1,2,2,2,2,1,1,1,1,1
+"SH068",1,2,2,2,1,1,1,1,1,1
+"SH071",2,1,1,1,2,1,1,1,1,1
+"SH072",2,1,2,2,2,1,1,1,1,1
+"SH073",2,2,1,2,2,1,1,1,1,1
+"SH074",2,2,1,1,2,1,1,1,1,1
+"SH035",NA,1,2,2,1,NA,1,1,1,1

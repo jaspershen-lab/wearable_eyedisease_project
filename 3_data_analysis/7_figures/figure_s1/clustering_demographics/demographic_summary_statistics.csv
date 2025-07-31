@@ -1,0 +1,3 @@
+"cohort","n_total","n_female","n_male","female_percent","male_percent","age_mean","age_sd","age_median","age_min","age_max","age_q25","age_q75"
+"OCTA Cohort",15,5,10,33.3,66.7,57.8,9.7,57,42,72,50.5,67.5
+"Wearable Cohort",15,7,8,46.7,53.3,55.3,9.3,53,38,69,50.5,61.5

@@ -1,0 +1,11 @@
+"combo_name","window_name","n_patients","method_used","m_value","avg_membership","membership_entropy","cluster_separation","cluster_balance","min_cluster_size","avg_center_distance","cluster_size_1","cluster_size_2","success","membership_norm","separation_norm","balance_norm","entropy_norm","mfuzz_composite_score"
+"cv_rhr_1 + steps_max","baseline",14,"mfuzz",3,1,2.30258509299405e-09,1,1,1,4.96107782603067,1,1,TRUE,1,1,1,0.999999996678072,0.999999999667807
+"cv_rhr_1 + steps_max","acute_recovery",15,"mfuzz",3,1,2.30258509299405e-09,1,1,1,4.35179930952513,1,1,TRUE,1,1,1,0.999999996678072,0.999999999667807
+"cv_rhr_1 + steps_max","early_recovery",15,"mfuzz",3,1,2.30258509299405e-09,1,1,1,4.442058404738,1,1,TRUE,1,1,1,0.999999996678072,0.999999999667807
+"cv_rhr_1 + steps_max","mid_recovery",14,"mfuzz",3,1,2.30258509299405e-09,1,1,1,4.24488343712813,1,1,TRUE,1,1,1,0.999999996678072,0.999999999667807
+"cv_rhr_1 + steps_max","late_recovery",15,"mfuzz",3,1,2.30258509299405e-09,1,1,1,5.11378488648813,1,1,TRUE,1,1,1,0.999999996678072,0.999999999667807
+"cv_rhr_1 + steps_mean","baseline",14,"mfuzz",3,1,2.30258509299405e-09,1,1,1,4.84641987149265,1,1,TRUE,1,1,1,0.999999996678072,0.999999999667807
+"cv_rhr_1 + steps_mean","acute_recovery",15,"mfuzz",3,1,2.30258509299405e-09,1,1,1,4.78220109252043,1,1,TRUE,1,1,1,0.999999996678072,0.999999999667807
+"cv_rhr_1 + steps_mean","early_recovery",15,"mfuzz",3,1,2.30258509299405e-09,1,1,1,5.35769172311079,1,1,TRUE,1,1,1,0.999999996678072,0.999999999667807
+"cv_rhr_1 + steps_mean","mid_recovery",14,"mfuzz",3,1,2.30258509299405e-09,1,1,1,3.41446341634852,1,1,TRUE,1,1,1,0.999999996678072,0.999999999667807
+"cv_rhr_1 + steps_mean","late_recovery",15,"mfuzz",3,1,2.30258509299405e-09,1,1,1,4.51235034766083,1,1,TRUE,1,1,1,0.999999996678072,0.999999999667807

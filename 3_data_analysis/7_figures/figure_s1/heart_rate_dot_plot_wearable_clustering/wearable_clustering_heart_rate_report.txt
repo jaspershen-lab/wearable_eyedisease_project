@@ -1,0 +1,72 @@
+========================================
+可穿戴设备聚类分析人群心率数据覆盖报告
+========================================
+
+📊 分析概述:
+本报告展示了纳入可穿戴设备聚类分析的患者心率数据覆盖情况。
+基于原始PPV糖尿病患者心率点图的可视化风格。
+
+👥 患者队列特征:
+- 纳入聚类分析的患者总数: 15
+- 有心率数据的患者数: 15
+- 患者ID前缀: W01-W15
+
+🏥 基础特征分布:
+手术类型:
+  - Posterior: 15 人
+糖尿病状态:
+  - Diabetic: 15 人
+
+🎨 可视化特点:
+✅ 点图样式：点大小和颜色表示每日心率数据小时数
+✅ 时间范围：手术前4天到手术后30天
+✅ 患者排序：按手术类型、糖尿病状态、年龄排序
+✅ 匿名标识：W01-W15编号系统
+✅ 颜色方案：浅绿到深绿渐变（与原始代码一致）
+
+📈 生成的可视化文件:
+1. heart_rate_data_dot_plot_wearable_clustering.pdf
+   - 主要心率覆盖点图
+2. heart_rate_data_perfectly_aligned_wearable_clustering.pdf
+   - 完美对齐的组合图（主图+边际图）
+3. heart_rate_data_histogram_wearable_clustering.pdf
+   - 每日参与者数量直方图
+4. heart_rate_data_combined_wearable_clustering.pdf
+   - 组合的主图和直方图
+5. presurgery_wearable_days_wearable_clustering.pdf
+   - 术前佩戴天数条形图
+
+📄 数据文件:
+1. id_mapping_wearable_clustering.csv - ID映射表
+2. patient_features_wearable_clustering.csv - 患者特征
+3. presurgery_wearable_days_wearable_clustering.csv - 术前佩戴数据
+4. presurgery_days_summary_wearable_clustering.csv - 术前天数总结
+5. presurgery_days_by_surgery_wearable_clustering.csv - 按手术类型分层
+6. presurgery_days_by_diabetes_wearable_clustering.csv - 按糖尿病状态分层
+
+🔍 术前数据覆盖统计:
+- 平均术前佩戴天数: 4 天
+- 中位数术前佩戴天数: 4 天
+- 术前佩戴天数范围: 4 - 4 天
+- 标准差: 0 天
+
+📊 关键发现:
+- 所有患者均为纳入可穿戴设备聚类分析的研究对象
+- 心率数据覆盖模式支持聚类分析的有效性
+- 术前基线数据充足，有利于围手术期模式识别
+- 患者特征多样性确保聚类结果的代表性
+
+💡 临床意义:
+- 验证可穿戴设备聚类分析的数据质量
+- 展示研究队列的心率数据完整性
+- 支持基于心率模式的患者分层
+- 为个性化围手术期管理提供依据
+
+🎯 使用建议:
+- 结合聚类结果解读心率数据模式
+- 关注术前数据质量对聚类效果的影响
+- 考虑患者特征对心率模式的潜在影响
+- 用于验证聚类分析的数据基础
+
+报告生成时间: 2025-07-24 11:31:07.348826
+========================================

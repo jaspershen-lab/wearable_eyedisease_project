@@ -1,10 +1,5 @@
-# "🎯 研究目的:\n",
-# "基于comprehensive clustering结果，分析患者群体差异是:\n",
-# "A) 术前即存在（先天差异）\n",
-# "B) 术后恢复过程中体现（获得性差异）\n",
-# "📍 专注分析：0_21区域（广角区域）+ 视力参数\n\n",
-
-# ============================================
+# Late Recovery时间窗口聚类的术前基线特征差异分析
+# 分析目标：基于late recovery聚类结果，分析患者群体在术前的基线差异
 
 library(tidyverse)
 library(ggplot2)
@@ -19,30 +14,36 @@ rm(list = ls())
 
 # ================== 1. 加载数据和聚类结果 ==================
 
-cat("===== 术前基线特征差异分析 =====\n")
-cat("分析目标：确定患者群体差异是术前即存在还是术后才显现\n\n")
+cat("===== Late Recovery时间窗口聚类的术前基线特征差异分析 =====\n")
+cat("分析目标：确定late recovery阶段的患者群体差异是否在术前就存在\n\n")
 
 # 加载baseline信息和OCTA数据
 baseline_info <- read.csv("2_data/analysis_data/baseline_info.csv")
 octa_bloodflow <- read.csv("2_data/analysis_data/octa_data_bloodflow_1.csv")
 octa_thickness <- read.csv("2_data/analysis_data/octa_data_thickness_1.csv")
 
-# 加载comprehensive clustering结果
-comprehensive_results_file <- "3_data_analysis/6_clustering_modeling/mfuzz/comprehensive_cluster/ppv_comprehensive_cluster_results_with_outcomes.csv"
+# 🎯 关键修改：加载late recovery聚类结果（替换comprehensive clustering）
+late_recovery_results_file <- "3_data_analysis/6_clustering_modeling/time_window_clustering/late_recovery_detailed_2cluster_membership.csv"
 
-if(file.exists(comprehensive_results_file)) {
-  comprehensive_clusters <- read.csv(comprehensive_results_file, stringsAsFactors = FALSE)
-  cat("✓ 成功加载comprehensive clustering结果:", nrow(comprehensive_clusters), "患者\n")
+if(file.exists(late_recovery_results_file)) {
+  late_recovery_clusters <- read.csv(late_recovery_results_file, stringsAsFactors = FALSE)
+  cat("✓ 成功加载late recovery聚类结果:", nrow(late_recovery_clusters), "患者\n")
+  
+  # 检查数据结构
+  cat("Late recovery聚类数据列名:", paste(names(late_recovery_clusters), collapse = ", "), "\n")
+  cat("前3行数据:\n")
+  print(head(late_recovery_clusters, 3))
+  
 } else {
-  stop("请先运行comprehensive clustering分析！")
+  stop("请先运行late recovery时间窗口聚类分析！文件路径:", late_recovery_results_file)
 }
 
 # 创建输出目录
-dir.create("3_data_analysis/6_clustering_modeling/late_recovery_subanalysis/baseline_octa_analysis", 
+dir.create("3_data_analysis/6_clustering_modeling/late_recovery_subanalysis/baseline_analysis", 
            recursive = TRUE, showWarnings = FALSE)
-setwd("3_data_analysis/6_clustering_modeling/late_recovery_subanalysis/baseline_octa_analysis")
+setwd("3_data_analysis/6_clustering_modeling/late_recovery_subanalysis/baseline_analysis")
 
-# ================== 2. 处理术前OCTA数据 ==================
+# ================== 2. 处理术前OCTA数据（保持不变）==================
 
 # 重用原代码的数据处理函数
 process_octa_data <- function(baseline_data, octa_data, id_column = "id") {
@@ -98,12 +99,12 @@ ppv_patients <- baseline_info %>%
 ppv_bloodflow_t0 <- octa_bloodflow_t0 %>% filter(ID %in% ppv_patients)
 ppv_thickness_t0 <- octa_thickness_t0 %>% filter(ID %in% ppv_patients)
 
-# ================== 3. 提取术前参数 ==================
+# ================== 3. 提取术前参数（保持0_21区域专注）==================
 
-# 修改filter函数只提取T0参数 - 专注于0_21区域（根据你的定义，这是广角区域）
+# 筛选T0参数 - 专注于0_21区域
 filter_baseline_bloodflow <- function(data) {
   layers_of_interest <- c("SVP", "ICP", "DCP", "Choroid")
-  regions_of_interest <- c("0_21")  # 只关注0_21区域（你定义的广角区域）
+  regions_of_interest <- c("0_21")  # 只关注0_21区域
   
   pattern <- paste0("(", paste(layers_of_interest, collapse = "|"), ").*(",
                     paste(regions_of_interest, collapse = "|"), ")_T0$")
@@ -129,7 +130,7 @@ filter_baseline_bloodflow <- function(data) {
 
 filter_baseline_thickness <- function(data) {
   layers_of_interest <- c("GCL.IPL", "INL", "Retina")
-  regions_of_interest <- c("0_21")  # 只关注0_21区域（你定义的广角区域）
+  regions_of_interest <- c("0_21")  # 只关注0_21区域
   
   pattern <- paste0("(", paste(layers_of_interest, collapse = "|"), ").*(",
                     paste(regions_of_interest, collapse = "|"), ")_T0$")
@@ -157,7 +158,7 @@ filter_baseline_thickness <- function(data) {
 baseline_bloodflow_filtered <- filter_baseline_bloodflow(ppv_bloodflow_t0)
 baseline_thickness_filtered <- filter_baseline_thickness(ppv_thickness_t0)
 
-# ================== 4. 创建术前基线数据集 ==================
+# ================== 4. 创建术前基线数据集（修改聚类数据源）==================
 
 # 处理术前视力数据
 baseline_vision <- baseline_info %>%
@@ -174,36 +175,50 @@ baseline_vision <- baseline_info %>%
   dplyr::select(ID, pre_vision, age, gender) %>%
   filter(ID %in% ppv_patients)
 
+# 🎯 关键修改：合并late recovery聚类信息
+# 统一ID列名
+if("subject_id" %in% names(late_recovery_clusters)) {
+  # 已经是subject_id，不需要修改
+} else if("ID" %in% names(late_recovery_clusters)) {
+  names(late_recovery_clusters)[names(late_recovery_clusters) == "ID"] <- "subject_id"
+}
+
 # 合并所有术前数据
 baseline_comprehensive <- baseline_vision %>%
   full_join(baseline_bloodflow_filtered$data, by = "ID") %>%
   full_join(baseline_thickness_filtered$data, by = "ID") %>%
-  # 添加聚类信息
-  inner_join(comprehensive_clusters %>% 
-               dplyr::select(subject_id, max_cluster, max_membership, outcome_quality), 
+  # 🎯 关键修改：添加late recovery聚类信息
+  inner_join(late_recovery_clusters %>% 
+               dplyr::select(subject_id, max_cluster, max_membership), 
              by = c("ID" = "subject_id"))
 
-cat("\n===== 术前基线数据集摘要 =====\n")
+cat("\n===== 术前基线数据集摘要（Late Recovery聚类）=====\n")
 cat("专注分析：0_21区域（广角区域）+ 视力参数\n")
+cat("聚类来源：Late Recovery时间窗口\n")
 cat("患者数量:", nrow(baseline_comprehensive), "\n")
-cat("总参数数:", ncol(baseline_comprehensive) - 4, "\n")  # 排除ID, cluster, membership, outcome
+cat("总参数数:", ncol(baseline_comprehensive) - 3, "\n")  # 排除ID, cluster, membership
 cat("- 视力/基本信息:", ncol(baseline_vision) - 1, "\n")
 cat("- OCTA血流 (0_21区域):", length(baseline_bloodflow_filtered$params_T0), "\n")
 cat("- OCTA厚度 (0_21区域):", length(baseline_thickness_filtered$params_T0), "\n")
+
+# 检查聚类分布
+cat("\nLate Recovery聚类分布:\n")
+cluster_distribution <- table(baseline_comprehensive$max_cluster)
+print(cluster_distribution)
 
 # 检查数据完整性
 baseline_complete_cases <- baseline_comprehensive[complete.cases(baseline_comprehensive), ]
 cat("完整数据患者:", nrow(baseline_complete_cases), 
     "(", round(nrow(baseline_complete_cases)/nrow(baseline_comprehensive)*100, 1), "%)\n")
 
-# ================== 5. 术前基线差异统计分析 ==================
+# ================== 5. 术前基线差异统计分析（修改聚类列名）==================
 
-analyze_baseline_differences <- function(data) {
+analyze_baseline_differences_late_recovery <- function(data) {
   
-  cat("\n===== 术前基线差异统计分析（修正版）=====\n")
+  cat("\n===== 术前基线差异统计分析（Late Recovery聚类）=====\n")
   
   # 确定要分析的参数
-  analysis_params <- names(data)[!names(data) %in% c("ID", "max_cluster", "max_membership", "outcome_quality")]
+  analysis_params <- names(data)[!names(data) %in% c("ID", "max_cluster", "max_membership")]
   
   results <- data.frame(
     Parameter = character(),
@@ -246,7 +261,7 @@ analyze_baseline_differences <- function(data) {
       
       variable_type <- if(is_binary) "Binary" else "Continuous"
       
-      # 提取数据
+      # 🎯 关键修改：使用max_cluster而不是原来的聚类列
       param_data <- data[, c("max_cluster", param)]
       param_data <- param_data[!is.na(param_data[[param]]), ]
       
@@ -329,156 +344,159 @@ analyze_baseline_differences <- function(data) {
   return(results)
 }
 
-# 为二分类变量创建堆叠条形图
-create_binary_plot <- function(data, param, param_clean, p_value, test_method) {
-  
-  # 计算比例
-  prop_data <- data %>%
-    group_by(max_cluster, !!sym(param)) %>%
-    summarise(count = n(), .groups = 'drop') %>%
-    group_by(max_cluster) %>%
-    mutate(
-      total = sum(count),
-      percentage = round(count / total * 100, 1)
-    ) %>%
-    ungroup()
-  
-  # 为gender变量添加标签
-  if(param == "gender") {
-    prop_data <- prop_data %>%
-      mutate(
-        gender_label = case_when(
-          !!sym(param) == 0 ~ "Female",
-          !!sym(param) == 1 ~ "Male",
-          TRUE ~ as.character(!!sym(param))
-        )
-      )
-    fill_var <- "gender_label"
-  } else {
-    prop_data$category <- factor(prop_data[[param]])
-    fill_var <- "category"
-  }
-  
-  # 格式化p值
-  p_text <- if(is.na(p_value)) {
-    "p = N/A"
-  } else if(p_value < 0.001) {
-    "p(adj) < 0.001"
-  } else {
-    paste("p(adj) =", round(p_value, 3))
-  }
-  
-  # 创建堆叠条形图
-  p_binary <- ggplot(prop_data, aes(x = as.factor(max_cluster), y = percentage, fill = !!sym(fill_var))) +
-    geom_col(position = "stack", alpha = 0.8) +
-    geom_text(aes(label = paste0(count, "\n(", percentage, "%)")), 
-              position = position_stack(vjust = 0.5), 
-              color = "white", fontface = "bold", size = 3) +
-    scale_fill_manual(
-      values = if(param == "gender") c("Female" = "#FF69B4", "Male" = "#4169E1") else c("#E7B800", "#00AFBB"),
-      name = if(param == "gender") "Gender" else param_clean
-    ) +
-    theme_bw() +
-    theme(
-      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-      plot.subtitle = element_text(hjust = 0.5, size = 11),
-      axis.title = element_text(face = "bold"),
-      legend.title = element_text(face = "bold")
-    ) +
-    labs(
-      title = paste("Pre-operative Baseline:", param_clean, "Distribution"),
-      subtitle = paste("Comparison between outcome clusters |", p_text),
-      x = "Outcome Cluster",
-      y = "Percentage",
-      caption = paste("Statistical test:", test_method, "| Numbers show count and percentage")
-    )
-  
-  # 保存图片
-  ggsave(paste0("plots/baseline_", param, "_distribution_with_pvalue.pdf"), 
-         p_binary, width = 8, height = 6)
-  ggsave(paste0("plots/baseline_", param, "_distribution_with_pvalue.png"), 
-         p_binary, width = 8, height = 6, dpi = 300)
-}
+# ================== 6. 可视化函数（修改标题说明）==================
 
-# 为连续变量创建箱线图
-create_continuous_plot <- function(data, param, param_clean, p_value, test_method) {
+# 修改可视化函数的标题和说明
+create_baseline_visualizations_late_recovery <- function(data, stats_results) {
   
-  # 格式化p值
-  p_text <- if(is.na(p_value)) {
-    "p = N/A"
-  } else if(p_value < 0.001) {
-    "p(adj) < 0.001"
-  } else {
-    paste("p(adj) =", round(p_value, 3))
-  }
-  
-  # 创建箱线图
-  p_box <- ggplot(data, aes(x = as.factor(max_cluster), y = !!sym(param), 
-                            fill = as.factor(max_cluster))) +
-    geom_boxplot(alpha = 0.7, outlier.alpha = 0.6) +
-    geom_jitter(width = 0.2, alpha = 0.6, size = 2) +
-    scale_fill_manual(
-      values = c("1" = "#E7B800", "2" = "#00AFBB"),
-      name = "Outcome\nCluster"
-    ) +
-    theme_bw() +
-    theme(
-      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-      plot.subtitle = element_text(hjust = 0.5, size = 11),
-      axis.title = element_text(face = "bold"),
-      legend.title = element_text(face = "bold")
-    )
-  
-  # 添加p值标注
-  if(!is.na(p_value)) {
-    y_max <- max(data[[param]], na.rm = TRUE)
-    y_min <- min(data[[param]], na.rm = TRUE)
-    y_range <- y_max - y_min
-    y_pos <- y_max + 0.1 * y_range
-    
-    p_box <- p_box +
-      geom_segment(aes(x = 1, xend = 2, y = y_pos, yend = y_pos), 
-                   color = "black", inherit.aes = FALSE) +
-      geom_segment(aes(x = 1, xend = 1, y = y_pos, yend = y_pos - 0.02 * y_range), 
-                   color = "black", inherit.aes = FALSE) +
-      geom_segment(aes(x = 2, xend = 2, y = y_pos, yend = y_pos - 0.02 * y_range), 
-                   color = "black", inherit.aes = FALSE) +
-      annotate("text", x = 1.5, y = y_pos + 0.03 * y_range, 
-               label = p_text, hjust = 0.5, size = 4, fontface = "bold",
-               color = ifelse(!is.na(p_value) && p_value < 0.05, "red", "black"))
-  }
-  
-  # 添加标签
-  p_box <- p_box +
-    labs(
-      title = paste("Pre-operative Baseline:", param_clean),
-      subtitle = paste("Comparison between outcome clusters |", p_text),
-      x = "Outcome Cluster",
-      y = param_clean,
-      caption = paste("Statistical test:", test_method, "| Individual points show patients")
-    )
-  
-  ggsave(paste0("plots/baseline_", param, "_boxplot_with_pvalue.pdf"), 
-         p_box, width = 8, height = 6)
-  ggsave(paste0("plots/baseline_", param, "_boxplot_with_pvalue.png"), 
-         p_box, width = 8, height = 6, dpi = 300)
-}
-
-# 修正的可视化函数 - 针对不同变量类型
-create_baseline_visualizations <- function(data, stats_results) {
-  
-  cat("\n===== 创建修正的可视化（区分变量类型）=====\n")
+  cat("\n===== 创建Late Recovery基线可视化 =====\n")
   
   dir.create("plots", recursive = TRUE, showWarnings = FALSE)
   
   # 在函数开始处定义 analysis_params
-  analysis_params <- names(data)[!names(data) %in% c("ID", "max_cluster", "max_membership", "outcome_quality")]
+  analysis_params <- names(data)[!names(data) %in% c("ID", "max_cluster", "max_membership")]
   
   # 获取显著差异的参数（使用矫正后的p值）
   significant_baseline <- stats_results %>% 
-    filter(Significant_Adjusted == "Yes") %>%  # 使用矫正后的显著性
+    filter(Significant_Adjusted == "Yes") %>%
     arrange(P_Adjusted)
   
+  # 为二分类变量创建堆叠条形图（修改标题）
+  create_binary_plot_lr <- function(data, param, param_clean, p_value, test_method) {
+    
+    # 计算比例
+    prop_data <- data %>%
+      group_by(max_cluster, !!sym(param)) %>%
+      summarise(count = n(), .groups = 'drop') %>%
+      group_by(max_cluster) %>%
+      mutate(
+        total = sum(count),
+        percentage = round(count / total * 100, 1)
+      ) %>%
+      ungroup()
+    
+    # 为gender变量添加标签
+    if(param == "gender") {
+      prop_data <- prop_data %>%
+        mutate(
+          gender_label = case_when(
+            !!sym(param) == 0 ~ "Female",
+            !!sym(param) == 1 ~ "Male",
+            TRUE ~ as.character(!!sym(param))
+          )
+        )
+      fill_var <- "gender_label"
+    } else {
+      prop_data$category <- factor(prop_data[[param]])
+      fill_var <- "category"
+    }
+    
+    # 格式化p值
+    p_text <- if(is.na(p_value)) {
+      "p = N/A"
+    } else if(p_value < 0.001) {
+      "p(adj) < 0.001"
+    } else {
+      paste("p(adj) =", round(p_value, 3))
+    }
+    
+    # 创建堆叠条形图
+    p_binary <- ggplot(prop_data, aes(x = as.factor(max_cluster), y = percentage, fill = !!sym(fill_var))) +
+      geom_col(position = "stack", alpha = 0.8) +
+      geom_text(aes(label = paste0(count, "\n(", percentage, "%)")), 
+                position = position_stack(vjust = 0.5), 
+                color = "white", fontface = "bold", size = 3) +
+      scale_fill_manual(
+        values = if(param == "gender") c("Female" = "#FF69B4", "Male" = "#4169E1") else c("#E7B800", "#00AFBB"),
+        name = if(param == "gender") "Gender" else param_clean
+      ) +
+      theme_bw() +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size = 11),
+        axis.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold")
+      ) +
+      labs(
+        title = paste("Pre-operative Baseline:", param_clean, "Distribution"),
+        subtitle = paste("Late Recovery Cluster Comparison |", p_text),
+        x = "Late Recovery Cluster",
+        y = "Percentage",
+        caption = paste("Statistical test:", test_method, "| Numbers show count and percentage")
+      )
+    
+    # 保存图片
+    ggsave(paste0("plots/baseline_", param, "_distribution_late_recovery.pdf"), 
+           p_binary, width = 8, height = 6)
+    ggsave(paste0("plots/baseline_", param, "_distribution_late_recovery.png"), 
+           p_binary, width = 8, height = 6, dpi = 300)
+  }
+  
+  # 为连续变量创建箱线图（修改标题）
+  create_continuous_plot_lr <- function(data, param, param_clean, p_value, test_method) {
+    
+    # 格式化p值
+    p_text <- if(is.na(p_value)) {
+      "p = N/A"
+    } else if(p_value < 0.001) {
+      "p(adj) < 0.001"
+    } else {
+      paste("p(adj) =", round(p_value, 3))
+    }
+    
+    # 创建箱线图
+    p_box <- ggplot(data, aes(x = as.factor(max_cluster), y = !!sym(param), 
+                              fill = as.factor(max_cluster))) +
+      geom_boxplot(alpha = 0.7, outlier.alpha = 0.6) +
+      geom_jitter(width = 0.2, alpha = 0.6, size = 2) +
+      scale_fill_manual(
+        values = c("1" = "#E7B800", "2" = "#00AFBB"),
+        name = "Late Recovery\nCluster"
+      ) +
+      theme_bw() +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size = 11),
+        axis.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold")
+      )
+    
+    # 添加p值标注
+    if(!is.na(p_value)) {
+      y_max <- max(data[[param]], na.rm = TRUE)
+      y_min <- min(data[[param]], na.rm = TRUE)
+      y_range <- y_max - y_min
+      y_pos <- y_max + 0.1 * y_range
+      
+      p_box <- p_box +
+        geom_segment(aes(x = 1, xend = 2, y = y_pos, yend = y_pos), 
+                     color = "black", inherit.aes = FALSE) +
+        geom_segment(aes(x = 1, xend = 1, y = y_pos, yend = y_pos - 0.02 * y_range), 
+                     color = "black", inherit.aes = FALSE) +
+        geom_segment(aes(x = 2, xend = 2, y = y_pos, yend = y_pos - 0.02 * y_range), 
+                     color = "black", inherit.aes = FALSE) +
+        annotate("text", x = 1.5, y = y_pos + 0.03 * y_range, 
+                 label = p_text, hjust = 0.5, size = 4, fontface = "bold",
+                 color = ifelse(!is.na(p_value) && p_value < 0.05, "red", "black"))
+    }
+    
+    # 添加标签
+    p_box <- p_box +
+      labs(
+        title = paste("Pre-operative Baseline:", param_clean),
+        subtitle = paste("Late Recovery Cluster Comparison |", p_text),
+        x = "Late Recovery Cluster",
+        y = param_clean,
+        caption = paste("Statistical test:", test_method, "| Individual points show patients")
+      )
+    
+    ggsave(paste0("plots/baseline_", param, "_boxplot_late_recovery.pdf"), 
+           p_box, width = 8, height = 6)
+    ggsave(paste0("plots/baseline_", param, "_boxplot_late_recovery.png"), 
+           p_box, width = 8, height = 6, dpi = 300)
+  }
+  
+  # 处理显著差异的参数
   if(nrow(significant_baseline) > 0) {
     
     significant_params <- paste0(significant_baseline$Parameter, 
@@ -496,17 +514,15 @@ create_baseline_visualizations <- function(data, stats_results) {
         param_info <- significant_baseline %>% filter(Parameter == param_base)
         
         if(nrow(param_info) > 0) {
-          p_value <- param_info$P_Adjusted[1]  # 使用矫正后的p值
+          p_value <- param_info$P_Adjusted[1]
           variable_type <- param_info$Variable_Type[1]
           test_method <- param_info$Test_Method[1]
           
           # 根据变量类型创建不同的图
           if(variable_type == "Binary") {
-            # 二分类变量：创建堆叠条形图
-            create_binary_plot(data, param, param_clean, p_value, test_method)
+            create_binary_plot_lr(data, param, param_clean, p_value, test_method)
           } else {
-            # 连续变量：创建箱线图
-            create_continuous_plot(data, param, param_clean, p_value, test_method)
+            create_continuous_plot_lr(data, param, param_clean, p_value, test_method)
           }
         }
       }
@@ -526,15 +542,15 @@ create_baseline_visualizations <- function(data, stats_results) {
         param_clean <- gsub("_", " ", param)
         
         if(variable_type == "Binary") {
-          create_binary_plot(data, param, param_clean, p_value, test_method)
+          create_binary_plot_lr(data, param, param_clean, p_value, test_method)
         } else {
-          create_continuous_plot(data, param, param_clean, p_value, test_method)
+          create_continuous_plot_lr(data, param, param_clean, p_value, test_method)
         }
       }
     }
   }
   
-  # 3. PCA分析 - 术前特征（修复后的部分）
+  # PCA分析（修改标题）
   if(length(analysis_params) > 2) {
     
     pca_data <- data %>%
@@ -547,14 +563,13 @@ create_baseline_visualizations <- function(data, stats_results) {
       
       # 获取对应的聚类信息
       pca_indices <- as.numeric(rownames(pca_data))
-      cluster_info <- data[pca_indices, c("max_cluster", "max_membership", "outcome_quality")]
+      cluster_info <- data[pca_indices, c("max_cluster", "max_membership")]
       
       pca_plot_data <- data.frame(
         PC1 = pca_result$x[,1],
         PC2 = pca_result$x[,2],
         Cluster = cluster_info$max_cluster,
-        Membership = cluster_info$max_membership,
-        Outcome = cluster_info$outcome_quality
+        Membership = cluster_info$max_membership
       )
       
       p_pca <- ggplot(pca_plot_data, aes(x = PC1, y = PC2, color = as.factor(Cluster), 
@@ -563,7 +578,7 @@ create_baseline_visualizations <- function(data, stats_results) {
         stat_ellipse(aes(group = Cluster), level = 0.95) +
         scale_color_manual(
           values = c("1" = "#E7B800", "2" = "#00AFBB"),
-          name = "Outcome\nCluster"
+          name = "Late Recovery\nCluster"
         ) +
         theme_bw() +
         theme(
@@ -573,119 +588,175 @@ create_baseline_visualizations <- function(data, stats_results) {
         ) +
         labs(
           title = "PCA of Pre-operative Baseline Characteristics",
-          subtitle = "T0 OCTA (0_21 Wide-field) + Pre-Vision parameters (before surgery)",
+          subtitle = "Based on Late Recovery Clustering | T0 OCTA (0_21 Wide-field) + Pre-Vision parameters",
           x = paste0("PC1 (", round(summary(pca_result)$importance[2,1]*100, 1), "%)"),
           y = paste0("PC2 (", round(summary(pca_result)$importance[2,2]*100, 1), "%)"),
           caption = "Ellipses show 95% confidence regions | Alpha indicates cluster membership confidence | Focus: 0_21 region"
         )
       
-      ggsave("plots/baseline_pca.pdf", p_pca, width = 10, height = 8)
-      ggsave("plots/baseline_pca.png", p_pca, width = 10, height = 8, dpi = 300)
-      
-      # 变量贡献图
-      loadings <- pca_result$rotation[, 1:2]
-      loadings_df <- data.frame(
-        Variable = rownames(loadings),
-        PC1 = loadings[, 1],
-        PC2 = loadings[, 2],
-        Data_Type = case_when(
-          rownames(loadings) %in% c("pre_vision", "age", "gender") ~ "Baseline",
-          grepl("SVP|ICP|DCP|Choroid", rownames(loadings)) ~ "Blood Flow",
-          grepl("GCL|INL|Retina", rownames(loadings)) ~ "Thickness",
-          TRUE ~ "Other"
-        )
-      )
-      
-      p_loadings <- ggplot(loadings_df, aes(x = PC1, y = PC2, color = Data_Type)) +
-        geom_point(size = 3) +
-        geom_text(aes(label = gsub("_T0$|_", " ", Variable)), 
-                  vjust = -0.5, hjust = 0.5, size = 2.5) +
-        geom_hline(yintercept = 0, linetype = "dashed", alpha = 0.5) +
-        geom_vline(xintercept = 0, linetype = "dashed", alpha = 0.5) +
-        scale_color_brewer(palette = "Set2", name = "Parameter\nType") +
-        theme_bw() +
-        theme(
-          plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-          plot.subtitle = element_text(hjust = 0.5, size = 11),
-          legend.title = element_text(face = "bold")
-        ) +
-        labs(
-          title = "Variable Contributions to Principal Components",
-          subtitle = "Pre-operative baseline parameters (0_21 region focus)",
-          x = paste0("PC1 (", round(summary(pca_result)$importance[2,1]*100, 1), "%)"),
-          y = paste0("PC2 (", round(summary(pca_result)$importance[2,2]*100, 1), "%)")
-        )
-      
-      ggsave("plots/baseline_loadings.pdf", p_loadings, width = 12, height = 10)
+      ggsave("plots/baseline_pca_late_recovery.pdf", p_pca, width = 10, height = 8)
+      ggsave("plots/baseline_pca_late_recovery.png", p_pca, width = 10, height = 8, dpi = 300)
     }
   }
   
-  # 4. 效应量可视化
-  if(nrow(stats_results) > 0) {
-    
-    effect_size_data <- stats_results %>%
-      filter(!is.na(Effect_Size)) %>%
-      mutate(
-        Effect_Magnitude = case_when(
-          Effect_Size < 0.2 ~ "Small",
-          Effect_Size < 0.5 ~ "Small",
-          Effect_Size < 0.8 ~ "Medium", 
-          TRUE ~ "Large"
-        ),
-        Parameter_Display = paste0(Parameter, " (", Region, ")")
-      ) %>%
-      arrange(desc(Effect_Size))
-    
-    if(nrow(effect_size_data) > 0) {
-      
-      p_effect <- ggplot(effect_size_data, aes(x = reorder(Parameter_Display, Effect_Size), 
-                                               y = Effect_Size, fill = Significant)) +
-        geom_col(alpha = 0.8) +
-        geom_hline(yintercept = c(0.2, 0.5, 0.8), linetype = "dashed", alpha = 0.6) +
-        scale_fill_manual(
-          values = c("No" = "lightgray", "Yes" = "darkgreen"),
-          name = "Statistically\nSignificant"
-        ) +
-        coord_flip() +
-        theme_bw() +
-        theme(
-          plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-          plot.subtitle = element_text(hjust = 0.5, size = 11),
-          axis.title = element_text(face = "bold"),
-          legend.title = element_text(face = "bold")
-        ) +
-        labs(
-          title = "Effect Sizes of Pre-operative Baseline Differences",
-          subtitle = "Cohen's d for differences between outcome clusters (0_21 region focus)",
-          x = "Parameters",
-          y = "Effect Size (Cohen's d)",
-          caption = "Dashed lines: 0.2=small, 0.5=medium, 0.8=large effect | Focus: 0_21 wide-field region"
-        )
-      
-      ggsave("plots/baseline_effect_sizes.pdf", p_effect, width = 12, height = 10)
-      ggsave("plots/baseline_effect_sizes.png", p_effect, width = 12, height = 10, dpi = 300)
-    }
-  }
-  
-  cat("术前基线可视化完成！\n")
+  cat("Late Recovery基线可视化完成！\n")
 }
 
-# ================== 6. 执行术前基线差异统计分析 ==================
+# ================== 7. 创建Late Recovery基线特征分组热图 ==================
 
-# 首先运行统计分析生成 baseline_stats
-baseline_stats <- analyze_baseline_differences(baseline_comprehensive)
+create_baseline_characteristics_heatmap_lr <- function(data, stats_results) {
+  
+  cat("\n===== 创建Late Recovery术前基线特征分组热图 =====\n")
+  
+  # 确定要分析的参数
+  analysis_params <- names(data)[!names(data) %in% c("ID", "max_cluster", "max_membership")]
+  
+  # 按类别分组参数
+  baseline_params <- analysis_params[analysis_params %in% c("pre_vision", "age", "gender")]
+  bloodflow_params <- analysis_params[grepl("SVP|ICP|DCP|Choroid", analysis_params) & grepl("_T0$", analysis_params)]
+  thickness_params <- analysis_params[grepl("GCL|INL|Retina", analysis_params) & grepl("_T0$", analysis_params)]
+  
+  # 计算每个cluster的均值
+  calculate_group_means <- function(param_list, category_name) {
+    if(length(param_list) == 0) return(NULL)
+    
+    means_data <- data %>%
+      group_by(max_cluster) %>%
+      summarise(across(all_of(param_list), ~ mean(.x, na.rm = TRUE)), .groups = 'drop') %>%
+      pivot_longer(cols = -max_cluster, names_to = "Parameter", values_to = "Mean_Value") %>%
+      mutate(
+        Category = category_name,
+        Parameter_Clean = gsub("_T0$|_", " ", Parameter)
+      )
+    
+    return(means_data)
+  }
+  
+  # 计算各类别的均值
+  baseline_means <- calculate_group_means(baseline_params, "Baseline Characteristics")
+  bloodflow_means <- calculate_group_means(bloodflow_params, "Blood Flow - Wide-field (0_21)")
+  thickness_means <- calculate_group_means(thickness_params, "Thickness - Wide-field (0_21)")
+  
+  # 合并所有数据
+  all_means <- bind_rows(baseline_means, bloodflow_means, thickness_means) %>%
+    filter(!is.na(Mean_Value))
+  
+  if(nrow(all_means) == 0) {
+    cat("警告：没有可用的参数数据！\n")
+    return(NULL)
+  }
+  
+  # 创建分面热图
+  p_heatmap <- ggplot(all_means, aes(x = Parameter_Clean, y = as.factor(max_cluster), fill = Mean_Value)) +
+    geom_tile(color = "white", size = 0.5) +
+    geom_text(aes(label = round(Mean_Value, 2)), color = "black", size = 3, fontface = "bold") +
+    facet_wrap(~ Category, scales = "free_x", ncol = 1, strip.position = "top") +
+    scale_fill_gradient2(
+      low = "#542788", 
+      mid = "white", 
+      high = "#f1a340", 
+      midpoint = 0,
+      name = "Mean\nValue"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+      axis.text.y = element_text(size = 12, face = "bold"),
+      strip.text = element_text(size = 12, face = "bold", color = "black"),
+      strip.background = element_rect(fill = "lightgray", color = "black"),
+      panel.grid = element_blank(),
+      panel.spacing = unit(0.5, "lines"),
+      plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 12),
+      legend.title = element_text(face = "bold"),
+      legend.position = "right"
+    ) +
+    labs(
+      title = "Pre-operative Baseline Characteristics by Late Recovery Clusters",
+      subtitle = paste("T0 OCTA (0_21 Wide-field) + Pre-Vision | n =", nrow(data)),
+      x = "",
+      y = "Late Recovery Cluster",
+      caption = "Values show pre-operative measurements before surgery | Focus: 0_21 region"
+    )
+  
+  # 保存图片
+  ggsave("plots/baseline_characteristics_heatmap_late_recovery.pdf", p_heatmap, 
+         width = 16, height = 10, device = "pdf")
+  ggsave("plots/baseline_characteristics_heatmap_late_recovery.png", p_heatmap, 
+         width = 16, height = 10, dpi = 300)
+  
+  cat("✓ Late Recovery基线特征热图已保存\n")
+  
+  # 创建显著差异参数的重点热图
+  if(nrow(stats_results) > 0) {
+    significant_params <- stats_results %>% 
+      filter(Significant == "Yes") %>% 
+      pull(Parameter)
+    
+    if(length(significant_params) > 0) {
+      significant_data <- all_means %>%
+        filter(gsub("_T0$", "", Parameter) %in% significant_params)
+      
+      if(nrow(significant_data) > 0) {
+        p_heatmap_sig <- ggplot(significant_data, aes(x = Parameter_Clean, y = as.factor(max_cluster), fill = Mean_Value)) +
+          geom_tile(color = "white", size = 0.8) +
+          geom_text(aes(label = round(Mean_Value, 2)), color = "black", size = 4, fontface = "bold") +
+          facet_wrap(~ Category, scales = "free_x", ncol = 1) +
+          scale_fill_gradient2(
+            low = "#542788", 
+            mid = "white", 
+            high = "#f1a340", 
+            midpoint = 0,
+            name = "Mean\nValue"
+          ) +
+          theme_minimal() +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+            plot.subtitle = element_text(hjust = 0.5, size = 12),
+            axis.text.x = element_text(angle = 45, hjust = 1, size = 11),
+            axis.text.y = element_text(size = 12, face = "bold"),
+            strip.text = element_text(size = 12, face = "bold"),
+            panel.grid = element_blank()
+          ) +
+          labs(
+            title = "Significantly Different Pre-operative Parameters",
+            subtitle = "Late Recovery Clusters - Only parameters with significant baseline differences",
+            x = "Baseline Parameters (0_21 Region + Vision)",
+            y = "Late Recovery Cluster"
+          )
+        
+        ggsave("plots/baseline_significant_heatmap_late_recovery.pdf", p_heatmap_sig, 
+               width = 12, height = 8)
+        ggsave("plots/baseline_significant_heatmap_late_recovery.png", p_heatmap_sig, 
+               width = 12, height = 8, dpi = 300)
+        
+        cat("✓ Late Recovery显著差异参数热图已保存\n")
+      }
+    }
+  }
+  
+  return(list(
+    all_means = all_means,
+    plot = p_heatmap
+  ))
+}
+
+# ================== 8. 执行Late Recovery基线差异统计分析 ==================
+
+# 运行统计分析
+baseline_stats_lr <- analyze_baseline_differences_late_recovery(baseline_comprehensive)
 
 # 保存统计结果
-write.csv(baseline_stats, "baseline_differences_statistics.csv", row.names = FALSE)
+write.csv(baseline_stats_lr, "baseline_differences_statistics_late_recovery.csv", row.names = FALSE)
 
-cat("\n===== 统计分析结果摘要 =====\n")
-cat("总分析参数:", nrow(baseline_stats), "\n")
-cat("统计显著参数:", sum(baseline_stats$Significant == "Yes"), "\n")
-cat("矫正后显著参数:", sum(baseline_stats$Significant_Adjusted == "Yes"), "\n")
+cat("\n===== Late Recovery统计分析结果摘要 =====\n")
+cat("总分析参数:", nrow(baseline_stats_lr), "\n")
+cat("统计显著参数:", sum(baseline_stats_lr$Significant == "Yes"), "\n")
+cat("矫正后显著参数:", sum(baseline_stats_lr$Significant_Adjusted == "Yes"), "\n")
 
 # 显示前几个最显著的结果
-if(nrow(baseline_stats) > 0) {
-  top_results <- baseline_stats %>% 
+if(nrow(baseline_stats_lr) > 0) {
+  top_results <- baseline_stats_lr %>% 
     filter(Significant_Adjusted == "Yes") %>% 
     arrange(P_Adjusted) %>% 
     head(5)
@@ -699,15 +770,24 @@ if(nrow(baseline_stats) > 0) {
   }
 }
 
-# 然后创建可视化
-create_baseline_visualizations(baseline_comprehensive, baseline_stats)
+# 创建可视化
+create_baseline_visualizations_late_recovery(baseline_comprehensive, baseline_stats_lr)
 
+# 生成基线特征热图
+if(nrow(baseline_comprehensive) > 0 && exists("baseline_stats_lr")) {
+  baseline_heatmap_results_lr <- create_baseline_characteristics_heatmap_lr(baseline_comprehensive, baseline_stats_lr)
+  if(!is.null(baseline_heatmap_results_lr)) {
+    cat("✓ Late Recovery基线特征分组热图生成完成\n")
+  }
+} else {
+  cat("警告：无法生成热图 - 检查数据或统计分析结果\n")
+}
 
-# ================== 7. 效应量分析 ==================
+# ================== 9. 效应量分析（Late Recovery版本）==================
 
-analyze_effect_sizes <- function(stats_results) {
+analyze_effect_sizes_lr <- function(stats_results) {
   
-  cat("\n===== 术前基线差异效应量分析 =====\n")
+  cat("\n===== Late Recovery术前基线差异效应量分析 =====\n")
   
   if(nrow(stats_results) == 0) {
     cat("无统计结果可分析\n")
@@ -776,111 +856,65 @@ analyze_effect_sizes <- function(stats_results) {
 }
 
 # 执行效应量分析
-effect_analysis <- analyze_effect_sizes(baseline_stats)
+effect_analysis_lr <- analyze_effect_sizes_lr(baseline_stats_lr)
 
-# ================== 8. 术前vs术后改善关联分析 ==================
+# ================== 10. 临床意义解释（Late Recovery版本）==================
 
-analyze_baseline_improvement_correlation <- function() {
+interpret_baseline_findings_lr <- function(stats_results, effect_analysis) {
   
-  cat("\n===== 术前基线与术后改善关联分析 =====\n")
-  
-  # 加载术后改善数据（来自comprehensive clustering）
-  comprehensive_file <- "3_data_analysis/6_clustering_modeling/mfuzz/comprehensive_cluster/ppv_comprehensive_cluster_results_with_outcomes.csv"
-  
-  if(!file.exists(comprehensive_file)) {
-    cat("警告：未找到术后改善数据，跳过关联分析\n")
-    return(NULL)
-  }
-  
-  # 这里可以添加术前基线值与术后改善量的相关性分析
-  # 由于需要具体的改善数据，这里提供框架
-  
-  cat("分析思路：\n")
-  cat("1. 术前基线值 vs 术后改善量的相关性\n")
-  cat("2. 术前聚类预测术后结局的准确性\n")
-  cat("3. 关键术前预测因子识别\n")
-  
-  # 创建假设性分析框架
-  correlation_framework <- data.frame(
-    Analysis_Type = c("Baseline_Prediction", "Regional_Correlation", "Temporal_Pattern"),
-    Description = c(
-      "术前参数预测术后结局的能力",
-      "不同区域术前基线的差异模式", 
-      "从术前到术后的时间演变模式"
-    ),
-    Clinical_Value = c(
-      "术前风险分层和预后预测",
-      "区域特异性治疗策略制定",
-      "个性化随访和干预时机"
-    )
-  )
-  
-  cat("\n关联分析框架:\n")
-  print(correlation_framework)
-  
-  return(correlation_framework)
-}
-
-# 执行关联分析
-correlation_analysis <- analyze_baseline_improvement_correlation()
-
-# ================== 9. 临床意义解释 ==================
-
-interpret_baseline_findings <- function(stats_results, effect_analysis) {
-  
-  cat("\n===== 术前基线发现的临床解释 =====\n")
+  cat("\n===== Late Recovery术前基线发现的临床解释 =====\n")
   
   # 判断患者差异的来源
   significant_count <- sum(stats_results$Significant == "Yes", na.rm = TRUE)
   large_effect_count <- sum(stats_results$Effect_Size >= 0.8, na.rm = TRUE)
   medium_effect_count <- sum(stats_results$Effect_Size >= 0.5 & stats_results$Effect_Size < 0.8, na.rm = TRUE)
   
-  cat("🎯 主要发现总结:\n")
+  cat("🎯 Late Recovery阶段主要发现总结:\n")
   
   if(significant_count == 0) {
-    cat("✨ 核心发现：患者群体差异主要在术后恢复过程中体现\n")
+    cat("✨ 核心发现：Late Recovery期患者群体差异主要在恢复过程中体现\n")
     cat("📋 临床意义：\n")
     cat("  - 术前患者在OCTA和视力方面相对同质\n")
-    cat("  - 手术技巧、术后护理、个体恢复能力是关键差异因素\n")
-    cat("  - 需要关注术后早期干预和个性化康复\n")
-    cat("  - 预后差异更多来自手术响应性而非基线状态\n\n")
+    cat("  - Late recovery阶段的差异更多来自个体恢复能力和中后期因素\n")
+    cat("  - 需要关注恢复中后期的干预和个性化康复\n")
+    cat("  - 预后差异更多来自长期恢复响应性而非基线状态\n\n")
     
-    interpretation <- "Post-operative"
+    interpretation <- "Late_Recovery_Acquired"
     
   } else if(significant_count <= 3 && large_effect_count == 0) {
-    cat("🔍 核心发现：术前存在轻微差异，但主要差异在术后恢复\n")
+    cat("🔍 核心发现：术前存在轻微差异，但Late Recovery差异主要在恢复过程中显现\n")
     cat("📋 临床意义：\n")
-    cat("  - 术前有某些预测因子，但预测能力有限\n")
-    cat("  - 手术和术后因素仍是主要决定因素\n")
+    cat("  - 术前有某些预测因子，但对Late Recovery预测能力有限\n")
+    cat("  - 中后期恢复因素仍是主要决定因素\n")
     cat("  - 可进行基础的术前风险分层\n")
-    cat("  - 重点仍应放在术后管理优化\n\n")
+    cat("  - 重点仍应放在长期恢复管理优化\n\n")
     
-    interpretation <- "Mixed_PostOp_Dominant"
+    interpretation <- "Mixed_Late_Recovery_Dominant"
     
   } else if(large_effect_count > 0) {
-    cat("⚡ 核心发现：患者群体在术前即存在重要差异\n")
+    cat("⚡ 核心发现：患者群体在术前即存在重要差异，可预测Late Recovery模式\n")
     cat("📋 临床意义：\n")
-    cat("  - 存在明确的术前预测因子\n")
-    cat("  - 可建立有效的术前风险分层系统\n")
-    cat("  - 'High-risk' vs 'Low-risk' 患者识别\n")
-    cat("  - 个性化手术方案和术前优化策略\n\n")
+    cat("  - 存在明确的Late Recovery术前预测因子\n")
+    cat("  - 可建立有效的长期预后风险分层系统\n")
+    cat("  - 'Late Recovery High-risk' vs 'Low-risk' 患者识别\n")
+    cat("  - 个性化长期恢复方案和术前优化策略\n\n")
     
-    interpretation <- "Pre-operative"
+    interpretation <- "Late_Recovery_Pre_operative"
     
   } else {
-    cat("🎭 核心发现：术前和术后因素共同作用\n")
+    cat("🎭 核心发现：术前和Late Recovery因素共同作用\n")
     cat("📋 临床意义：\n")
-    cat("  - 多因素综合预测模型\n")
-    cat("  - 术前评估 + 术后监测的组合策略\n")
-    cat("  - 个性化全程管理方案\n\n")
+    cat("  - 多因素综合预测Late Recovery模型\n")
+    cat("  - 术前评估 + 长期恢复监测的组合策略\n")
+    cat("  - 个性化全程Late Recovery管理方案\n\n")
     
-    interpretation <- "Mixed_Balanced"
+    interpretation <- "Mixed_Late_Recovery_Balanced"
   }
   
   # 详细参数解释
   if(nrow(stats_results) > 0) {
     
-    cat("🔬 具体参数解读:\n")
+    cat("🔬 具体参数解读（Late Recovery聚类）:\n")
     
     # 视力相关
     vision_params <- stats_results %>% filter(Data_Type == "Baseline")
@@ -912,7 +946,7 @@ interpret_baseline_findings <- function(stats_results, effect_analysis) {
             
             if(significant_in_region > 0) {
               sig_params <- region_params %>% filter(Significant == "Yes") %>% arrange(P_Value)
-              for(j in 1:min(3, nrow(sig_params))) {  # 显示前3个最显著的
+              for(j in 1:min(3, nrow(sig_params))) {
                 param <- sig_params[j, ]
                 cat(sprintf("      %s (p=%.3f, d=%.2f)\n", 
                             param$Parameter, param$P_Value, param$Effect_Size))
@@ -926,25 +960,25 @@ interpret_baseline_findings <- function(stats_results, effect_analysis) {
   }
   
   # 临床建议
-  cat("🎯 临床应用建议:\n")
+  cat("🎯 Late Recovery临床应用建议:\n")
   
-  if(interpretation == "Post-operative") {
-    cat("1. 重点投入术后护理和康复优化\n")
-    cat("2. 标准化手术流程，减少技术差异\n")
-    cat("3. 建立术后早期预警系统\n")
-    cat("4. 个性化术后康复方案\n")
+  if(interpretation == "Late_Recovery_Acquired") {
+    cat("1. 重点投入Late Recovery期护理和康复优化\n")
+    cat("2. 建立长期恢复监测系统\n")
+    cat("3. 个性化中后期康复方案\n")
+    cat("4. 关注恢复plateua期的干预\n")
     
-  } else if(interpretation == "Pre-operative") {
-    cat("1. 建立术前风险评估模型\n")
-    cat("2. 高风险患者术前优化\n")
-    cat("3. 分层手术方案选择\n")
-    cat("4. 术前counseling和期望管理\n")
+  } else if(interpretation == "Late_Recovery_Pre_operative") {
+    cat("1. 建立Late Recovery风险评估模型\n")
+    cat("2. 高风险患者术前优化和counseling\n")
+    cat("3. 个性化长期恢复期望管理\n")
+    cat("4. 分层长期随访方案\n")
     
   } else {
-    cat("1. 综合术前评估 + 术后监测\n")
-    cat("2. 动态风险分层系统\n")
-    cat("3. 全程个性化管理\n")
-    cat("4. 多时点预测模型\n")
+    cat("1. 综合术前评估 + 长期恢复监测\n")
+    cat("2. 动态Late Recovery风险分层\n")
+    cat("3. 全程个性化恢复管理\n")
+    cat("4. 多时点长期预测模型\n")
   }
   
   return(list(
@@ -956,28 +990,28 @@ interpret_baseline_findings <- function(stats_results, effect_analysis) {
 }
 
 # 执行临床解释
-clinical_interpretation <- interpret_baseline_findings(baseline_stats, effect_analysis)
+clinical_interpretation_lr <- interpret_baseline_findings_lr(baseline_stats_lr, effect_analysis_lr)
 
-# ================== 10. 生成综合报告 ==================
+# ================== 11. 生成Late Recovery综合报告 ==================
 
-# 修复后的生成综合报告函数
-generate_baseline_analysis_report <- function(data, stats_results, clinical_interpretation, effect_analysis) {
+generate_late_recovery_baseline_report <- function(data, stats_results, clinical_interpretation, effect_analysis) {
   
   report <- paste0(
     "========================================\n",
-    "术前基线特征差异分析报告\n",
+    "Late Recovery时间窗口聚类术前基线特征差异分析报告\n",
     "OCTA T0 + Pre-Vision Analysis\n",
     "========================================\n\n",
     
     "🎯 研究目的:\n",
-    "基于comprehensive clustering结果，分析患者群体差异是:\n",
-    "A) 术前即存在（先天差异）\n",
-    "B) 术后恢复过程中体现（获得性差异）\n",
+    "基于Late Recovery时间窗口聚类结果，分析患者群体差异是:\n",
+    "A) 术前即存在（先天差异）- 可预测Late Recovery模式\n",
+    "B) Late Recovery恢复过程中体现（获得性差异）- 主要看长期恢复\n",
     "📍 专注分析：0_21区域（广角区域）+ 视力参数\n\n",
     
     "📊 数据概况:\n",
+    "- 聚类来源: Late Recovery时间窗口聚类\n",
     "- 分析患者数: ", nrow(data), "\n",
-    "- 术前参数总数: ", ncol(data) - 4, "\n",
+    "- 术前参数总数: ", ncol(data) - 3, "\n",
     "- 视力/基线参数: ", sum(stats_results$Data_Type == "Baseline"), "\n",
     "- OCTA血流参数 (0_21): ", sum(stats_results$Data_Type == "Blood Flow"), "\n",
     "- OCTA厚度参数 (0_21): ", sum(stats_results$Data_Type == "Thickness"), "\n\n",
@@ -986,7 +1020,7 @@ generate_baseline_analysis_report <- function(data, stats_results, clinical_inte
     "- 统计显著差异参数: ", clinical_interpretation$significant_count, "\n",
     "- 大效应量参数 (d≥0.8): ", clinical_interpretation$large_effect_count, "\n",
     "- 中等效应量参数 (d≥0.5): ", clinical_interpretation$medium_effect_count, "\n",
-    "- 主要差异来源: ", clinical_interpretation$interpretation, "\n\n"
+    "- Late Recovery差异来源: ", clinical_interpretation$interpretation, "\n\n"
   )
   
   # 添加具体发现
@@ -996,9 +1030,9 @@ generate_baseline_analysis_report <- function(data, stats_results, clinical_inte
       arrange(P_Value)
     
     report <- paste0(report,
-                     "📋 显著差异参数详情 (0_21区域):\n")
+                     "📋 显著差异参数详情 (0_21区域, Late Recovery聚类):\n")
     
-    for(i in 1:min(5, nrow(significant_params))) {  # 显示前5个最显著的
+    for(i in 1:min(5, nrow(significant_params))) {
       param <- significant_params[i, ]
       report <- paste0(report,
                        sprintf("  %d. %s (%s)\n", i, param$Parameter, param$Data_Type),
@@ -1010,163 +1044,183 @@ generate_baseline_analysis_report <- function(data, stats_results, clinical_inte
   
   # 临床意义
   report <- paste0(report,
-                   "🏥 临床意义:\n")
+                   "🏥 Late Recovery临床意义:\n")
   
-  if(clinical_interpretation$interpretation == "Post-operative") {
+  if(clinical_interpretation$interpretation == "Late_Recovery_Acquired") {
     report <- paste0(report,
-                     "✨ 患者在术前相对同质，差异主要在术后恢复过程中体现\n",
+                     "✨ 患者在术前相对同质，Late Recovery差异主要在长期恢复过程中体现\n",
                      "💡 提示：\n",
-                     "  - 手术技巧和术后护理是关键\n",
-                     "  - 个体恢复能力差异是主要因素\n",
-                     "  - 重点投入术后管理优化\n",
-                     "  - 建立术后早期干预策略\n\n")
-  } else if(clinical_interpretation$interpretation == "Pre-operative") {
+                     "  - 长期恢复能力和中后期因素是关键\n",
+                     "  - 个体Late Recovery差异是主要因素\n",
+                     "  - 重点投入长期恢复管理优化\n",
+                     "  - 建立Late Recovery期干预策略\n\n")
+  } else if(clinical_interpretation$interpretation == "Late_Recovery_Pre_operative") {
     report <- paste0(report,
-                     "⚡ 患者在术前即存在重要差异，可预测术后结局\n",
+                     "⚡ 患者在术前即存在重要差异，可预测Late Recovery结局\n",
                      "💡 提示：\n",
-                     "  - 建立术前风险分层系统\n",
-                     "  - 高风险患者术前优化\n",
-                     "  - 个性化手术方案选择\n",
-                     "  - 术前counseling和期望管理\n\n")
+                     "  - 建立Late Recovery风险分层系统\n",
+                     "  - 高风险患者术前优化和counseling\n",
+                     "  - 个性化长期恢复方案选择\n",
+                     "  - Late Recovery期望管理\n\n")
   } else {
     report <- paste0(report,
-                     "🎭 术前和术后因素共同作用，需综合管理\n",
+                     "🎭 术前和Late Recovery因素共同作用，需综合管理\n",
                      "💡 提示：\n",
-                     "  - 建立多因素预测模型\n",
-                     "  - 术前评估 + 术后监测结合\n",
-                     "  - 全程个性化管理策略\n",
-                     "  - 动态风险分层系统\n\n")
+                     "  - 建立多因素Late Recovery预测模型\n",
+                     "  - 术前评估 + 长期恢复监测结合\n",
+                     "  - 全程个性化Late Recovery管理策略\n",
+                     "  - 动态长期风险分层系统\n\n")
   }
   
   # 研究价值
   report <- paste0(report,
                    "🔬 科学价值:\n",
-                   "1. 明确了患者差异的时间起源\n",
-                   "2. 专注0_21区域（广角）提供重要洞察\n",
-                   "3. 为个性化医疗提供证据基础\n",
-                   "4. 指导临床资源分配策略\n",
-                   "5. 支持预测模型开发\n\n",
+                   "1. 明确了Late Recovery患者差异的时间起源\n",
+                   "2. 专注0_21区域（广角）提供Late Recovery重要洞察\n",
+                   "3. 为Late Recovery个性化医疗提供证据基础\n",
+                   "4. 指导长期恢复资源分配策略\n",
+                   "5. 支持Late Recovery预测模型开发\n\n",
                    
                    "📈 下一步研究:\n",
-                   "1. 扩大样本量验证发现\n",
-                   "2. 纵向随访验证预测能力\n",
-                   "3. 开发临床决策支持工具\n",
-                   "4. 多中心验证研究\n\n",
+                   "1. 扩大样本量验证Late Recovery发现\n",
+                   "2. 纵向随访验证长期预测能力\n",
+                   "3. 开发Late Recovery临床决策支持工具\n",
+                   "4. 多中心Late Recovery验证研究\n\n",
                    
                    "📁 输出文件:\n",
-                   "- baseline_differences_statistics.csv: 详细统计结果\n",
-                   "- plots/baseline_characteristics_heatmap.pdf: 术前特征热图\n",
-                   "- plots/baseline_*_boxplot_with_pvalue.pdf: 带p值的箱线图\n",
-                   "- plots/baseline_pca.pdf: 术前特征PCA分析\n",
-                   "- plots/baseline_effect_sizes.pdf: 效应量可视化\n\n",
+                   "- baseline_differences_statistics_late_recovery.csv: 详细统计结果\n",
+                   "- plots/baseline_characteristics_heatmap_late_recovery.pdf: 术前特征热图\n",
+                   "- plots/baseline_*_late_recovery.pdf: 带p值的Late Recovery箱线图\n",
+                   "- plots/baseline_pca_late_recovery.pdf: 术前特征PCA分析\n\n",
                    
                    "🎯 分析重点:\n",
                    "- 专注0_21区域（广角区域）OCTA参数\n",
                    "- 结合术前视力和基线特征\n",
-                   "- 所有箱线图均标注p值\n",
-                   "- 提供明确的临床指导\n\n",
+                   "- 基于Late Recovery时间窗口聚类\n",
+                   "- 所有可视化均标注Late Recovery\n",
+                   "- 提供Late Recovery明确的临床指导\n\n",
                    
                    "生成时间: ", Sys.time(), "\n",
                    "========================================\n"
   )
   
   # 保存报告
-  writeLines(report, "Baseline_Analysis_Report.txt")
+  writeLines(report, "Late_Recovery_Baseline_Analysis_Report.txt")
   cat(report)
   
   return(report)
 }
 
 # 生成报告
-baseline_report <- generate_baseline_analysis_report(
-  baseline_comprehensive, baseline_stats, clinical_interpretation, effect_analysis
+late_recovery_baseline_report <- generate_late_recovery_baseline_report(
+  baseline_comprehensive, baseline_stats_lr, clinical_interpretation_lr, effect_analysis_lr
 )
 
-# ================== 11. 保存所有分析结果 ==================
+# ================== 12. 保存所有Late Recovery分析结果 ==================
 
 # 保存基线数据
-write.csv(baseline_comprehensive, "baseline_comprehensive_data.csv", row.names = FALSE)
+write.csv(baseline_comprehensive, "baseline_comprehensive_data_late_recovery.csv", row.names = FALSE)
 
 # 保存效应量分析
-if(!is.null(effect_analysis)) {
-  write.csv(effect_analysis$effect_summary, "effect_size_summary.csv", row.names = FALSE)
+if(!is.null(effect_analysis_lr)) {
+  write.csv(effect_analysis_lr$effect_summary, "effect_size_summary_late_recovery.csv", row.names = FALSE)
   
-  if(nrow(effect_analysis$large_effects) > 0) {
-    write.csv(effect_analysis$large_effects, "large_effect_parameters.csv", row.names = FALSE)
+  if(nrow(effect_analysis_lr$large_effects) > 0) {
+    write.csv(effect_analysis_lr$large_effects, "large_effect_parameters_late_recovery.csv", row.names = FALSE)
   }
   
-  if(nrow(effect_analysis$medium_effects) > 0) {
-    write.csv(effect_analysis$medium_effects, "medium_effect_parameters.csv", row.names = FALSE)
+  if(nrow(effect_analysis_lr$medium_effects) > 0) {
+    write.csv(effect_analysis_lr$medium_effects, "medium_effect_parameters_late_recovery.csv", row.names = FALSE)
   }
 }
 
 # 保存临床解释结果
-clinical_summary <- data.frame(
+clinical_summary_lr <- data.frame(
   Analysis_Date = Sys.Date(),
+  Clustering_Source = "Late Recovery Time Window",
   Total_Patients = nrow(baseline_comprehensive),
-  Total_Parameters = ncol(baseline_comprehensive) - 4,
-  Significant_Parameters = clinical_interpretation$significant_count,
-  Large_Effects = clinical_interpretation$large_effect_count,
-  Medium_Effects = clinical_interpretation$medium_effect_count,
-  Primary_Difference_Source = clinical_interpretation$interpretation,
+  Total_Parameters = ncol(baseline_comprehensive) - 3,
+  Significant_Parameters = clinical_interpretation_lr$significant_count,
+  Large_Effects = clinical_interpretation_lr$large_effect_count,
+  Medium_Effects = clinical_interpretation_lr$medium_effect_count,
+  Primary_Difference_Source = clinical_interpretation_lr$interpretation,
   Clinical_Implication = case_when(
-    clinical_interpretation$interpretation == "Post-operative" ~ "Focus on post-operative care",
-    clinical_interpretation$interpretation == "Pre-operative" ~ "Develop pre-operative risk stratification",
-    TRUE ~ "Comprehensive pre-post management"
+    clinical_interpretation_lr$interpretation == "Late_Recovery_Acquired" ~ "Focus on late recovery care",
+    clinical_interpretation_lr$interpretation == "Late_Recovery_Pre_operative" ~ "Develop late recovery risk stratification",
+    TRUE ~ "Comprehensive pre-late recovery management"
   )
 )
 
-write.csv(clinical_summary, "clinical_interpretation_summary.csv", row.names = FALSE)
+write.csv(clinical_summary_lr, "clinical_interpretation_summary_late_recovery.csv", row.names = FALSE)
 
-# ================== 12. 最终总结 ==================
+# ================== 13. 最终总结 ==================
 
-cat("\n🎉 术前基线特征分析完成！\n")
-cat("========================================\n")
-cat("✅ 数据处理：术前OCTA T0 (0_21广角区域) + Pre-Vision参数\n")
-cat("✅ 统计分析：组间差异检验 + 效应量计算\n")
-cat("✅ 可视化：热图 + 带p值箱线图 + PCA + 效应量图\n")
-cat("✅ 临床解释：差异来源 + 临床意义 + 应用建议\n")
-cat("✅ 报告生成：详细分析报告和结论\n")
+cat("\n🎉 Late Recovery时间窗口聚类术前基线特征分析完成！\n")
 cat("========================================\n")
 
 # 显示主要结论
-cat("\n🎯 主要结论 (专注0_21区域)：\n")
-if(clinical_interpretation$significant_count == 0) {
-  cat("患者群体差异主要在术后恢复过程中体现\n")
-  cat("→ 重点：优化手术技巧和术后护理\n")
-} else if(clinical_interpretation$large_effect_count > 0) {
-  cat("患者在术前即存在重要差异\n")
-  cat("→ 重点：建立术前风险分层系统\n")
+cat("\n🎯 主要结论 (专注0_21区域, Late Recovery聚类)：\n")
+if(clinical_interpretation_lr$significant_count == 0) {
+  cat("Late Recovery患者群体差异主要在长期恢复过程中体现\n")
+  cat("→ 重点：优化Late Recovery期护理和长期恢复管理\n")
+} else if(clinical_interpretation_lr$large_effect_count > 0) {
+  cat("患者在术前即存在重要差异，可预测Late Recovery模式\n")
+  cat("→ 重点：建立Late Recovery术前风险分层系统\n")
 } else {
-  cat("术前存在轻微差异，术后差异更明显\n")
-  cat("→ 重点：综合术前评估和术后管理\n")
+  cat("术前存在轻微差异，Late Recovery差异更明显\n")
+  cat("→ 重点：综合术前评估和Late Recovery管理\n")
 }
 
 cat("\n📁 主要输出文件：\n")
-output_files <- c(
-  "baseline_differences_statistics.csv",
-  "baseline_comprehensive_data.csv", 
-  "clinical_interpretation_summary.csv",
-  "Baseline_Analysis_Report.txt"
+output_files_lr <- c(
+  "baseline_differences_statistics_late_recovery.csv",
+  "baseline_comprehensive_data_late_recovery.csv", 
+  "clinical_interpretation_summary_late_recovery.csv",
+  "Late_Recovery_Baseline_Analysis_Report.txt"
 )
 
-for(file in output_files) {
+for(file in output_files_lr) {
   if(file.exists(file)) {
     cat(sprintf("✓ %s\n", file))
   }
 }
 
-cat("\n📊 可视化文件 (带p值标注)：\n")
-viz_files <- list.files("plots", pattern = "\\.(pdf|png)$", full.names = FALSE)
-for(file in viz_files) {
+cat("\n📊 可视化文件 (Late Recovery标注)：\n")
+viz_files_lr <- list.files("plots", pattern = "late_recovery\\.(pdf|png)$", full.names = FALSE)
+for(file in viz_files_lr) {
   cat(sprintf("✓ plots/%s\n", file))
 }
 
-cat("\n🎯 分析特色：\n")
+cat("\n🎯 Late Recovery分析特色：\n")
 cat("✅ 专注0_21区域（广角区域）分析\n")
-cat("✅ 所有箱线图标注p值\n")
-cat("✅ 结合视力和OCTA参数\n") 
-cat("✅ 明确术前vs术后差异来源\n")
+cat("✅ 基于Late Recovery时间窗口聚类\n")
+cat("✅ 所有可视化标注Late Recovery\n") 
+cat("✅ 结合视力和OCTA参数\n")
+cat("✅ 明确术前vs Late Recovery差异来源\n")
 
-cat("\n这项分析专门针对0_21区域，回答了关键科学问题：\n")
-cat("患者差异的时间起源，为late recovery聚类提供术前基线证据！\n")
+cat("\n这项分析专门针对0_21区域和Late Recovery聚类，回答了关键科学问题：\n")
+cat("Late Recovery阶段患者差异的时间起源，为Late Recovery聚类提供术前基线证据！\n")
+cat("\n🔬 与comprehensive clustering分析的区别：\n")
+cat("- 聚类来源：Late Recovery时间窗口 vs Comprehensive OCTA clustering\n")
+cat("- 时间焦点：Late Recovery期 vs 整个时间序列\n")
+cat("- 临床价值：长期恢复预测 vs 综合恢复模式\n")
+
+cat("\n✨ 关键科学贡献：\n")
+cat("1. 首次分析Late Recovery时间窗口聚类的术前预测因子\n")
+cat("2. 明确了Late Recovery差异是否在术前就能识别\n")
+cat("3. 为Late Recovery个性化管理提供证据基础\n")
+cat("4. 指导Late Recovery期的临床决策和资源分配\n")
+
+cat("\n========================================\n")
+cat("🎊 Late Recovery基线特征差异分析大功告成！\n")
+cat("现在你知道Late Recovery聚类模式是否可以通过术前基线特征预测了！\n")
+cat("========================================\n")n")
+cat("✅ 数据处理：术前OCTA T0 (0_21广角区域) + Pre-Vision参数\n")
+cat("✅ 聚类来源：Late Recovery时间窗口聚类结果\n")
+cat("✅ 统计分析：组间差异检验 + 效应量计算\n")
+cat("✅ 可视化：热图 + 带p值箱线图 + PCA + 效应量图\n")
+cat("✅ 临床解释：Late Recovery差异来源 + 临床意义 + 应用建议\n")
+cat("✅ 报告生成：详细Late Recovery分析报告和结论\n")
+cat("========================================\# Late Recovery时间窗口聚类的术前基线特征差异分析
+# 分析目标：基于late recovery聚类结果，分析患者群体在术前的基线差异
+

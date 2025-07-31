@@ -1,0 +1,6 @@
+"Time_Window","N_Patients","N_Clusters","Mean_Max_Membership","SD_Max_Membership","Min_Max_Membership","Max_Max_Membership","M_Value","Was_Remapped","Clustering_Method"
+"baseline",14,2,1,0,1,1,3,TRUE,"mfuzz"
+"acute_recovery",15,2,1,0,1,1,3,TRUE,"mfuzz"
+"early_recovery",15,2,1,0,1,1,3,TRUE,"mfuzz"
+"mid_recovery",14,2,1,0,1,1,3,TRUE,"mfuzz"
+"late_recovery",15,2,1,0,1,1,3,TRUE,"mfuzz"

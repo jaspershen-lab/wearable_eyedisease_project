@@ -1,0 +1,5 @@
+"Parameter","Data_Type","Region","Variable_Type","Cluster1_Mean","Cluster2_Mean","Mean_Difference","P_Value","Effect_Size","Test_Method","Significant","P_Adjusted","Significant_Adjusted"
+"PA_SVP_0_21","Blood Flow","Wide-field (0_21)","Continuous",57.02106,52.5709444444444,-4.45011555555556,0.232639405768874,0.674678211207748,"Independent t-test","No",0.719141290002318,"No"
+"PA_ICP_0_21","Blood Flow","Wide-field (0_21)","Continuous",41.22186,38.8847444444444,-2.33711555555556,0.18052666181292,0.643906281616305,"Independent t-test","No",0.719141290002318,"No"
+"VD_DCP_0_21","Blood Flow","Wide-field (0_21)","Continuous",3.88324,2.99152222222222,-0.891717777777778,0.380620961493024,0.581684428672729,"Independent t-test","No",0.719141290002318,"No"
+"Thickness_INL_0_21","Thickness","Wide-field (0_21)","Continuous",34.02614,30.46535,-3.56079,0.279535700592132,0.548965645651838,"Independent t-test","No",0.719141290002318,"No"

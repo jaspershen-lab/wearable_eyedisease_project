@@ -1,0 +1,97 @@
+========================================
+可穿戴设备聚类人群RHR数据可视化报告
+========================================
+
+📊 分析概述:
+本报告展示了纳入可穿戴设备聚类分析患者的RHR数据可视化结果。
+专门针对聚类人群，使用步数≤1的静息心率数据。
+
+👥 研究队列特征:
+- 可穿戴设备聚类分析患者总数: 15
+- 有RHR数据的聚类患者数: 11
+- 使用的聚类窗口: early_recovery
+- 聚类分布: Cluster 1 = 4人, Cluster 2 = 7人
+
+📈 数据特征:
+- 总RHR记录数: 132
+- 分析时间窗口数: 12
+- 活动水平限制: 仅步数≤1（静息状态）
+- 数据完整性: 既有聚类结果又有RHR数据的患者
+
+🎯 聚类对比分析:
+基于early_recovery时间窗口的聚类结果进行分组分析，
+探索不同聚类组在围手术期RHR模式上的差异。
+
+📊 生成的可视化:
+1. wearable_cohort_overall_rhr_pattern.pdf
+   - 聚类人群整体RHR围手术期趋势
+2. wearable_cohort_cluster_rhr_patterns.pdf
+   - 按聚类分组的RHR趋势对比
+3. wearable_cohort_cluster_rhr_boxplots.pdf
+   - 按聚类和时间的RHR分布箱线图
+4. wearable_cohort_cluster_differences.pdf
+   - 聚类间RHR差异分析
+5. wearable_cohort_individual_trajectories_by_cluster.pdf
+   - 按聚类分组的个体患者轨迹
+6. wearable_cohort_pre_post_scatter_by_cluster.pdf
+   - 按聚类分组的术前术后相关分析
+7. wearable_cohort_rhr_change_by_cluster.pdf
+   - 按聚类分组的RHR变化对比
+8. wearable_cohort_comprehensive_rhr_analysis.pdf
+   - 综合分析图（2×3布局）
+9. wearable_cohort_cluster_comparison_focus.pdf
+   - 聚类对比专门图表
+
+📄 数据文件:
+1. wearable_cohort_time_period_stats.csv - 时间窗口整体统计
+2. wearable_cohort_time_cluster_stats.csv - 按聚类分组统计
+3. wearable_cohort_patient_clusters.csv - 患者聚类信息
+4. cluster_rhr_differences.csv - 聚类间差异数据
+5. wearable_cohort_pre_post_rhr_by_cluster.csv - 术前术后对比数据
+6. rhr_wearable_cohort.rda - 完整聚类人群RHR数据
+
+🔍 关键发现:
+- 聚类人群平均RHR: 79.1 bpm
+- RHR变化范围: 78.3 - 80.7 bpm
+- 聚类间最大RHR差异: 5.1 bpm
+- 术前术后平均变化: -0.2 bpm
+- 聚类间变化差异: 1.6 bpm
+
+💡 临床意义:
+- 验证可穿戴设备聚类结果的生理基础
+- 识别不同聚类组的心血管特征差异
+- 为基于RHR模式的患者分层提供依据
+- 支持个性化围手术期监护策略
+
+🎨 可视化特点:
+✅ 专门针对可穿戴设备聚类人群
+✅ 聚类分组对比分析
+✅ 统一的聚类配色方案（橙色vs绿色）
+✅ 多角度分析：趋势、分布、差异、轨迹
+✅ 术前术后变化的聚类间比较
+
+📊 统计学发现:
+- Cluster 1: 平均RHR 80 bpm, 变化范围 3.5 bpm
+- Cluster 2: 平均RHR 78.6 bpm, 变化范围 3.4 bpm
+
+🎯 研究价值:
+- 首次在可穿戴设备聚类人群中进行RHR模式分析
+- 为聚类结果提供生理学验证
+- 发现不同聚类组的心血管特征差异
+- 为精准医疗和个性化监护提供科学依据
+
+⚠️ 研究限制:
+- 样本量受限于既有聚类又有RHR数据的患者
+- 聚类结果基于特定时间窗口可能有偏倚
+- 需要更大样本验证聚类间RHR差异
+- 缺乏长期随访数据验证预后差异
+
+📝 后续研究建议:
+- 扩大样本量验证聚类间RHR差异的稳定性
+- 探索RHR模式与临床结局的关联
+- 开发基于RHR+聚类的风险预测模型
+- 进行多中心验证研究
+- 结合其他生理指标完善患者分层体系
+
+报告生成时间: 2025-07-24 13:12:04.688262
+========================================

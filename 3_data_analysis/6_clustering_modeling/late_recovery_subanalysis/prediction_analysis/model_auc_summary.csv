@@ -1,0 +1,6 @@
+"Model","AUC","Performance","Sensitivity","Specificity"
+"Logistic (All Features)",0.792,"Fair",0.5,1
+"Logistic (Wearables Only)",0.75,"Fair",0.75,0.833333333333333
+"Random Forest",0.375,"Very Poor",0.25,0.666666666666667
+"Logistic (Age + Gender + HbA1c)",0.354,"Very Poor",0.5,0.333333333333333
+"SVM",0.208,"Very Poor",0,1

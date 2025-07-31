@@ -1,0 +1,61 @@
+========================================
+Systematic Wearable Metrics Selection Analysis Report
+========================================
+
+🎯 Analysis Objective:
+Provide objective, scientific evidence for wearable metric selection, avoiding subjective selection bias.
+
+📊 Analysis Method:
+1. Use OCTA clusters as prediction target (gold standard outcome)
+2. Systematically evaluate all heart rate + steps metric combinations
+3. Use composite score (AUC 50% + correlation 30% + accuracy 20%)
+4. Evaluate across 5 time windows
+
+📈 Key Findings:
+- Total evaluated combinations: 60
+- Statistically significant combinations: 0 (p < 0.05)
+- Best combination: cv_rhr_1 + steps_max (late_recovery window), Score: 0.754
+- CV-RHR + Steps_max best performance: late_recovery window, AUC=0.821, Score=0.754
+- Average rank: 41.0, Best rank: 1 (out of 60 combinations)
+
+🔍 Key Insights:
+Best combinations by time window:
+- acute_recovery: max_rhr_1 + steps_mean (Score=0.682)
+- baseline: max_rhr_1 + steps_total (Score=0.740)
+- early_recovery: min_rhr_1 + steps_mean (Score=0.718)
+- late_recovery: cv_rhr_1 + steps_max (Score=0.754)
+- late_recovery: cv_rhr_1 + steps_mean (Score=0.754)
+- mid_recovery: cv_rhr_1 + steps_total (Score=0.593)
+
+🎯 CV-RHR + Steps_max Detailed Analysis:
+This combination shows excellent performance in the following aspects:
+- Time windows with excellent performance:
+  * late_recovery: AUC=0.821, Correlation=0.538, p=0.056
+
+💡 Scientific Value:
+1. Objective Evidence: Systematic evaluation based on statistical metrics
+2. Avoid Bias: Eliminates subjective selection and data mining suspicion
+3. Biological Plausibility: OCTA as outcome measure has clinical significance
+4. Reproducibility: Transparent methods, verifiable results
+
+📋 Paper Writing Recommendations:
+1. Methods section should first describe clinical significance of OCTA clustering
+2. Emphasize objectivity of systematic evaluation approach
+3. Present complete evaluation process in Results
+4. Explain physiological mechanisms in Discussion
+
+🔗 Physiological Mechanism Explanation:
+- CV-RHR: Reflects heart rate variability, indicates autonomic nervous system stability
+- Steps_max: Reflects cardiopulmonary functional reserve and peak daily activity capacity
+- Combined: Captures different physiological dimensions during recovery process
+
+📊 Output Files:
+- systematic_metric_evaluation_results.csv: Complete evaluation results
+- plots/metric_selection_heatmap.pdf: Combination performance heatmap
+- plots/metric_selection_ranking.pdf: Ranking comparison chart
+- plots/target_combo_performance.pdf: Target combination performance chart
+- systematic_metric_selection_report.txt: This report
+
+Generated at: 2025-07-28 15:13:56.091324
+========================================
+

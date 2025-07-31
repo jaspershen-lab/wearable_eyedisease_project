@@ -1,0 +1,98 @@
+========================================
+TIME WINDOW HARD CLUSTER ANALYSIS REPORT
+        (0_21 REGION ONLY)
+========================================
+
+🎯 ANALYSIS OVERVIEW:
+✅ 针对硬聚类（所有membership=1）进行组间差异分析
+✅ 仅分析0_21区域（21mm广域视网膜区）的OCTA参数
+✅ 去掉了按区域的FDR校正分组
+✅ 使用Welch t检验作为主要统计方法
+✅ 实施简化的FDR校正策略
+
+📊 ANALYSIS DETAILS:
+- Analysis Date: 2025-07-22
+- Total Comparisons: 65
+- Region: 0_21 (21mm diameter) only
+- Welch t-test Significant (p < 0.05): 4
+- FDR Corrected Significant (Strategy 2): 2
+
+🔬 EFFECT SIZE DISTRIBUTION:
+- Large: 20 (30.8%)
+- Medium: 14 (21.5%)
+- Negligible: 13 (20.0%)
+- Small: 18 (27.7%)
+
+🏆 TOP FINDINGS (0_21 Region):
+
+1. PA_Choroid_0_21_improvement - late_recovery Window:
+   📊 Difference: -9.265 vs 2.929
+   📈 Statistics: Welch t=-3.627, p=0.0110
+   🔬 Effect: Cohen's d=2.236 (Large)
+   🎯 Better Cluster: 2 (n=8)
+   📈 Improvement: 131.6%
+
+2. VD_ICP_0_21_improvement - late_recovery Window:
+   📊 Difference: 1.798 vs -0.845
+   📈 Statistics: Welch t=3.481, p=0.0124
+   🔬 Effect: Cohen's d=2.115 (Large)
+   🎯 Better Cluster: 1 (n=4)
+   📈 Improvement: 312.8%
+
+3. VD_SVP_0_21_improvement - late_recovery Window:
+   📊 Difference: 1.295 vs -2.590
+   📈 Statistics: Welch t=2.943, p=0.0242
+   🔬 Effect: Cohen's d=1.774 (Large)
+   🎯 Better Cluster: 1 (n=4)
+   📈 Improvement: 150.0%
+
+4. PA_Choroid_0_21_improvement - early_recovery Window:
+   📊 Difference: 3.915 vs -6.186
+   📈 Statistics: Welch t=2.809, p=0.0187
+   🔬 Effect: Cohen's d=1.622 (Large)
+   🎯 Better Cluster: 1 (n=6)
+   📈 Improvement: 163.3%
+
+⏰ TIME WINDOW PERFORMANCE:
+1. late_recovery: 3 significant differences (Mean d=2.042, 3 large effects)
+2. early_recovery: 1 significant differences (Mean d=1.622, 1 large effects)
+
+📁 GENERATED FILES:
+- time_window_hard_cluster_analysis_0_21_only_complete.csv: Complete results
+- time_window_hard_cluster_analysis_0_21_only_refined_significant.csv: FDR significant
+- time_window_hard_cluster_analysis_0_21_only_original_significant.csv: Original significant
+- hard_cluster_*_0_21_only*.pdf: Individual cluster comparison plots
+- time_window_hard_cluster_analysis_0_21_only_combined*.pdf: Combined visualization
+- effect_size_volcano_plot_0_21_only.pdf: Effect size visualization
+
+🎯 KEY MODIFICATIONS:
+1. ✅ Removed 0_6 (macular) region parameters
+2. ✅ Focus on 0_21 (widefield) region only
+3. ✅ Simplified FDR correction (no region-based grouping)
+4. ✅ Reduced parameter complexity while maintaining statistical rigor
+
+🔬 FDR CORRECTION STRATEGIES:
+- Strategy 1: By Time Window + Detailed Parameter Type
+- Strategy 2: By Time Window + Major Parameter Type (Recommended)
+- Strategy 3: By Major Parameter Type only
+- Global: All parameters together (Most conservative)
+
+💡 CLINICAL IMPLICATIONS:
+1. Focus on widefield (0_21) retinal health patterns
+2. Better clusters indicate favorable recovery in broader retinal areas
+3. Time window differences suggest optimal intervention periods
+4. Simplified analysis reduces multiple comparison burden
+5. More focused results for clinical interpretation
+
+🚀 NEXT STEPS:
+1. Validate 0_21 region findings in independent cohorts
+2. Investigate baseline predictors of better-performing clusters
+3. Develop widefield-focused treatment protocols
+4. Consider peripheral retinal intervention strategies
+5. Compare 0_21 vs 0_6 region recovery patterns in future studies
+
+========================================
+Simplified Hard Cluster Analysis completed! 🎉
+All 0_21 region cluster comparison results available.
+========================================
+

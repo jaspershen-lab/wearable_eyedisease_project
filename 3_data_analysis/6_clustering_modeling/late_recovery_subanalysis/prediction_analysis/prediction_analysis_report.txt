@@ -1,0 +1,37 @@
+========================================
+Wearable Device Metrics for OCTA Prognosis Prediction Analysis Report
+========================================
+
+Data Overview:
+- Total sample size: 10
+- Good outcome: 6 cases
+- Poor outcome: 4 cases
+- Features used: CV RHR (Late Recovery), Max Steps (Late Recovery)
+
+Statistical Test Results:
+- CV RHR: t=1.77, p=0.1197
+- Max Steps: t=-1.316, p=0.2518
+
+Machine Learning Model Performance:
+- Logistic (Wearables Only): AUC=0.750, Sensitivity=0.750, Specificity=0.833
+- Random Forest: AUC=0.375, Sensitivity=0.250, Specificity=0.667
+- SVM: AUC=0.208, Sensitivity=0.000, Specificity=1.000
+- Logistic (Age + Gender + HbA1c): AUC=0.354, Sensitivity=0.500, Specificity=0.333
+- Logistic (All Features): AUC=0.792, Sensitivity=0.500, Specificity=1.000
+
+Best Model: Logistic (All Features) (AUC = 0.792)
+
+Clinical Significance:
+1. Late Recovery period wearable device metrics have predictive value
+2. CV RHR reflects heart rate variability, may relate to recovery quality
+3. Max Steps reflects activity capacity, may relate to prognosis
+4. Model can assist clinicians in prognostic assessment
+
+Usage Recommendations:
+1. Collect CV RHR and Max Steps data during Late Recovery period
+2. Use best model for prognostic prediction
+3. Combine with clinical judgment for comprehensive assessment
+4. Recommend expanding sample size for further model validation
+
+Generated: 2025-07-30 13:28:00.784153
+========================================

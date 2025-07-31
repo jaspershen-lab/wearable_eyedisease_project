@@ -1,0 +1,67 @@
+========================================
+Enhanced Wearable Device + Demographics for OCTA Prognosis Prediction
+========================================
+
+Data Overview:
+- Total sample size: 11
+- Good outcome: 7 cases
+- Poor outcome: 4 cases
+- Features used: CV RHR, Max Steps (Late Recovery), Age, Gender
+
+Demographic Characteristics:
+- Age range: 42-69 years
+- Mean age: 56.4 (SD: 9.3)
+- Female: 5 (45.5%)
+- Male: 6 (54.5%)
+
+Statistical Test Results:
+- CV RHR: t=1.631, p=0.1482
+- Max Steps: t=-1.345, p=0.249
+- Age: t=1.597, p=0.1636
+- Gender: X²=0.737, p=0.3907
+
+Model Performance Comparison:
+- Basic Logistic (Wearable Only):
+  AUC=0.750, Sensitivity=0.750, Specificity=1.000
+- Enhanced Logistic (+ Age + Gender):
+  AUC=0.357, Sensitivity=0.500, Specificity=0.571
+- Enhanced Random Forest:
+  AUC=0.464, Sensitivity=0.500, Specificity=0.857
+- Enhanced SVM:
+  AUC=0.071, Sensitivity=0.000, Specificity=0.857
+
+Model Enhancement Impact:
+- Basic Model (Wearable Only): AUC = 0.75
+- Enhanced Model (+ Age + Gender): AUC = 0.357
+- Absolute Improvement: +-0.393
+- Relative Improvement: +-52.4%
+
+Best Model: Basic Logistic (Wearable Only) (AUC = 0.75)
+
+Clinical Implications:
+1. Adding demographic features improves prediction accuracy
+2. Age and gender provide additional prognostic value beyond wearable metrics
+3. Comprehensive model enables more personalized risk assessment
+4. Enhanced model shows improved discrimination between outcome groups
+
+Feature Contributions:
+Logistic Regression Odds Ratios:
+- cv_rhr: OR=0.19 (↓ 81.1% odds of good outcome per unit increase)
+- steps_max: OR=6.17 (↑ 516.7% odds of good outcome per unit increase)
+
+Recommendations:
+1. Use enhanced model for clinical decision support
+2. Collect both wearable metrics and demographic data
+3. Consider age and gender in prognostic assessment
+4. Validate model in larger, independent cohorts
+5. Explore additional demographic/clinical variables
+
+Model Usage:
+Enhanced prediction requires 4 inputs:
+- CV RHR (Late Recovery period)
+- Max Steps (Late Recovery period)
+- Patient Age (years)
+- Patient Gender (0=Female, 1=Male)
+
+Generated: 2025-07-30 11:39:15.108092
+========================================

@@ -1,0 +1,68 @@
+========================================================
+Wearable Device Metrics for OCTA Prognosis Prediction
+Final Analysis Report
+========================================================
+
+STUDY OVERVIEW
+- Analysis Date: 2025-07-30
+- Total Sample Size: 11
+- Good Prognosis: 7 cases (63.6%)
+- Poor Prognosis: 4 cases (36.4%)
+- Primary Features: CV RHR and Max Steps (Late Recovery Period)
+
+DATA QUALITY
+- No simulated data used - all analyses based on real measurements
+- Complete case analysis performed
+- Late Recovery Period: Days 16-30 post-surgery
+- Clinical variables included: Age, Gender, HbA1c
+
+STATISTICAL ANALYSIS
+- Normality Tests: Shapiro-Wilk test
+- Group Comparisons: Mann-Whitney U test (non-parametric)
+- Effect Sizes: Cohen's d
+- CV RHR Effect Size: 1.001
+- Steps Max Effect Size: -0.997
+
+PRIMARY ANALYSIS RESULTS (Logistic Regression)
+- Wearable Devices: AUC=0.750, Sensitivity=0.750, Specificity=1.000
+- Clinical (Age+Gender+HbA1c): AUC=0.354, Sensitivity=0.500, Specificity=0.333
+- Combined (All): AUC=0.792, Sensitivity=0.500, Specificity=1.000
+
+Best Performing Model: Combined (All) (AUC = 0.792)
+
+SUPPLEMENTARY ANALYSIS (Machine Learning)
+- Random Forest: AUC=0.429, Sensitivity=0.250, Specificity=0.857
+- SVM: AUC=0.714, Sensitivity=0.500, Specificity=0.714
+
+KEY FINDINGS
+1. Wearable device metrics show predictive value for OCTA prognosis
+2. Late Recovery period (Days 16-30) provides meaningful signals
+3. CV RHR and Max Steps complement each other as predictors
+4. Combined model improvement over wearable-only: +0.042 AUC points
+
+CLINICAL IMPLICATIONS
+1. Continuous monitoring via wearables offers objective prognosis assessment
+2. Non-invasive approach suitable for routine clinical implementation
+3. Late Recovery period appears most informative for prediction
+4. Integration with clinical data may enhance predictive accuracy
+
+LIMITATIONS
+1. Small sample size (n=11) requires validation in larger cohorts
+2. Single-center study limits generalizability
+3. Cross-validation may overestimate performance
+4. Need for prospective validation studies
+
+RECOMMENDATIONS
+1. Validate findings in multi-center study with larger sample
+2. Explore optimal time windows for prediction
+3. Investigate additional wearable-derived metrics
+4. Develop clinical decision support tools
+
+TECHNICAL NOTES
+- Cross-validation: LOOCV
+- No data imputation or simulation used
+- Robust statistical testing with effect size reporting
+- Primary focus on interpretable logistic regression
+
+Generated: 2025-07-30 17:00:05.332655
+========================================================

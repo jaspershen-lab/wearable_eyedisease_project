@@ -1,6 +1,0 @@
-"Window","N_Patients","N_Clusters","Mean_Membership"
-"baseline",14,3,0.631455490658047
-"acute_recovery",15,3,0.338573546713956
-"early_recovery",15,3,0.6108866079785
-"mid_recovery",14,3,0.667539618849981
-"late_recovery",15,3,0.339261123673389

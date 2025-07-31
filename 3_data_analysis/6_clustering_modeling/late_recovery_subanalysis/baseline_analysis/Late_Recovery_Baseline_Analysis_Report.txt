@@ -1,0 +1,66 @@
+========================================
+Late Recovery时间窗口聚类术前基线特征差异分析报告
+OCTA T0 + Pre-Vision Analysis
+========================================
+
+🎯 研究目的:
+基于Late Recovery时间窗口聚类结果，分析患者群体差异是:
+A) 术前即存在（先天差异）- 可预测Late Recovery模式
+B) Late Recovery恢复过程中体现（获得性差异）- 主要看长期恢复
+📍 专注分析：0_21区域（广角区域）+ 视力参数
+
+📊 数据概况:
+- 聚类来源: Late Recovery时间窗口聚类
+- 分析患者数: 15
+- 术前参数总数: 14
+- 视力/基线参数: 3
+- OCTA血流参数 (0_21): 7
+- OCTA厚度参数 (0_21): 4
+
+🔍 核心发现:
+- 统计显著差异参数: 1
+- 大效应量参数 (d≥0.8): 2
+- 中等效应量参数 (d≥0.5): 4
+- Late Recovery差异来源: Late_Recovery_Pre_operative
+
+📋 显著差异参数详情 (0_21区域, Late Recovery聚类):
+  1. age (Baseline)
+     差异: -10.667, p=0.0170, 效应量=1.35
+
+🏥 Late Recovery临床意义:
+⚡ 患者在术前即存在重要差异，可预测Late Recovery结局
+💡 提示：
+  - 建立Late Recovery风险分层系统
+  - 高风险患者术前优化和counseling
+  - 个性化长期恢复方案选择
+  - Late Recovery期望管理
+
+🔬 科学价值:
+1. 明确了Late Recovery患者差异的时间起源
+2. 专注0_21区域（广角）提供Late Recovery重要洞察
+3. 为Late Recovery个性化医疗提供证据基础
+4. 指导长期恢复资源分配策略
+5. 支持Late Recovery预测模型开发
+
+📈 下一步研究:
+1. 扩大样本量验证Late Recovery发现
+2. 纵向随访验证长期预测能力
+3. 开发Late Recovery临床决策支持工具
+4. 多中心Late Recovery验证研究
+
+📁 输出文件:
+- baseline_differences_statistics_late_recovery.csv: 详细统计结果
+- plots/baseline_characteristics_heatmap_late_recovery.pdf: 术前特征热图
+- plots/baseline_*_late_recovery.pdf: 带p值的Late Recovery箱线图
+- plots/baseline_pca_late_recovery.pdf: 术前特征PCA分析
+
+🎯 分析重点:
+- 专注0_21区域（广角区域）OCTA参数
+- 结合术前视力和基线特征
+- 基于Late Recovery时间窗口聚类
+- 所有可视化均标注Late Recovery
+- 提供Late Recovery明确的临床指导
+
+生成时间: 2025-07-22 14:22:55.906949
+========================================
+

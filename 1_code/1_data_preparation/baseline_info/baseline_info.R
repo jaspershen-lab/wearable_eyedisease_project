@@ -11,6 +11,7 @@ data_mental <- read_excel("2_data/mental questionnaire/mental_health_2.xlsx")
 data_baseline <- read_excel("2_data/baseline questionnaire/baseline_questionnaire_4.xlsx")
 data_va <- read_excel("2_data/va iop/va_iop_6.xlsx")
 data_bmi <- read_excel("2_data/baseline questionnaire/bmi_data.xlsx")
+data_hba1c<- read_excel("2_data/baseline questionnaire/Hba1c_data.xlsx")
 
 ###create working directory
 if (!dir.exists(
@@ -74,7 +75,8 @@ data_bmi <- data_bmi %>%
 data_merged <- data_baseline %>%
   left_join(data_mental_wide, by = "ID") %>%
   left_join(data_va, by = "ID") %>%
-  left_join(data_bmi, by = "ID")
+  left_join(data_bmi, by = "ID")%>%
+  left_join(data_hba1c, by= "ID")
 
 head(data_merged)
 

@@ -16,7 +16,8 @@ rm(list = ls())
 # Step 1: Load the clustering results from both analyses
 wearable_clusters  <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/less_timepoint/ppv_cluster_results_time_windows.csv", check.names = FALSE)
 # wearable_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/multi_metrics/1m/ppv_cluster_results_all_metrics.csv")
-octa_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/WF_only_cluster/ppv_WF_cluster_results.csv")
+#octa_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/WF_only_cluster/ppv_comprehensive_cluster_results.csv")
+octa_clusters <- read.csv("3_data_analysis/6_clustering_modeling/mfuzz/comprehensive_cluster/ppv_octa_0_21_only_cluster_results.csv")
 # octa_clusters <- read.csv("3_data_analysis/6_clustering_modeling/fcm_octa/WF_only_cluster/fcm_all_parameters_results.csv")
  
 dir.create("3_data_analysis/6_clustering_modeling/cluster_association_analysis/ppv_octa/timepoint",

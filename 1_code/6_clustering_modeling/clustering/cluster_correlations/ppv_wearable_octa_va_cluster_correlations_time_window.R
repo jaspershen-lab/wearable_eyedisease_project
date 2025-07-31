@@ -25,14 +25,21 @@ cat("===== 可穿戴设备聚类与预后聚类相关性分析 =====\n")
 #   late_recovery = "3_data_analysis/6_clustering_modeling/time_window_clustering/late_recovery_membership_data.csv"
 # )
 
-wearable_files <- list(
-  baseline = "3_data_analysis/6_clustering_modeling/time_window_clustering/baseline_detailed_membership_fixed.csv",
-  acute_recovery = "3_data_analysis/6_clustering_modeling/time_window_clustering/acute_recovery_detailed_membership_fixed.csv",
-  early_recovery = "3_data_analysis/6_clustering_modeling/time_window_clustering/early_recovery_detailed_membership_fixed.csv",
-  mid_recovery = "3_data_analysis/6_clustering_modeling/time_window_clustering/mid_recovery_detailed_membership_fixed.csv",
-  late_recovery = "3_data_analysis/6_clustering_modeling/time_window_clustering/late_recovery_detailed_membership_fixed.csv"
-)
+# wearable_files <- list(
+#   baseline = "3_data_analysis/6_clustering_modeling/time_window_clustering/baseline_detailed_membership_fixed.csv",
+#   acute_recovery = "3_data_analysis/6_clustering_modeling/time_window_clustering/acute_recovery_detailed_membership_fixed.csv",
+#   early_recovery = "3_data_analysis/6_clustering_modeling/time_window_clustering/early_recovery_detailed_membership_fixed.csv",
+#   mid_recovery = "3_data_analysis/6_clustering_modeling/time_window_clustering/mid_recovery_detailed_membership_fixed.csv",
+#   late_recovery = "3_data_analysis/6_clustering_modeling/time_window_clustering/late_recovery_detailed_membership_fixed.csv"
+# )
 
+wearable_files <- list(
+  baseline = "3_data_analysis/6_clustering_modeling/time_window_clustering/baseline_detailed_2cluster_membership.csv",
+  acute_recovery = "3_data_analysis/6_clustering_modeling/time_window_clustering/acute_recovery_detailed_2cluster_membership.csv",
+  early_recovery = "3_data_analysis/6_clustering_modeling/time_window_clustering/early_recovery_detailed_2cluster_membership.csv",
+  mid_recovery = "3_data_analysis/6_clustering_modeling/time_window_clustering/mid_recovery_detailed_2cluster_membership.csv",
+  late_recovery = "3_data_analysis/6_clustering_modeling/time_window_clustering/late_recovery_detailed_2cluster_membership.csv"
+)
 
 # 加载预后聚类结果
 # outcome_file <- "3_data_analysis/6_clustering_modeling/mfuzz/octa_cluster/combined_blood_thick/ppv_octa_combined_cluster_results_with_outcomes.csv"

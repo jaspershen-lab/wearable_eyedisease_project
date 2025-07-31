@@ -1219,3 +1219,791 @@ quality_control <- function() {
 # Perform quality control
 quality_control()
 
+
+
+
+# ================== OCTA聚类改善值可视化（修正版）==================
+# 针对OCTA数据特点：使用T2-T0改善值进行聚类，不是时间序列
+# 重点展示：1）改善值分布对比 2）参数相关性 3）聚类特征
+
+# -------------------- 1. OCTA改善值可视化主函数 --------------------
+create_octa_improvement_visualizations <- function(comprehensive_data_with_clusters, 
+                                                   vision_params, bloodflow_params, thickness_params,
+                                                   bloodflow_macular, thickness_macular) {
+  
+  cat("\n🎨 开始创建OCTA改善值可视化（修正版）...\n")
+  cat("📋 数据特点：聚类基于T2-T0改善值，非时间序列\n")
+  
+  # 创建输出目录
+  dir.create("plots/octa_improvements", recursive = TRUE, showWarnings = FALSE)
+  
+  # 1. 创建改善值分布对比图
+  create_improvement_comparison_plots(comprehensive_data_with_clusters, bloodflow_params, thickness_params)
+  
+  # 2. 创建参数重要性排序图
+  create_parameter_importance_plots(comprehensive_data_with_clusters, bloodflow_params, thickness_params)
+  
+  # 3. 创建聚类特征雷达图
+  create_cluster_radar_charts(comprehensive_data_with_clusters, vision_params, bloodflow_params, thickness_params)
+  
+  # 4. 创建改善值热图和聚类对比
+  create_improvement_heatmaps(comprehensive_data_with_clusters, bloodflow_params, thickness_params)
+  
+  # 5. 创建相关性分析图
+  create_correlation_analysis(comprehensive_data_with_clusters, vision_params, bloodflow_params, thickness_params)
+  
+  # 6. 创建患者改善模式图
+  create_patient_improvement_patterns(comprehensive_data_with_clusters, bloodflow_params, thickness_params)
+  
+  cat("\n✅ OCTA改善值可视化创建完成！\n")
+}
+
+# -------------------- 2. 改善值分布对比图 --------------------
+create_improvement_comparison_plots <- function(data, bloodflow_params, thickness_params) {
+  
+  cat("  📊 创建改善值分布对比图...\n")
+  
+  # 1. 整体改善值分布对比
+  all_params <- c(bloodflow_params, thickness_params)
+  
+  # 准备数据
+  improvement_data <- prepare_improvement_comparison_data(data, all_params)
+  
+  if(nrow(improvement_data) == 0) {
+    cat("    Warning: No improvement data available\n")
+    return(NULL)
+  }
+  
+  # A. 按参数类型的箱线图对比
+  p_boxplot_type <- ggplot(improvement_data, aes(x = Parameter_Type, y = Improvement_Value, 
+                                                 fill = factor(Cluster))) +
+    geom_boxplot(alpha = 0.7, position = position_dodge(width = 0.8), outlier.shape = NA) +
+    geom_jitter(aes(color = factor(Cluster)), 
+                position = position_jitterdodge(dodge.width = 0.8, jitter.width = 0.3),
+                alpha = 0.6, size = 1.5) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "red", alpha = 0.7) +
+    scale_fill_manual(values = c("1" = "#df8859", "2" = "#0fb292"), name = "Cluster") +
+    scale_color_manual(values = c("1" = "#df8859", "2" = "#0fb292"), name = "Cluster") +
+    labs(
+      title = "OCTA Parameter Improvements by Type and Cluster",
+      subtitle = "Distribution of T2-T0 improvement values | Positive = better outcomes",
+      x = "Parameter Type",
+      y = "Improvement Value (T2 - T0)",
+      caption = "Red dashed line = no change | Above = improvement, Below = deterioration"
+    ) +
+    theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 11),
+      legend.position = "top"
+    )
+  
+  ggsave("plots/octa_improvements/improvement_boxplot_by_type.pdf", p_boxplot_type, width = 12, height = 8)
+  ggsave("plots/octa_improvements/improvement_boxplot_by_type.png", p_boxplot_type, width = 12, height = 8, dpi = 300)
+  
+  # B. Top差异参数的详细对比
+  create_top_parameters_comparison(improvement_data)
+  
+  cat("      ✓ 改善值分布对比图创建完成\n")
+}
+
+# -------------------- 3. 参数重要性排序图 --------------------
+create_parameter_importance_plots <- function(data, bloodflow_params, thickness_params) {
+  
+  cat("  📊 创建参数重要性排序图...\n")
+  
+  all_params <- c(bloodflow_params, thickness_params)
+  
+  # 计算每个参数的聚类间差异
+  param_importance <- calculate_parameter_importance(data, all_params)
+  
+  if(nrow(param_importance) == 0) {
+    cat("    Warning: No parameter importance data available\n")
+    return(NULL)
+  }
+  
+  # 创建重要性排序图
+  p_importance <- ggplot(param_importance %>% head(15), 
+                         aes(x = reorder(Parameter_Clean, Importance_Score), y = Importance_Score)) +
+    geom_col(aes(fill = Parameter_Type), alpha = 0.8) +
+    geom_text(aes(label = sprintf("%.2f", Importance_Score)), hjust = -0.1, size = 3) +
+    scale_fill_manual(values = c("Blood Flow" = "#3498db", "Thickness" = "#e74c3c"), name = "Type") +
+    coord_flip() +
+    labs(
+      title = "Top 15 Most Important OCTA Parameters for Cluster Separation",
+      subtitle = "Importance Score = |Mean Difference| × -log10(P-value)",
+      x = "OCTA Parameters",
+      y = "Importance Score",
+      caption = "Higher scores indicate better cluster discrimination"
+    ) +
+    theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 11),
+      axis.text.y = element_text(size = 10)
+    )
+  
+  ggsave("plots/octa_improvements/parameter_importance_ranking.pdf", p_importance, width = 14, height = 10)
+  ggsave("plots/octa_improvements/parameter_importance_ranking.png", p_importance, width = 14, height = 10, dpi = 300)
+  
+  # 保存重要性数据
+  write.csv(param_importance, "plots/octa_improvements/parameter_importance_scores.csv", row.names = FALSE)
+  
+  cat("      ✓ 参数重要性排序图创建完成\n")
+}
+
+# -------------------- 4. 聚类特征雷达图 --------------------
+create_cluster_radar_charts <- function(data, vision_params, bloodflow_params, thickness_params) {
+  
+  cat("  📊 创建聚类特征雷达图...\n")
+  
+  # 选择关键参数创建雷达图
+  key_params <- select_key_parameters_for_radar(data, vision_params, bloodflow_params, thickness_params)
+  
+  if(length(key_params) == 0) {
+    cat("    Warning: No key parameters selected for radar chart\n")
+    return(NULL)
+  }
+  
+  # 准备雷达图数据
+  radar_data <- prepare_radar_data(data, key_params)
+  
+  # 创建雷达图
+  create_radar_plot(radar_data, key_params)
+  
+  cat("      ✓ 聚类特征雷达图创建完成\n")
+}
+
+# -------------------- 5. 改善值热图 --------------------
+create_improvement_heatmaps <- function(data, bloodflow_params, thickness_params) {
+  
+  cat("  📊 创建改善值热图...\n")
+  
+  all_params <- c(bloodflow_params, thickness_params)
+  
+  # 计算聚类平均改善值
+  cluster_means <- calculate_cluster_means(data, all_params)
+  
+  # A. 综合热图
+  p_heatmap_all <- ggplot(cluster_means, aes(x = Parameter_Clean, y = factor(Cluster), fill = Mean_Improvement)) +
+    geom_tile(color = "white", size = 0.5) +
+    geom_text(aes(label = sprintf("%.3f", Mean_Improvement)), 
+              color = "black", size = 2.5, fontface = "bold") +
+    scale_fill_gradient2(
+      low = "#d73027", mid = "white", high = "#1a9850", 
+      midpoint = 0, name = "Mean\nImprovement"
+    ) +
+    facet_wrap(~ Parameter_Type, scales = "free_x", ncol = 1) +
+    labs(
+      title = "OCTA Parameter Improvement Heatmap by Cluster",
+      subtitle = "Mean improvement values (T2-T0) | Green = improvement, Red = deterioration",
+      x = "Parameters", y = "Cluster"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+      strip.text = element_text(size = 12, face = "bold")
+    )
+  
+  ggsave("plots/octa_improvements/improvement_heatmap_comprehensive.pdf", p_heatmap_all, width = 20, height = 8)
+  ggsave("plots/octa_improvements/improvement_heatmap_comprehensive.png", p_heatmap_all, width = 20, height = 8, dpi = 300)
+  
+  # B. 聚类对比条形图
+  create_cluster_comparison_barplot(cluster_means)
+  
+  cat("      ✓ 改善值热图创建完成\n")
+}
+
+# -------------------- 6. 相关性分析图 --------------------
+create_correlation_analysis <- function(data, vision_params, bloodflow_params, thickness_params) {
+  
+  cat("  📊 创建相关性分析图...\n")
+  
+  # A. 视力与OCTA参数相关性
+  create_vision_octa_correlation(data, vision_params, bloodflow_params, thickness_params)
+  
+  # B. OCTA参数间相关性
+  create_octa_internal_correlation(data, bloodflow_params, thickness_params)
+  
+  cat("      ✓ 相关性分析图创建完成\n")
+}
+
+# -------------------- 7. 患者改善模式图 --------------------
+create_patient_improvement_patterns <- function(data, bloodflow_params, thickness_params) {
+  
+  cat("  📊 创建患者改善模式图...\n")
+  
+  # A. 患者改善得分分布
+  patient_scores <- calculate_patient_improvement_scores(data, bloodflow_params, thickness_params)
+  
+  # 创建改善得分分布图
+  p_scores <- ggplot(patient_scores, aes(x = factor(Cluster), y = Overall_Score, fill = factor(Cluster))) +
+    geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+    geom_jitter(aes(color = factor(Cluster)), width = 0.2, alpha = 0.6, size = 2) +
+    scale_fill_manual(values = c("1" = "#df8859", "2" = "#0fb292"), name = "Cluster") +
+    scale_color_manual(values = c("1" = "#df8859", "2" = "#0fb292"), name = "Cluster") +
+    labs(
+      title = "Patient Overall Improvement Scores by Cluster",
+      subtitle = "Composite score based on all OCTA parameter improvements",
+      x = "Cluster", y = "Overall Improvement Score"
+    ) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+  
+  ggsave("plots/octa_improvements/patient_improvement_scores.pdf", p_scores, width = 10, height = 8)
+  ggsave("plots/octa_improvements/patient_improvement_scores.png", p_scores, width = 10, height = 8, dpi = 300)
+  
+  # B. 改善模式分类
+  create_improvement_pattern_classification(patient_scores)
+  
+  cat("      ✓ 患者改善模式图创建完成\n")
+}
+
+# -------------------- 辅助函数 --------------------
+
+# 准备改善值对比数据
+prepare_improvement_comparison_data <- function(data, all_params) {
+  improvement_data <- data.frame()
+  
+  for(param in all_params) {
+    if(param %in% names(data)) {
+      param_data <- data %>%
+        dplyr::select(ID, max_cluster, max_membership, all_of(param)) %>%
+        filter(!is.na(.data[[param]])) %>%
+        mutate(
+          Parameter_Clean = clean_parameter_name(param),
+          Parameter_Type = determine_parameter_type(param, bloodflow_params, thickness_params),
+          Improvement_Value = .data[[param]],
+          Cluster = max_cluster
+        )
+      
+      improvement_data <- rbind(improvement_data, param_data)
+    }
+  }
+  
+  return(improvement_data)
+}
+
+# 清理参数名称
+clean_parameter_name <- function(param) {
+  cleaned <- gsub("_improvement$", "", param)
+  cleaned <- gsub("_0_21", "", cleaned)
+  cleaned <- gsub("_", " ", cleaned)
+  return(cleaned)
+}
+
+# 确定参数类型
+determine_parameter_type <- function(param, bloodflow_params, thickness_params) {
+  if(param %in% bloodflow_params) {
+    return("Blood Flow")
+  } else if(param %in% thickness_params) {
+    return("Thickness")
+  } else {
+    return("Other")
+  }
+}
+
+# 创建Top参数对比
+create_top_parameters_comparison <- function(improvement_data) {
+  # 找出差异最大的参数
+  param_differences <- improvement_data %>%
+    group_by(Parameter_Clean, Parameter_Type) %>%
+    summarise(
+      Cluster1_Mean = mean(Improvement_Value[Cluster == 1], na.rm = TRUE),
+      Cluster2_Mean = mean(Improvement_Value[Cluster == 2], na.rm = TRUE),
+      Difference = abs(Cluster2_Mean - Cluster1_Mean),
+      .groups = 'drop'
+    ) %>%
+    arrange(desc(Difference)) %>%
+    head(12)
+  
+  # 创建Top参数的详细对比图
+  top_params <- param_differences$Parameter_Clean
+  top_data <- improvement_data %>% filter(Parameter_Clean %in% top_params)
+  
+  p_top <- ggplot(top_data, aes(x = Parameter_Clean, y = Improvement_Value, fill = factor(Cluster))) +
+    geom_boxplot(alpha = 0.7, position = position_dodge(width = 0.8)) +
+    geom_jitter(aes(color = factor(Cluster)), 
+                position = position_jitterdodge(dodge.width = 0.8, jitter.width = 0.2),
+                alpha = 0.5, size = 1) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "red", alpha = 0.7) +
+    scale_fill_manual(values = c("1" = "#df8859", "2" = "#0fb292"), name = "Cluster") +
+    scale_color_manual(values = c("1" = "#df8859", "2" = "#0fb292"), name = "Cluster") +
+    facet_wrap(~ Parameter_Type, scales = "free", ncol = 1) +
+    labs(
+      title = "Top 12 Parameters with Largest Cluster Differences",
+      subtitle = "OCTA parameters showing most distinct improvement patterns",
+      x = "Parameters", y = "Improvement Value"
+    ) +
+    theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 9)
+    )
+  
+  ggsave("plots/octa_improvements/top_discriminative_parameters.pdf", p_top, width = 16, height = 12)
+  ggsave("plots/octa_improvements/top_discriminative_parameters.png", p_top, width = 16, height = 12, dpi = 300)
+}
+
+# 计算参数重要性
+calculate_parameter_importance <- function(data, all_params) {
+  importance_results <- data.frame()
+  
+  for(param in all_params) {
+    if(param %in% names(data)) {
+      param_data <- data %>%
+        dplyr::select(max_cluster, all_of(param)) %>%
+        filter(!is.na(.data[[param]]))
+      
+      if(nrow(param_data) > 3) {
+        # 计算t检验
+        t_test <- try(t.test(param_data[[param]] ~ param_data$max_cluster), silent = TRUE)
+        
+        if(class(t_test) != "try-error") {
+          means <- tapply(param_data[[param]], param_data$max_cluster, mean, na.rm = TRUE)
+          mean_diff <- abs(means[2] - means[1])
+          p_value <- t_test$p.value
+          
+          importance_score <- mean_diff * (-log10(p_value + 1e-10))
+          
+          importance_results <- rbind(importance_results, data.frame(
+            Parameter = param,
+            Parameter_Clean = clean_parameter_name(param),
+            Parameter_Type = determine_parameter_type(param, bloodflow_params, thickness_params),
+            Mean_Difference = mean_diff,
+            P_Value = p_value,
+            Importance_Score = importance_score,
+            stringsAsFactors = FALSE
+          ))
+        }
+      }
+    }
+  }
+  
+  return(importance_results %>% arrange(desc(Importance_Score)))
+}
+
+# 选择关键参数用于雷达图
+select_key_parameters_for_radar <- function(data, vision_params, bloodflow_params, thickness_params) {
+  all_params <- c(vision_params, bloodflow_params, thickness_params)
+  
+  # 选择方差最大且有显著性的参数
+  param_importance <- calculate_parameter_importance(data, all_params)
+  
+  # 选择前8个最重要的参数
+  key_params <- param_importance %>%
+    filter(P_Value < 0.1) %>%  # 宽松的显著性标准
+    head(8) %>%
+    pull(Parameter)
+  
+  return(key_params)
+}
+
+# 准备雷达图数据
+prepare_radar_data <- function(data, key_params) {
+  if(length(key_params) == 0) return(data.frame())
+  
+  # 计算每个聚类的标准化平均值
+  radar_data <- data %>%
+    group_by(max_cluster) %>%
+    summarise(across(all_of(key_params), ~ mean(.x, na.rm = TRUE)), .groups = 'drop')
+  
+  # 标准化到0-1范围以便雷达图显示
+  for(param in key_params) {
+    if(param %in% names(radar_data)) {
+      min_val <- min(radar_data[[param]], na.rm = TRUE)
+      max_val <- max(radar_data[[param]], na.rm = TRUE)
+      if(max_val != min_val) {
+        radar_data[[param]] <- (radar_data[[param]] - min_val) / (max_val - min_val)
+      }
+    }
+  }
+  
+  return(radar_data)
+}
+
+# 创建雷达图（简化版，使用极坐标）
+create_radar_plot <- function(radar_data, key_params) {
+  if(nrow(radar_data) == 0 || length(key_params) == 0) return(NULL)
+  
+  # 转换为长格式
+  radar_long <- radar_data %>%
+    pivot_longer(cols = all_of(key_params), names_to = "Parameter", values_to = "Value") %>%
+    mutate(
+      Parameter_Clean = clean_parameter_name(Parameter),
+      Cluster = factor(max_cluster)
+    )
+  
+  # 创建极坐标图
+  p_radar <- ggplot(radar_long, aes(x = Parameter_Clean, y = Value, color = Cluster, group = Cluster)) +
+    geom_polygon(aes(fill = Cluster), alpha = 0.3) +
+    geom_point(size = 3) +
+    geom_line(size = 1) +
+    scale_color_manual(values = c("1" = "#df8859", "2" = "#0fb292")) +
+    scale_fill_manual(values = c("1" = "#df8859", "2" = "#0fb292")) +
+    coord_polar() +
+    scale_y_continuous(limits = c(0, 1)) +
+    labs(
+      title = "Cluster Characteristic Profile (Radar Chart)",
+      subtitle = "Normalized mean values for key discriminative parameters"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      axis.text.x = element_text(size = 10),
+      axis.title = element_blank()
+    )
+  
+  ggsave("plots/octa_improvements/cluster_radar_chart.pdf", p_radar, width = 12, height = 10)
+  ggsave("plots/octa_improvements/cluster_radar_chart.png", p_radar, width = 12, height = 10, dpi = 300)
+}
+
+# 计算聚类平均值
+calculate_cluster_means <- function(data, all_params) {
+  cluster_means <- data.frame()
+  
+  for(param in all_params) {
+    if(param %in% names(data)) {
+      param_means <- data %>%
+        group_by(max_cluster) %>%
+        summarise(
+          Mean_Improvement = mean(.data[[param]], na.rm = TRUE),
+          .groups = 'drop'
+        ) %>%
+        mutate(
+          Parameter = param,
+          Parameter_Clean = clean_parameter_name(param),
+          Parameter_Type = determine_parameter_type(param, bloodflow_params, thickness_params),
+          Cluster = max_cluster
+        )
+      
+      cluster_means <- rbind(cluster_means, param_means)
+    }
+  }
+  
+  return(cluster_means)
+}
+
+# 创建聚类对比条形图
+create_cluster_comparison_barplot <- function(cluster_means) {
+  # 计算聚类间差异
+  cluster_diff <- cluster_means %>%
+    dplyr::select(Parameter_Clean, Parameter_Type, Cluster, Mean_Improvement) %>%
+    pivot_wider(names_from = Cluster, values_from = Mean_Improvement, names_prefix = "Cluster_") %>%
+    mutate(
+      Difference = Cluster_2 - Cluster_1,
+      Better_Cluster = ifelse(Difference > 0, "Cluster 2", "Cluster 1")
+    ) %>%
+    arrange(desc(abs(Difference))) %>%
+    head(15)
+  
+  p_diff <- ggplot(cluster_diff, aes(x = reorder(Parameter_Clean, abs(Difference)), y = Difference)) +
+    geom_col(aes(fill = Better_Cluster), alpha = 0.8) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+    scale_fill_manual(values = c("Cluster 1" = "#df8859", "Cluster 2" = "#0fb292"), name = "Better Cluster") +
+    coord_flip() +
+    labs(
+      title = "Top 15 Parameters: Cluster 2 vs Cluster 1 Differences",
+      subtitle = "Positive = Cluster 2 better, Negative = Cluster 1 better",
+      x = "Parameters", y = "Mean Difference (Cluster 2 - Cluster 1)"
+    ) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+  
+  ggsave("plots/octa_improvements/cluster_difference_barplot.pdf", p_diff, width = 14, height = 10)
+  ggsave("plots/octa_improvements/cluster_difference_barplot.png", p_diff, width = 14, height = 10, dpi = 300)
+}
+
+# 创建视力-OCTA相关性图
+create_vision_octa_correlation <- function(data, vision_params, bloodflow_params, thickness_params) {
+  if(length(vision_params) == 0) return(NULL)
+  
+  # 选择视力改善参数
+  vision_improvement <- vision_params[grep("improvement", vision_params)]
+  if(length(vision_improvement) == 0) return(NULL)
+  
+  octa_params <- c(bloodflow_params, thickness_params)
+  
+  # 计算相关性
+  cor_data <- data %>%
+    dplyr::select(all_of(c(vision_improvement[1], octa_params[1:min(10, length(octa_params))]))) %>%
+    na.omit()
+  
+  if(nrow(cor_data) > 3) {
+    cor_matrix <- cor(cor_data)
+    
+    # 提取视力参数与OCTA参数的相关性
+    vision_octa_cor <- cor_matrix[1, -1]
+    
+    cor_df <- data.frame(
+      Parameter = names(vision_octa_cor),
+      Correlation = as.numeric(vision_octa_cor),
+      Parameter_Clean = clean_parameter_name(names(vision_octa_cor))
+    ) %>%
+      arrange(desc(abs(Correlation)))
+    
+    p_cor <- ggplot(cor_df, aes(x = reorder(Parameter_Clean, abs(Correlation)), y = Correlation)) +
+      geom_col(aes(fill = Correlation > 0), alpha = 0.8) +
+      scale_fill_manual(values = c("TRUE" = "#2ecc71", "FALSE" = "#e74c3c"), 
+                        labels = c("Negative", "Positive"), name = "Correlation") +
+      coord_flip() +
+      labs(
+        title = "Vision-OCTA Parameter Correlations",
+        subtitle = "Correlation between vision improvement and OCTA improvements",
+        x = "OCTA Parameters", y = "Correlation with Vision Improvement"
+      ) +
+      theme_bw() +
+      theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+    
+    ggsave("plots/octa_improvements/vision_octa_correlations.pdf", p_cor, width = 12, height = 10)
+    ggsave("plots/octa_improvements/vision_octa_correlations.png", p_cor, width = 12, height = 10, dpi = 300)
+  }
+}
+
+# 创建OCTA内部相关性图
+create_octa_internal_correlation <- function(data, bloodflow_params, thickness_params) {
+  octa_params <- c(bloodflow_params, thickness_params)
+  
+  # 选择前15个参数避免图太复杂
+  selected_params <- octa_params[1:min(15, length(octa_params))]
+  
+  cor_data <- data %>%
+    dplyr::select(all_of(selected_params)) %>%
+    na.omit()
+  
+  if(nrow(cor_data) > 3 && ncol(cor_data) > 2) {
+    cor_matrix <- cor(cor_data)
+    
+    # 转换为长格式用于ggplot
+    cor_long <- as.data.frame(as.table(cor_matrix)) %>%
+      mutate(
+        Var1_Clean = clean_parameter_name(as.character(Var1)),
+        Var2_Clean = clean_parameter_name(as.character(Var2))
+      )
+    
+    p_cor_heatmap <- ggplot(cor_long, aes(x = Var1_Clean, y = Var2_Clean, fill = Freq)) +
+      geom_tile() +
+      scale_fill_gradient2(low = "#d73027", mid = "white", high = "#1a9850", 
+                           midpoint = 0, name = "Correlation") +
+      labs(
+        title = "OCTA Parameter Inter-correlations",
+        subtitle = "Correlation matrix of OCTA improvement parameters",
+        x = "Parameters", y = "Parameters"
+      ) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+        axis.text.y = element_text(size = 8)
+      )
+    
+    ggsave("plots/octa_improvements/octa_correlation_heatmap.pdf", p_cor_heatmap, width = 14, height = 12)
+    ggsave("plots/octa_improvements/octa_correlation_heatmap.png", p_cor_heatmap, width = 14, height = 12, dpi = 300)
+  }
+}
+
+# 计算患者改善得分
+calculate_patient_improvement_scores <- function(data, bloodflow_params, thickness_params) {
+  all_params <- c(bloodflow_params, thickness_params)
+  
+  # 为每个患者计算综合改善得分
+  patient_scores <- data %>%
+    rowwise() %>%
+    mutate(
+      # 血流参数改善得分
+      BF_Score = mean(c_across(all_of(bloodflow_params)), na.rm = TRUE),
+      # 厚度参数改善得分  
+      TH_Score = mean(c_across(all_of(thickness_params)), na.rm = TRUE),
+      # 总体改善得分
+      Overall_Score = mean(c_across(all_of(all_params)), na.rm = TRUE),
+      # 正向改善参数数量
+      Positive_Count = sum(c_across(all_of(all_params)) > 0, na.rm = TRUE),
+      # 总参数数量
+      Total_Count = sum(!is.na(c_across(all_of(all_params)))),
+      # 改善比例
+      Improvement_Ratio = Positive_Count / Total_Count
+    ) %>%
+    ungroup() %>%
+    dplyr::select(ID, max_cluster, max_membership, BF_Score, TH_Score, Overall_Score, 
+                  Positive_Count, Total_Count, Improvement_Ratio)
+  
+  return(patient_scores)
+}
+
+# 创建改善模式分类
+create_improvement_pattern_classification <- function(patient_scores) {
+  # 根据改善得分对患者进行分类
+  pattern_data <- patient_scores %>%
+    mutate(
+      Improvement_Pattern = case_when(
+        Overall_Score > 0.05 & Improvement_Ratio > 0.6 ~ "High Improver",
+        Overall_Score > 0 & Improvement_Ratio > 0.5 ~ "Moderate Improver", 
+        Overall_Score < -0.05 & Improvement_Ratio < 0.4 ~ "Poor Responder",
+        TRUE ~ "Mixed Response"
+      )
+    )
+  
+  # 创建改善模式分布图
+  p_patterns <- ggplot(pattern_data, aes(x = Improvement_Pattern, fill = factor(max_cluster))) +
+    geom_bar(position = "dodge", alpha = 0.8) +
+    geom_text(stat = "count", aes(label = ..count..), 
+              position = position_dodge(width = 0.9), vjust = -0.5) +
+    scale_fill_manual(values = c("1" = "#df8859", "2" = "#0fb292"), name = "Cluster") +
+    labs(
+      title = "Patient Improvement Pattern Distribution by Cluster",
+      subtitle = "Classification based on overall improvement score and success ratio",
+      x = "Improvement Pattern", y = "Number of Patients"
+    ) +
+    theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      axis.text.x = element_text(angle = 20, hjust = 1)
+    )
+  
+  ggsave("plots/octa_improvements/improvement_pattern_distribution.pdf", p_patterns, width = 12, height = 8)
+  ggsave("plots/octa_improvements/improvement_pattern_distribution.png", p_patterns, width = 12, height = 8, dpi = 300)
+  
+  # 创建改善得分散点图
+  p_scatter <- ggplot(pattern_data, aes(x = Improvement_Ratio, y = Overall_Score)) +
+    geom_point(aes(color = factor(max_cluster), size = max_membership), alpha = 0.7) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+    geom_vline(xintercept = 0.5, linetype = "dashed", color = "gray50") +
+    scale_color_manual(values = c("1" = "#df8859", "2" = "#0fb292"), name = "Cluster") +
+    scale_size_continuous(name = "Membership", range = c(2, 6)) +
+    labs(
+      title = "Patient Improvement Score vs Success Ratio",
+      subtitle = "Each point represents one patient | Size = cluster membership strength",
+      x = "Improvement Success Ratio", y = "Overall Improvement Score",
+      caption = "Dashed lines: Success ratio = 0.5, Overall score = 0"
+    ) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+  
+  ggsave("plots/octa_improvements/improvement_score_scatter.pdf", p_scatter, width = 12, height = 8)  
+  ggsave("plots/octa_improvements/improvement_score_scatter.png", p_scatter, width = 12, height = 8, dpi = 300)
+  
+  # 保存模式分类数据
+  write.csv(pattern_data, "plots/octa_improvements/patient_improvement_patterns.csv", row.names = FALSE)
+  
+  # 打印模式分布统计
+  pattern_summary <- pattern_data %>%
+    group_by(max_cluster, Improvement_Pattern) %>%
+    summarise(Count = n(), .groups = 'drop') %>%
+    arrange(max_cluster, desc(Count))
+  
+  cat("\n===== 患者改善模式分布 =====\n")
+  print(pattern_summary)
+}
+
+# -------------------- 执行OCTA改善值可视化 --------------------
+
+cat("\n========================================\n")
+cat("🎨 开始创建OCTA改善值可视化（修正版）\n")
+cat("========================================\n")
+
+# 执行主要可视化函数
+# 注意：需要在原始OCTA代码后添加这个调用
+# create_octa_improvement_visualizations(comprehensive_data_with_clusters, 
+#                                        vision_params, bloodflow_params, thickness_params,
+#                                        bloodflow_macular, thickness_macular)
+
+# -------------------- 生成OCTA改善值可视化报告 --------------------
+generate_octa_improvement_report <- function() {
+  
+  report <- paste0(
+    "========================================\n",
+    "OCTA聚类改善值可视化报告（修正版）\n",
+    "========================================\n\n",
+    
+    "🎯 数据特点分析:\n",
+    "- 聚类基于：T2-T0改善值（非时间序列）\n",
+    "- 数据结构：每个参数一个改善值\n",
+    "- 可视化重点：改善值分布、聚类对比、参数重要性\n\n",
+    
+    "📊 生成的可视化类型:\n",
+    "1. 改善值分布对比图\n",
+    "   - 按参数类型的箱线图对比\n",
+    "   - Top差异参数的详细对比\n",
+    "   - 文件：improvement_boxplot_by_type.pdf/png\n",
+    "   - 文件：top_discriminative_parameters.pdf/png\n\n",
+    
+    "2. 参数重要性排序图\n",
+    "   - 基于统计显著性和效应量\n",
+    "   - 重要性得分 = |平均差异| × -log10(P值)\n",
+    "   - 文件：parameter_importance_ranking.pdf/png\n\n",
+    
+    "3. 聚类特征雷达图\n",
+    "   - 关键参数的聚类特征轮廓\n",
+    "   - 标准化显示便于比较\n",
+    "   - 文件：cluster_radar_chart.pdf/png\n\n",
+    
+    "4. 改善值热图\n",
+    "   - 综合参数改善值热图\n",
+    "   - 聚类差异条形图\n",
+    "   - 文件：improvement_heatmap_comprehensive.pdf/png\n",
+    "   - 文件：cluster_difference_barplot.pdf/png\n\n",
+    
+    "5. 相关性分析图\n",
+    "   - 视力-OCTA参数相关性\n",
+    "   - OCTA参数间相关性热图\n",
+    "   - 文件：vision_octa_correlations.pdf/png\n",
+    "   - 文件：octa_correlation_heatmap.pdf/png\n\n",
+    
+    "6. 患者改善模式图\n",
+    "   - 综合改善得分分布\n",
+    "   - 改善模式分类（High/Moderate/Poor/Mixed）\n",
+    "   - 改善得分vs成功率散点图\n",
+    "   - 文件：patient_improvement_scores.pdf/png\n",
+    "   - 文件：improvement_pattern_distribution.pdf/png\n",
+    "   - 文件：improvement_score_scatter.pdf/png\n\n",
+    
+    "🔍 关键特点:\n",
+    "✅ 适应OCTA数据结构（改善值而非时间序列）\n",
+    "✅ 重点展示聚类间改善差异\n",
+    "✅ 识别最具判别力的参数\n",
+    "✅ 患者个体改善模式分析\n",
+    "✅ 参数间相关性探索\n",
+    "✅ 统计学意义与临床意义结合\n\n",
+    
+    "💡 使用建议:\n",
+    "1. 查看改善值分布图了解聚类特征\n",
+    "2. 参考重要性排序识别关键参数\n",
+    "3. 使用雷达图直观比较聚类轮廓\n",
+    "4. 通过热图发现改善模式\n",
+    "5. 利用相关性分析理解参数关系\n",
+    "6. 根据改善模式指导临床决策\n\n",
+    
+    "📈 临床价值:\n",
+    "- 识别OCTA改善的关键指标\n",
+    "- 预测患者改善潜力\n",
+    "- 指导个性化治疗策略\n",
+    "- 优化随访方案\n\n",
+    
+    "报告生成时间: ", Sys.time(), "\n",
+    "========================================\n"
+  )
+  
+  writeLines(report, "OCTA_Improvement_Visualization_Report.txt")
+  cat("✓ 保存OCTA改善值可视化报告: OCTA_Improvement_Visualization_Report.txt\n")
+  
+  return(report)
+}
+
+# 生成报告
+octa_report <- generate_octa_improvement_report()
+
+cat("\n🎉 OCTA改善值可视化代码创建完成！\n")
+cat("========================================\n")
+cat("📋 使用说明:\n")
+cat("1. 在原始OCTA代码的最后添加函数调用\n")
+cat("2. 运行：create_octa_improvement_visualizations(...)\n") 
+cat("3. 查看生成的plots/octa_improvements/目录\n")
+cat("4. 阅读生成的可视化报告\n")
+cat("\n🎯 核心改进:\n")
+cat("✅ 适应T2-T0改善值数据结构\n")
+cat("✅ 重点展示聚类改善差异\n")
+cat("✅ 多维度参数重要性分析\n")
+cat("✅ 患者个体改善模式识别\n")
+cat("✅ 临床实用性导向设计\n")
+

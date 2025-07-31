@@ -1,0 +1,71 @@
+========================================
+OCTA聚类改善值可视化报告（修正版）
+========================================
+
+🎯 数据特点分析:
+- 聚类基于：T2-T0改善值（非时间序列）
+- 数据结构：每个参数一个改善值
+- 可视化重点：改善值分布、聚类对比、参数重要性
+
+📊 生成的可视化类型:
+1. 改善值分布对比图
+   - 按参数类型的箱线图对比
+   - Top差异参数的详细对比
+   - 文件：improvement_boxplot_by_type.pdf/png
+   - 文件：top_discriminative_parameters.pdf/png
+
+2. 参数重要性排序图
+   - 基于统计显著性和效应量
+   - 重要性得分 = |平均差异| × -log10(P值)
+   - 文件：parameter_importance_ranking.pdf/png
+
+3. 聚类特征雷达图
+   - 关键参数的聚类特征轮廓
+   - 标准化显示便于比较
+   - 文件：cluster_radar_chart.pdf/png
+
+4. 改善值热图
+   - 综合参数改善值热图
+   - 聚类差异条形图
+   - 文件：improvement_heatmap_comprehensive.pdf/png
+   - 文件：cluster_difference_barplot.pdf/png
+
+5. 相关性分析图
+   - 视力-OCTA参数相关性
+   - OCTA参数间相关性热图
+   - 文件：vision_octa_correlations.pdf/png
+   - 文件：octa_correlation_heatmap.pdf/png
+
+6. 患者改善模式图
+   - 综合改善得分分布
+   - 改善模式分类（High/Moderate/Poor/Mixed）
+   - 改善得分vs成功率散点图
+   - 文件：patient_improvement_scores.pdf/png
+   - 文件：improvement_pattern_distribution.pdf/png
+   - 文件：improvement_score_scatter.pdf/png
+
+🔍 关键特点:
+✅ 适应OCTA数据结构（改善值而非时间序列）
+✅ 重点展示聚类间改善差异
+✅ 识别最具判别力的参数
+✅ 患者个体改善模式分析
+✅ 参数间相关性探索
+✅ 统计学意义与临床意义结合
+
+💡 使用建议:
+1. 查看改善值分布图了解聚类特征
+2. 参考重要性排序识别关键参数
+3. 使用雷达图直观比较聚类轮廓
+4. 通过热图发现改善模式
+5. 利用相关性分析理解参数关系
+6. 根据改善模式指导临床决策
+
+📈 临床价值:
+- 识别OCTA改善的关键指标
+- 预测患者改善潜力
+- 指导个性化治疗策略
+- 优化随访方案
+
+报告生成时间: 2025-07-23 16:37:45.71108
+========================================
+

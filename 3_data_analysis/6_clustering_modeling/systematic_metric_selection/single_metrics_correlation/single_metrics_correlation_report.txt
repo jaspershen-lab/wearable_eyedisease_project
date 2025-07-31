@@ -1,0 +1,41 @@
+========================================
+Single Metrics vs OCTA Clustering Correlation Analysis Report
+========================================
+
+🎯 Analysis Objective:
+Directly evaluate the correlation between each candidate wearable metric and OCTA clustering
+No composite metrics used, focusing on individual metric predictive potential
+
+📊 Candidate Metrics:
+- Heart Rate Variability: cv_rhr_1, mean_rhr_1, max_rhr_1, min_rhr_1
+- Step Count Activity: steps_max, steps_mean, steps_total
+- Time Windows: baseline, acute_recovery, early_recovery, mid_recovery, late_recovery
+
+📈 Overall Results:
+- Total tests: 35 (7 metrics × 5 time windows)
+- Significant correlations: 0 (0.0%)
+- Meaningful correlations (|r|≥0.3): 7 (20.0%)
+- Weak correlation trends (0.1≤|r|<0.3): 22 (62.9%)
+- Strongest correlation: 0.494 (mean_rhr_1 in baseline time window)
+
+🏆 Best Performing Metrics:
+1. mean_rhr_1 (baseline): r=0.494, p=0.220 (Non-significant)
+2. cv_rhr_1 (late_recovery): r=-0.418, p=0.159 (Non-significant)
+3. max_rhr_1 (early_recovery): r=0.359, p=0.152 (Non-significant)
+4. steps_mean (early_recovery): r=0.359, p=0.563 (Non-significant)
+5. steps_mean (late_recovery): r=0.359, p=0.330 (Non-significant)
+
+💡 Key Conclusions:
+✅ Found 7 metrics showing meaningful correlation (|r|≥0.3)
+⚠️ No metrics achieved statistical significance, but correlation trends still have reference value
+🎯 Recommended focus: mean_rhr_1 (baseline time window), strongest correlation (r=0.494)
+
+📁 Output Files:
+- correlation_heatmap.pdf/png: All metrics correlation heatmap
+- top_metrics_barplot.pdf/png: Top 10 metrics bar chart
+- correlation_by_type.pdf/png: Comparison grouped by type
+- correlation_strength_distribution.pdf/png: Correlation strength distribution
+- single_metrics_correlation_results.csv: Detailed data
+
+Report generated at: 2025-07-28 14:11:08.308892
+========================================

@@ -1,0 +1,94 @@
+========================================
+TIME WINDOW HARD CLUSTER ANALYSIS REPORT
+========================================
+
+🎯 ANALYSIS OVERVIEW:
+✅ 针对硬聚类（所有membership=1）进行组间差异分析
+✅ 使用t检验、Welch t检验和Mann-Whitney U检验
+✅ 计算多种效应大小指标（Cohen's d, Hedges' g等）
+✅ 实施精细化FDR校正策略
+
+📊 ANALYSIS DETAILS:
+- Analysis Date: 2025-07-22
+- Total Comparisons: 120
+- t-test Significant (p < 0.05): 5
+- Welch t-test Significant: 5
+- Mann-Whitney Significant: 5
+- FDR Corrected Significant (Strategy 2): 5
+
+🔬 EFFECT SIZE DISTRIBUTION:
+- Large: 33 (27.5%)
+- Medium: 32 (26.7%)
+- Negligible: 22 (18.3%)
+- Small: 33 (27.5%)
+
+🏆 TOP FINDINGS:
+
+1. PA_Choroid_0_21_improvement - late_recovery Window:
+   📊 Difference: -9.265 vs 2.929
+   📈 Statistics: t=-3.627, p=0.0110
+   🔬 Effect: Cohen's d=2.236 (Large)
+   🎯 Better Cluster: 2 (n=8)
+   📈 Improvement: 131.6%
+
+2. VD_ICP_0_21_improvement - late_recovery Window:
+   📊 Difference: 1.798 vs -0.845
+   📈 Statistics: t=3.481, p=0.0124
+   🔬 Effect: Cohen's d=2.115 (Large)
+   🎯 Better Cluster: 1 (n=4)
+   📈 Improvement: 312.8%
+
+3. VD_DCP_0_6_improvement - mid_recovery Window:
+   📊 Difference: 0.817 vs -1.276
+   📈 Statistics: t=3.163, p=0.0133
+   🔬 Effect: Cohen's d=1.826 (Large)
+   🎯 Better Cluster: 1 (n=6)
+   📈 Improvement: 164.1%
+
+⏰ TIME WINDOW PERFORMANCE:
+1. late_recovery: 3 significant differences (Mean d=2.042, 3 large effects)
+2. early_recovery: 1 significant differences (Mean d=1.622, 1 large effects)
+3. mid_recovery: 1 significant differences (Mean d=1.826, 1 large effects)
+
+📁 GENERATED FILES:
+- time_window_hard_cluster_analysis_complete.csv: Complete results
+- time_window_hard_cluster_analysis_refined_significant.csv: FDR significant results
+- time_window_hard_cluster_analysis_original_significant.csv: Original significant results
+- hard_cluster_*.pdf: Individual cluster comparison plots
+- time_window_hard_cluster_analysis_combined.pdf: Combined visualization
+- effect_size_volcano_plot.pdf: Effect size visualization
+
+🎯 INTERPRETATION GUIDELINES:
+- Cohen's d ≥ 0.8: Large effect (clinically very meaningful)
+- Cohen's d ≥ 0.5: Medium effect (clinically meaningful)
+- Cohen's d ≥ 0.2: Small effect (may be clinically relevant)
+- p < 0.05: Statistically significant (before correction)
+- p_FDR < 0.05: Significant after multiple comparison correction
+
+🔬 STATISTICAL METHODS:
+1. Student's t-test: Assumes equal variances
+2. Welch's t-test: Does not assume equal variances (recommended)
+3. Mann-Whitney U: Non-parametric alternative
+4. Cohen's d: Standardized effect size
+5. Hedges' g: Small sample corrected effect size
+6. FDR correction: Controls false discovery rate
+
+💡 CLINICAL IMPLICATIONS:
+1. Focus on large effect size differences (d ≥ 0.8)
+2. Consider both statistical and clinical significance
+3. Better clusters indicate more favorable recovery patterns
+4. Time window differences suggest optimal intervention periods
+5. Validate findings in independent cohorts
+
+🚀 NEXT STEPS:
+1. Investigate baseline characteristics of better-performing clusters
+2. Develop cluster-specific treatment protocols
+3. Validate cluster assignments in prospective studies
+4. Consider time-window-specific interventions
+5. Analyze cluster stability across different time windows
+
+========================================
+Hard Cluster Analysis completed successfully! 🎉
+All cluster comparison results are now available.
+========================================
+
