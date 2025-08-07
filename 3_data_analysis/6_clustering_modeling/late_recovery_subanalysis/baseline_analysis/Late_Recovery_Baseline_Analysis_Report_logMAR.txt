@@ -1,0 +1,88 @@
+========================================
+Late Recovery时间窗口聚类术前基线特征差异分析报告
+logMAR视力版本 - OCTA T0 + logMAR Vision Analysis
+========================================
+
+🎯 研究目的:
+基于Late Recovery时间窗口聚类结果，分析患者群体差异是:
+A) 术前即存在（先天差异）- 可预测Late Recovery模式
+B) Late Recovery恢复过程中体现（获得性差异）- 主要看长期恢复
+📍 专注分析：0_21区域（广角区域）+ logMAR视力参数
+🔍 特别关注：logMAR视力作为Late Recovery的预测因子
+
+📊 数据概况（logMAR版本）:
+- 聚类来源: Late Recovery时间窗口聚类
+- 分析患者数: 15
+- 术前参数总数: 14
+- logMAR视力/基线参数: 3
+- OCTA血流参数 (0_21): 7
+- OCTA厚度参数 (0_21): 4
+
+🔍 核心发现（logMAR重点分析）:
+- 统计显著差异参数: 1
+- 大效应量参数 (d≥0.8): 2
+- 中等效应量参数 (d≥0.5): 5
+- logMAR视力显著性: 否
+- logMAR视力效应量: 0.632
+- Late Recovery差异来源: Late_Recovery_Pre_operative_logMAR
+
+👁️ logMAR视力详细分析:
+- Cluster 1 平均logMAR: 0.741 (约20/110)
+- Cluster 2 平均logMAR: 0.390 (约20/49)
+- 差异: -0.351 logMAR (约3.5行视力差异)
+- 统计显著性: p=0.3562 (调整后p=0.6918)
+- 效应量: 0.632 (中等效应)
+
+📋 显著差异参数详情 (0_21区域, Late Recovery聚类, logMAR版本):
+  1. age (Baseline - Demographics)
+     差异: -10.667, p=0.0170, 效应量=1.35
+
+🏥 Late Recovery临床意义（logMAR视力导向）:
+⚡ 患者在术前即存在重要差异（可能包括logMAR视力），可预测Late Recovery结局
+💡 提示：
+  - 建立包含logMAR视力的综合Late Recovery风险分层系统
+  - 高风险患者术前优化和counseling
+  - 个性化长期恢复方案选择
+  - Late Recovery期望管理
+
+🔬 科学价值（logMAR重点）:
+1. 明确了Late Recovery患者差异的时间起源和logMAR视力的作用
+2. 专注0_21区域（广角）+ logMAR视力提供Late Recovery重要洞察
+3. 为logMAR视力导向的Late Recovery个性化医疗提供证据基础
+4. 指导长期恢复资源分配策略
+5. 支持包含logMAR视力的Late Recovery预测模型开发
+
+📈 下一步研究（logMAR导向）:
+1. 扩大样本量验证logMAR视力对Late Recovery的预测能力
+2. 纵向随访验证logMAR视力的长期预测价值
+3. 开发包含logMAR视力的Late Recovery临床决策支持工具
+4. 多中心logMAR视力导向的Late Recovery验证研究
+5. 探索术前logMAR视力优化对Late Recovery结局的影响
+
+📁 输出文件（logMAR版本）:
+- baseline_differences_statistics_late_recovery_logmar.csv: 详细统计结果
+- logmar_vision_statistics_by_cluster.csv: logMAR视力聚类统计
+- plots/baseline_characteristics_heatmap_late_recovery_logmar.pdf: 术前特征热图
+- plots/baseline_logmar_vision_boxplot_late_recovery.pdf: logMAR视力专用箱线图
+- plots/baseline_*_late_recovery_logmar.pdf: 带p值的Late Recovery箱线图
+- plots/baseline_pca_late_recovery_logmar.pdf: 术前特征PCA分析
+
+🎯 分析重点（logMAR版本）:
+- 专注0_21区域（广角区域）OCTA参数
+- 结合术前logMAR视力和基线特征
+- 基于Late Recovery时间窗口聚类
+- 所有可视化均标注Late Recovery和logMAR
+- 提供logMAR视力导向的Late Recovery明确临床指导
+- logMAR视力作为核心预测因子的重点分析
+
+📊 logMAR视力解读指南:
+- logMAR = 0: 20/20视力（正常）
+- logMAR = 0.3: 20/40视力（轻度受损）
+- logMAR = 0.7: 20/100视力（中度受损）
+- logMAR = 1.0: 20/200视力（重度受损）
+- logMAR差异0.1 ≈ 1行视力差异
+- logMAR差异≥0.3 = 临床显著差异
+
+生成时间: 2025-08-07 15:04:55.725701
+========================================
+

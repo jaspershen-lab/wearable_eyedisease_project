@@ -21,7 +21,8 @@ cat("===== 可穿戴设备指标预测OCTA预后分析 - 双模型策略 =====\n
 # 加载数据文件
 raw_wearable_file <- "3_data_analysis/6_clustering_modeling/data_prepare/1m/mfuzz_D_Surg1_8h_filtered.csv"
 wearable_cluster_file <- "3_data_analysis/6_clustering_modeling/time_window_clustering/late_recovery_detailed_membership_fixed.csv"
-outcome_file <- "3_data_analysis/6_clustering_modeling/mfuzz/comprehensive_cluster/ppv_WF_cluster_results.csv"
+# outcome_file <- "3_data_analysis/6_clustering_modeling/mfuzz/comprehensive_cluster/ppv_WF_cluster_results.csv"
+outcome_file <- "3_data_analysis/6_clustering_modeling/mfuzz/WF_only_cluster/ppv_comprehensive_cluster_results.csv"
 baseline_info <- read.csv("2_data/analysis_data/baseline_info.csv", stringsAsFactors = FALSE)
 
 # 安全加载数据函数

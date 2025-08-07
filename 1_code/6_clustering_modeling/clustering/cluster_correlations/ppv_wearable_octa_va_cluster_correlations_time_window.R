@@ -44,8 +44,9 @@ wearable_files <- list(
 # 加载预后聚类结果
 # outcome_file <- "3_data_analysis/6_clustering_modeling/mfuzz/octa_cluster/combined_blood_thick/ppv_octa_combined_cluster_results_with_outcomes.csv"
 
-outcome_file <- "3_data_analysis/6_clustering_modeling/mfuzz/comprehensive_cluster/ppv_WF_cluster_results.csv"
+# outcome_file <- "3_data_analysis/6_clustering_modeling/mfuzz/comprehensive_cluster/ppv_WF_cluster_results.csv"
 
+outcome_file <- "3_data_analysis/6_clustering_modeling/mfuzz/WF_only_cluster/ppv_comprehensive_cluster_results.csv"
 # 检查文件是否存在并加载
 load_data_safely <- function(file_path, data_name) {
   if(file.exists(file_path)) {
@@ -1059,3 +1060,391 @@ cat("2. Mosaic_Plot_[window].pdf - Mosaic plot showing proportional relationship
 cat("3. Stacked_Barplot_[window].pdf - Stacked bar chart showing distribution\n")
 cat("4. Association_Plot_[window].pdf - Association plot showing residuals\n")
 cat("5. Significant_Windows_Comparison.pdf - Overall comparison of significant windows\n")
+
+
+# 修改版本：为所有时间窗口创建可视化图表（无论是否显著）
+# 在原代码基础上的改进版本
+
+library(ggplot2)
+library(vcd)
+library(RColorBrewer)
+library(gridExtra)
+library(corrplot)
+library(reshape2)
+library(dplyr)
+
+# ================== 1. 修改主函数 - 为所有时间窗口创建图表 ==================
+
+create_plots_for_all_windows <- function(analysis_results) {
+  
+  cat("Creating plots for ALL time windows (both significant and non-significant)...\n")
+  
+  # 检查是否有分析结果
+  if(length(analysis_results) == 0) {
+    cat("❌ No analysis results found. Please run the main analysis first.\n")
+    return(NULL)
+  }
+  
+  cat(sprintf("Total time windows to process: %d\n", length(analysis_results)))
+  
+  # 为每个时间窗口创建图表
+  for(window_name in names(analysis_results)) {
+    result <- analysis_results[[window_name]]
+    
+    # 显示当前处理的时间窗口信息
+    significance_status <- ifelse(result$fisher_p < 0.05, "SIGNIFICANT", "NON-SIGNIFICANT")
+    cat(sprintf("\n--- Processing %s (%s, p=%.4f) ---\n", 
+                toupper(window_name), significance_status, result$fisher_p))
+    
+    create_comprehensive_plots_for_window(result, window_name)
+  }
+  
+  # 创建总体对比图
+  create_comprehensive_comparison_summary(analysis_results)
+}
+
+
+
+# ================== 3. 修改单个时间窗口图表创建函数 ==================
+
+create_comprehensive_plots_for_window <- function(result, window_name) {
+  
+  # 获取列联表和显著性状态
+  contingency_table <- result$contingency_table
+  is_significant <- result$fisher_p < 0.05
+  significance_label <- ifelse(is_significant, "SIGNIFICANT", "NON-SIGNIFICANT")
+  
+  # 1. 创建列联表热图（所有时间窗口）
+  create_universal_contingency_heatmap(contingency_table, window_name, result, is_significant)
+  
+  # 2. 创建马赛克图（所有时间窗口）
+  create_universal_mosaic_plot(contingency_table, window_name, result, is_significant)
+  
+  # 3. 创建堆叠条形图（所有时间窗口）
+  create_universal_stacked_barplot(result$analysis_data, window_name, result, is_significant)
+  
+  # 4. 创建关联性矩阵图（所有时间窗口）
+  create_universal_association_plot(contingency_table, window_name, result, is_significant)
+  
+  cat(sprintf("✅ All plots created for %s (%s)\n", window_name, significance_label))
+}
+
+# ================== 4. 通用列联表热图函数 ==================
+
+create_universal_contingency_heatmap <- function(contingency_table, window_name, result, is_significant) {
+  
+  # 转换为数据框
+  contingency_df <- as.data.frame(contingency_table)
+  names(contingency_df) <- c("Wearable_Cluster", "OCTA_Cluster", "Frequency")
+  
+  # 计算百分比
+  contingency_df$Percentage <- round(contingency_df$Frequency / sum(contingency_df$Frequency) * 100, 1)
+  
+  # 统一使用紫色配色方案
+  color_scheme <- scale_fill_gradient(low = "white", high = "#a488bf", name = "Frequency")
+  
+  # 统一显著性标签（保持文字区分但颜色统一）
+  significance_label <- ifelse(is_significant, "SIGNIFICANT", "NON-SIGNIFICANT")
+  significance_color <- "black"  # 统一使用黑色文字
+  
+  # 创建热图
+  p1 <- ggplot(contingency_df, aes(x = OCTA_Cluster, y = Wearable_Cluster, fill = Frequency)) +
+    geom_tile(color = "white", size = 1) +
+    geom_text(aes(label = paste0(Frequency, "\n(", Percentage, "%)")), 
+              color = "black", size = 4, fontweight = "bold") +
+    color_scheme +
+    labs(title = paste("Cluster Association Analysis"),
+         subtitle = paste("Time Window:", toupper(gsub("_", " ", window_name)), "|", 
+                          significance_label,
+                          "\nFisher's p =", round(result$fisher_p, 4),
+                          "| Cramér's V =", round(result$cramers_v, 3),
+                          "| n =", result$n_patients),
+         x = "OCTA Improvement Cluster",
+         y = "Wearable Device Cluster") +
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+          plot.subtitle = element_text(hjust = 0.5, size = 11, color = significance_color),
+          axis.title = element_text(face = "bold"),
+          legend.title = element_text(face = "bold"))
+  
+  # 保存为PDF
+  filename1 <- paste0("Heatmap_", window_name, "_", 
+                      ifelse(is_significant, "SIGNIFICANT", "NON_SIGNIFICANT"), ".pdf")
+  ggsave(filename1, p1, width = 10, height = 8, device = "pdf")
+  cat(sprintf("  ✓ Heatmap saved: %s\n", filename1))
+}
+
+# ================== 5. 通用马赛克图函数 ==================
+
+create_universal_mosaic_plot <- function(contingency_table, window_name, result, is_significant) {
+  
+  # 使用PDF设备
+  significance_label <- ifelse(is_significant, "SIGNIFICANT", "NON_SIGNIFICANT")
+  filename <- paste0("Mosaic_", window_name, "_", significance_label, ".pdf")
+  pdf(filename, width = 10, height = 8)
+  
+  # 设置图形参数
+  par(mar = c(6, 6, 8, 3))
+  
+  # 统一使用紫色配色
+  colors <- brewer.pal(max(3, ncol(contingency_table)), "Purples")
+  
+  # 创建标题
+  sig_label <- ifelse(is_significant, "SIGNIFICANT", "NON-SIGNIFICANT")
+  main_title <- paste("Mosaic Plot:", toupper(gsub("_", " ", window_name)), 
+                      "\n", sig_label,
+                      "\nFisher's p =", round(result$fisher_p, 4),
+                      "| Cramér's V =", round(result$cramers_v, 3))
+  
+  # 创建马赛克图
+  tryCatch({
+    mosaic(contingency_table, 
+           shade = TRUE,
+           legend = TRUE)
+    
+    # 手动添加标题和轴标签
+    title(main = main_title, line = 4, cex.main = 1.1, font.main = 2)
+    mtext("Wearable Device Cluster", side = 1, line = 3, cex = 1.1, font = 2)
+    mtext("OCTA Improvement Cluster", side = 2, line = 3, cex = 1.1, font = 2)
+    
+  }, error = function(e) {
+    # 使用基础R的mosaicplot
+    mosaicplot(contingency_table, 
+               main = main_title,
+               xlab = "Wearable Device Cluster",
+               ylab = "OCTA Improvement Cluster",
+               color = colors,
+               cex.axis = 1.0)
+  })
+  
+  dev.off()
+  
+  cat(sprintf("  ✓ Mosaic plot saved: %s\n", filename))
+}
+
+# ================== 6. 通用堆叠条形图函数 ==================
+
+create_universal_stacked_barplot <- function(analysis_data, window_name, result, is_significant) {
+  
+  # 创建堆叠条形图数据
+  stacked_data <- analysis_data %>%
+    dplyr::count(wearable_cluster, outcome_cluster) %>%
+    dplyr::group_by(wearable_cluster) %>%
+    dplyr::mutate(percentage = round(n / sum(n) * 100, 1))
+  
+  # 统一使用紫色配色方案
+  color_scheme <- scale_fill_brewer(type = "seq", palette = "Purples", name = "OCTA Improvement\nCluster")
+  
+  # 统一显著性标签（保持文字区分但颜色统一）
+  significance_label <- ifelse(is_significant, "SIGNIFICANT", "NON-SIGNIFICANT")
+  significance_color <- "black"  # 统一使用黑色文字
+  
+  p3 <- ggplot(stacked_data, aes(x = factor(wearable_cluster), y = n, fill = factor(outcome_cluster))) +
+    geom_col(position = "stack", alpha = 0.8) +
+    geom_text(aes(label = paste0(n, "\n(", percentage, "%)")), 
+              position = position_stack(vjust = 0.5), 
+              color = "white", fontweight = "bold", size = 3) +
+    color_scheme +
+    labs(title = "Distribution within Wearable Device Clusters",
+         subtitle = paste("Time Window:", toupper(gsub("_", " ", window_name)), "|",
+                          significance_label,
+                          "| n =", result$n_patients, "patients"),
+         x = "Wearable Device Cluster",
+         y = "Number of Patients") +
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+          plot.subtitle = element_text(hjust = 0.5, size = 11, color = significance_color),
+          axis.title = element_text(face = "bold"),
+          legend.title = element_text(face = "bold"))
+  
+  # 保存为PDF
+  filename3 <- paste0("Stacked_", window_name, "_", 
+                      ifelse(is_significant, "SIGNIFICANT", "NON_SIGNIFICANT"), ".pdf")
+  ggsave(filename3, p3, width = 10, height = 6, device = "pdf")
+  cat(sprintf("  ✓ Stacked barplot saved: %s\n", filename3))
+}
+
+# ================== 7. 通用关联性图函数 ==================
+
+create_universal_association_plot <- function(contingency_table, window_name, result, is_significant) {
+  
+  # 使用PDF设备
+  significance_label <- ifelse(is_significant, "SIGNIFICANT", "NON_SIGNIFICANT")
+  filename <- paste0("Association_", window_name, "_", significance_label, ".pdf")
+  pdf(filename, width = 10, height = 8)
+  
+  # 设置图形参数
+  par(mar = c(6, 6, 8, 3))
+  
+  # 创建关联图
+  tryCatch({
+    assoc(contingency_table, shade = TRUE)
+    
+    # 手动添加标题和轴标签
+    sig_label <- ifelse(is_significant, "SIGNIFICANT", "NON-SIGNIFICANT")
+    main_title <- paste("Association Plot:", toupper(gsub("_", " ", window_name)),
+                        "\n", sig_label,
+                        "\nFisher's p =", round(result$fisher_p, 4))
+    title(main = main_title, line = 4, cex.main = 1.1, font.main = 2)
+    mtext("Wearable Device Cluster", side = 1, line = 3, cex = 1.1, font = 2)
+    mtext("OCTA Improvement Cluster", side = 2, line = 3, cex = 1.1, font = 2)
+    
+  }, error = function(e) {
+    # 创建替代的热图
+    chi_test <- chisq.test(contingency_table)
+    residuals_std <- chi_test$stdres
+    
+    # 统一使用紫色配色
+    colors <- colorRampPalette(c("white", "#a488bf", "#8b5a99"))(100)
+    
+    # 创建热图
+    image(1:nrow(residuals_std), 1:ncol(residuals_std), as.matrix(residuals_std),
+          col = colors,
+          xlab = "", ylab = "", axes = FALSE)
+    
+    # 添加轴标签
+    axis(1, at = 1:nrow(residuals_std), labels = rownames(residuals_std))
+    axis(2, at = 1:ncol(residuals_std), labels = colnames(residuals_std))
+    
+    # 添加数值
+    for(i in 1:nrow(residuals_std)) {
+      for(j in 1:ncol(residuals_std)) {
+        text(i, j, round(residuals_std[i,j], 2), cex = 1.2)
+      }
+    }
+    
+    # 添加标题
+    sig_label <- ifelse(is_significant, "SIGNIFICANT", "NON-SIGNIFICANT")
+    main_title <- paste("Standardized Residuals:", toupper(gsub("_", " ", window_name)),
+                        "\n", sig_label,
+                        "\nFisher's p =", round(result$fisher_p, 4))
+    title(main = main_title, line = 1, cex.main = 1.1, font.main = 2)
+    mtext("Wearable Device Cluster", side = 1, line = 3, cex = 1.1, font = 2)
+    mtext("OCTA Improvement Cluster", side = 2, line = 3, cex = 1.1, font = 2)
+  })
+  
+  dev.off()
+  
+  cat(sprintf("  ✓ Association plot saved: %s\n", filename))
+}
+
+# ================== 8. 全面的对比汇总图 ==================
+
+create_comprehensive_comparison_summary <- function(analysis_results) {
+  
+  cat("\nCreating comprehensive comparison summary...\n")
+  
+  # 创建对比数据
+  comparison_data <- data.frame(
+    Time_Window = names(analysis_results),
+    Fisher_P = sapply(analysis_results, function(x) x$fisher_p),
+    Cramers_V = sapply(analysis_results, function(x) x$cramers_v),
+    N_Patients = sapply(analysis_results, function(x) x$n_patients),
+    Significant = sapply(analysis_results, function(x) x$fisher_p < 0.05),
+    Association_Strength = sapply(analysis_results, function(x) x$association_strength),
+    stringsAsFactors = FALSE
+  )
+  
+  # 1. P值对比图（所有时间窗口）
+  p1 <- ggplot(comparison_data, aes(x = reorder(Time_Window, Fisher_P), 
+                                    y = -log10(Fisher_P), 
+                                    fill = Significant)) +
+    geom_col(alpha = 0.8) +
+    geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red", size = 1) +
+    geom_text(aes(label = round(Fisher_P, 4)), vjust = -0.3, size = 3) +
+    scale_fill_manual(values = c("FALSE" = "#a488bf", "TRUE" = "#8b5a99"),
+                      name = "Significant", labels = c("No", "Yes")) +
+    labs(title = "Fisher's Exact Test Results - All Time Windows",
+         subtitle = "Red line indicates significance threshold (p = 0.05)",
+         x = "Time Window", y = "-log10(P-value)") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          plot.title = element_text(hjust = 0.5, face = "bold"),
+          plot.subtitle = element_text(hjust = 0.5))
+  
+  # 2. Cramér's V对比图（所有时间窗口）
+  p2 <- ggplot(comparison_data, aes(x = reorder(Time_Window, -Cramers_V), 
+                                    y = Cramers_V, 
+                                    fill = Association_Strength)) +
+    geom_col(alpha = 0.8) +
+    geom_text(aes(label = round(Cramers_V, 3)), vjust = -0.3, size = 3) +
+    scale_fill_brewer(type = "qual", palette = "Set3", name = "Association\nStrength") +
+    labs(title = "Association Strength (Cramér's V) - All Time Windows",
+         x = "Time Window", y = "Cramér's V") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          plot.title = element_text(hjust = 0.5, face = "bold"))
+  
+  # 3. 患者数量对比图
+  p3 <- ggplot(comparison_data, aes(x = Time_Window, y = N_Patients, fill = Significant)) +
+    geom_col(alpha = 0.8) +
+    geom_text(aes(label = N_Patients), vjust = -0.3, size = 3) +
+    scale_fill_manual(values = c("FALSE" = "#a488bf", "TRUE" = "#8b5a99"),
+                      name = "Significant", labels = c("No", "Yes")) +
+    labs(title = "Sample Size by Time Window",
+         x = "Time Window", y = "Number of Patients") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          plot.title = element_text(hjust = 0.5, face = "bold"))
+  
+  # 4. 显著性热图
+  significance_matrix <- data.frame(
+    Time_Window = comparison_data$Time_Window,
+    Fisher_Test = ifelse(comparison_data$Significant, 1, 0)
+  )
+  
+  # 重塑数据用于热图
+  sig_long <- reshape2::melt(significance_matrix, id.vars = "Time_Window",
+                             variable.name = "Test_Type", value.name = "Significant")
+  
+  p4 <- ggplot(sig_long, aes(x = Time_Window, y = Test_Type, fill = factor(Significant))) +
+    geom_tile(color = "white", size = 1) +
+    geom_text(aes(label = ifelse(Significant == 1, "SIG", "NS")), 
+              color = "white", fontweight = "bold", size = 4) +
+    scale_fill_manual(values = c("0" = "#a488bf", "1" = "#8b5a99"),
+                      name = "Result", labels = c("Non-Significant", "Significant")) +
+    labs(title = "Significance Status Across All Time Windows",
+         x = "Time Window", y = "Statistical Test") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          plot.title = element_text(hjust = 0.5, face = "bold"))
+  
+  # 组合所有图表
+  combined_comparison <- grid.arrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
+  ggsave("ALL_Time_Windows_Comprehensive_Summary.pdf", combined_comparison, 
+         width = 16, height = 12, device = "pdf")
+  cat("✓ Comprehensive summary saved: ALL_Time_Windows_Comprehensive_Summary.pdf\n")
+  
+  # 创建汇总统计表
+  summary_stats <- data.frame(
+    Metric = c("Total Windows", "Significant Windows", "Non-Significant Windows",
+               "Mean Sample Size", "Mean Cramér's V", "Strongest Association"),
+    Value = c(nrow(comparison_data),
+              sum(comparison_data$Significant),
+              sum(!comparison_data$Significant),
+              round(mean(comparison_data$N_Patients), 1),
+              round(mean(comparison_data$Cramers_V), 3),
+              comparison_data$Time_Window[which.max(comparison_data$Cramers_V)])
+  )
+  
+  write.csv(summary_stats, "All_Windows_Summary_Statistics.csv", row.names = FALSE)
+  cat("✓ Summary statistics saved: All_Windows_Summary_Statistics.csv\n")
+  
+  # 显示汇总信息
+  cat("\n=== COMPREHENSIVE ANALYSIS SUMMARY ===\n")
+  print(summary_stats)
+  cat("\nSignificant windows:", paste(comparison_data$Time_Window[comparison_data$Significant], collapse = ", "), "\n")
+  cat("Non-significant windows:", paste(comparison_data$Time_Window[!comparison_data$Significant], collapse = ", "), "\n")
+}
+
+# ================== 9. 主函数调用 ==================
+
+# 检查是否存在analysis_results并调用函数
+if(exists("analysis_results") && !is.null(analysis_results) && length(analysis_results) > 0) {
+  cat("Using actual analysis results...\n")
+  create_plots_for_all_windows(analysis_results)
+} else {
+  cat("❌ ERROR: No analysis_results found!\n")
+  cat("Please run the main correlation analysis first to generate analysis_results.\n")
+  cat("The analysis_results should contain the correlation analysis results for all time windows.\n")
+}

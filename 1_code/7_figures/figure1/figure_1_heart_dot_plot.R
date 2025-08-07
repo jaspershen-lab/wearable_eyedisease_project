@@ -439,20 +439,7 @@ print("Presurgery days summary for PPV diabetes patients:")
 print(presurgery_summary_ppv)
 write.csv(presurgery_summary_ppv, "presurgery_days_summary_ppv_diabetes.csv", row.names = FALSE)
 
-cat("\n============ ANALYSIS COMPLETE ============\n")
-cat("Generated files for PPV diabetes patients:\n")
-cat("1. heart_rate_data_dot_plot_ppv_diabetes.pdf\n")
-cat("2. heart_rate_data_perfectly_aligned_ppv_diabetes.pdf\n")
-cat("3. heart_rate_data_histogram_ppv_diabetes.pdf\n")
-cat("4. heart_rate_data_combined_ppv_diabetes.pdf\n")
-cat("5. presurgery_wearable_days_ppv_diabetes.pdf\n")
-cat("6. presurgery_wearable_days_ppv_diabetes.csv\n")
-cat("7. presurgery_days_summary_ppv_diabetes.csv\n")
-cat("8. id_mapping_ppv_diabetes.csv - ID mapping table\n").x = element_blank(),
-axis.text.x = element_text(angle = 45, hjust = 1, size = 8)
-).x = element_blank(),
-axis.text.x = element_text(angle = 45, hjust = 1, size = 8)
-)
+
 
 print(p_presurgery_ppv)
 ggsave(filename = "presurgery_wearable_days_ppv_diabetes.pdf", plot = p_presurgery_ppv, width = 8, height = 6)

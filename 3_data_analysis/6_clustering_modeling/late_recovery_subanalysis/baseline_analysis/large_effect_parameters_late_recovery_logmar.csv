@@ -1,0 +1,3 @@
+"Parameter","Data_Type","Region","Variable_Type","Cluster1_Mean","Cluster2_Mean","Mean_Difference","P_Value","Effect_Size","Test_Method","Significant","P_Adjusted","Significant_Adjusted"
+"age","Baseline","Demographics","Continuous",61.6666666666667,51,-10.6666666666667,0.017041222372643,1.35187546420903,"Independent t-test","Yes",0.238577113217002,"No"
+"PA_DCP_0_21","Blood Flow","Wide-field (0_21)","Continuous",35.99654,28.0552888888889,-7.94125111111111,0.0813869354681931,1.24084547554346,"Independent t-test","No",0.569708548277352,"No"

@@ -1,0 +1,7 @@
+"max_cluster","Data_Type","Parameter_Count","Mean_Improvement","Positive_Changes","Negative_Changes"
+"1","Blood Flow - Macular",7,-1.58852619047619,3,4
+"1","Thickness - Macular",4,-9.75045,0,4
+"1","Vision (LogMAR)",3,21.1073973605015,3,0
+"2","Blood Flow - Macular",7,1.11739047619048,3,4
+"2","Thickness - Macular",4,4.82786388888889,4,0
+"2","Vision (LogMAR)",3,18.3691324535005,3,0

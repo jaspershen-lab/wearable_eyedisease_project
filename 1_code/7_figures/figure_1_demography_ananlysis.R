@@ -210,56 +210,56 @@ circos.track(
   }
 )
 
-## Track 3: HbA1c track with gradient colors
-temp_hba1c <- df_circular$hba1c
-circos.track(
-  factors = df_circular$factors,
-  y = temp_hba1c,
-  ylim = c(0.8 * min(temp_hba1c, na.rm = TRUE), 1.1 * max(temp_hba1c, na.rm = TRUE)),
-  bg.border = "black",
-  track.height = 0.15,
-  panel.fun = function(x, y) {
-    name = get.cell.meta.data("sector.index")
-    i = get.cell.meta.data("sector.numeric.index")
-    xlim = get.cell.meta.data("xlim")
-    ylim = get.cell.meta.data("ylim")
-    
-    # Add y-axis only for the first sector
-    if(i == 1) {
-      circos.yaxis(
-        side = "left",
-        at = c(
-          round(min(temp_hba1c, na.rm = TRUE), 1),
-          round((min(temp_hba1c, na.rm = TRUE) + max(temp_hba1c, na.rm = TRUE)) / 2, 1),
-          round(max(temp_hba1c, na.rm = TRUE), 1)
-        ),
-        sector.index = get.all.sector.index()[1],
-        labels.cex = 0.4,
-        labels.niceFacing = FALSE
-      )
-    }
-    
-    # Calculate gradient color for HbA1c
-    current_hba1c <- temp_hba1c[i]
-    if(!is.na(current_hba1c)) {
-      hba1c_min <- min(temp_hba1c, na.rm = TRUE)
-      hba1c_max <- max(temp_hba1c, na.rm = TRUE)
-      hba1c_normalize <- (current_hba1c - hba1c_min) / (hba1c_max - hba1c_min)
-      hba1c_normalize <- max(0, min(1, hba1c_normalize))
-      hba1c_color <- colorRampPalette(c("#ccccff", "#6666ff", "#0000cc"))(100)[ceiling(hba1c_normalize * 99) + 1]
-      
-      circos.lines(
-        x = mean(xlim, na.rm = TRUE),
-        y = temp_hba1c[i],
-        pch = 16,
-        cex = 8,
-        type = "h",
-        col = hba1c_color,
-        lwd = 4
-      )
-    }
-  }
-)
+# ## Track 3: HbA1c track with gradient colors
+# temp_hba1c <- df_circular$hba1c
+# circos.track(
+#   factors = df_circular$factors,
+#   y = temp_hba1c,
+#   ylim = c(0.8 * min(temp_hba1c, na.rm = TRUE), 1.1 * max(temp_hba1c, na.rm = TRUE)),
+#   bg.border = "black",
+#   track.height = 0.15,
+#   panel.fun = function(x, y) {
+#     name = get.cell.meta.data("sector.index")
+#     i = get.cell.meta.data("sector.numeric.index")
+#     xlim = get.cell.meta.data("xlim")
+#     ylim = get.cell.meta.data("ylim")
+#     
+#     # Add y-axis only for the first sector
+#     if(i == 1) {
+#       circos.yaxis(
+#         side = "left",
+#         at = c(
+#           round(min(temp_hba1c, na.rm = TRUE), 1),
+#           round((min(temp_hba1c, na.rm = TRUE) + max(temp_hba1c, na.rm = TRUE)) / 2, 1),
+#           round(max(temp_hba1c, na.rm = TRUE), 1)
+#         ),
+#         sector.index = get.all.sector.index()[1],
+#         labels.cex = 0.4,
+#         labels.niceFacing = FALSE
+#       )
+#     }
+#     
+#     # Calculate gradient color for HbA1c
+#     current_hba1c <- temp_hba1c[i]
+#     if(!is.na(current_hba1c)) {
+#       hba1c_min <- min(temp_hba1c, na.rm = TRUE)
+#       hba1c_max <- max(temp_hba1c, na.rm = TRUE)
+#       hba1c_normalize <- (current_hba1c - hba1c_min) / (hba1c_max - hba1c_min)
+#       hba1c_normalize <- max(0, min(1, hba1c_normalize))
+#       hba1c_color <- colorRampPalette(c("#ccccff", "#6666ff", "#0000cc"))(100)[ceiling(hba1c_normalize * 99) + 1]
+#       
+#       circos.lines(
+#         x = mean(xlim, na.rm = TRUE),
+#         y = temp_hba1c[i],
+#         pch = 16,
+#         cex = 8,
+#         type = "h",
+#         col = hba1c_color,
+#         lwd = 4
+#       )
+#     }
+#   }
+# )
 
 ## Track 4: Gender track
 temp_gender <- as.character(df_circular$gender_factor)
@@ -333,32 +333,32 @@ for(i in 1:3) {
 grid.text("BMI", x = 0.5, y = 0.85, just = "center", gp = gpar(fontsize = 10, fontface = "bold"))
 popViewport()
 
-# HbA1c legend
-pushViewport(viewport(x = legend_x, y = legend_y_start - 0.3, width = 0.15, height = 0.08))
-hba1c_color_bar <- colorRampPalette(c("#ccccff", "#6666ff", "#0000cc"))(100)
-for(i in 1:100) {
-  grid.rect(x = 0.1 + (i-1)*0.8/100, y = 0.5, width = 0.8/100, height = 0.3,
-            gp = gpar(fill = hba1c_color_bar[i], col = NA))
-}
-hba1c_breaks <- seq(min(df_circular$hba1c, na.rm = TRUE), max(df_circular$hba1c, na.rm = TRUE), length.out = 3)
-for(i in 1:3) {
-  grid.text(round(hba1c_breaks[i], 1), x = 0.1 + (i-1)*0.8/2, y = 0.2, just = "center", gp = gpar(fontsize = 8))
-}
-grid.text("HbA1c (%)", x = 0.5, y = 0.85, just = "center", gp = gpar(fontsize = 10, fontface = "bold"))
-popViewport()
-
-# Gender legend
-text(legend_x + 0.02, legend_y_start - 0.45, "Gender", cex = 1.2, font = 2, adj = 0)
-
-# Female
-rect(legend_x, legend_y_start - 0.52, legend_x + 0.03, legend_y_start - 0.49, 
-     col = sex_color["Female"], border = NA)
-text(legend_x + 0.05, legend_y_start - 0.505, "Female", cex = 0.8, adj = 0)
-
-# Male
-rect(legend_x, legend_y_start - 0.58, legend_x + 0.03, legend_y_start - 0.55, 
-     col = sex_color["Male"], border = NA)
-text(legend_x + 0.05, legend_y_start - 0.565, "Male", cex = 0.8, adj = 0)
+# # HbA1c legend
+# pushViewport(viewport(x = legend_x, y = legend_y_start - 0.3, width = 0.15, height = 0.08))
+# hba1c_color_bar <- colorRampPalette(c("#ccccff", "#6666ff", "#0000cc"))(100)
+# for(i in 1:100) {
+#   grid.rect(x = 0.1 + (i-1)*0.8/100, y = 0.5, width = 0.8/100, height = 0.3,
+#             gp = gpar(fill = hba1c_color_bar[i], col = NA))
+# }
+# hba1c_breaks <- seq(min(df_circular$hba1c, na.rm = TRUE), max(df_circular$hba1c, na.rm = TRUE), length.out = 3)
+# for(i in 1:3) {
+#   grid.text(round(hba1c_breaks[i], 1), x = 0.1 + (i-1)*0.8/2, y = 0.2, just = "center", gp = gpar(fontsize = 8))
+# }
+# grid.text("HbA1c (%)", x = 0.5, y = 0.85, just = "center", gp = gpar(fontsize = 10, fontface = "bold"))
+# popViewport()
+# 
+# # Gender legend
+# text(legend_x + 0.02, legend_y_start - 0.45, "Gender", cex = 1.2, font = 2, adj = 0)
+# 
+# # Female
+# rect(legend_x, legend_y_start - 0.52, legend_x + 0.03, legend_y_start - 0.49, 
+#      col = sex_color["Female"], border = NA)
+# text(legend_x + 0.05, legend_y_start - 0.505, "Female", cex = 0.8, adj = 0)
+# 
+# # Male
+# rect(legend_x, legend_y_start - 0.58, legend_x + 0.03, legend_y_start - 0.55, 
+#      col = sex_color["Male"], border = NA)
+# text(legend_x + 0.05, legend_y_start - 0.565, "Male", cex = 0.8, adj = 0)
 
 # Clear circos
 circos.clear()

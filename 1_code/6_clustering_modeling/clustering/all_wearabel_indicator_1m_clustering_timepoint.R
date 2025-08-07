@@ -42,7 +42,7 @@ available_metrics <- check_metrics(ppv_data, metrics)
 cat("可用的指标:", paste(available_metrics, collapse = ", "), "\n")
 
 # 我们将选择4个关键指标来平衡信息量和维度
-selected_metrics <- c("cv_rhr_1","steps_max")
+selected_metrics <- c("cv_rhr_1","steps_mean")
 # selected_metrics <- c("cv_rhr_1","cv_bo", "steps_max")
 # selected_metrics <- c("cv_rhr_1","cv_bo", "steps_max","deep_sleep")
 selected_metrics <- intersect(selected_metrics, available_metrics)

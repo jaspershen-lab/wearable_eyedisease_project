@@ -407,7 +407,7 @@ create_baseline_visualizations_late_recovery <- function(data, stats_results) {
                 position = position_stack(vjust = 0.5), 
                 color = "white", fontface = "bold", size = 3) +
       scale_fill_manual(
-        values = if(param == "gender") c("Female" = "#FF69B4", "Male" = "#4169E1") else c("#E7B800", "#00AFBB"),
+        values = if(param == "gender") c("Female" = "#FF69B4", "Male" = "#4169E1") else c("#a388bf", "#bc982f"),
         name = if(param == "gender") "Gender" else param_clean
       ) +
       theme_bw() +
@@ -450,7 +450,7 @@ create_baseline_visualizations_late_recovery <- function(data, stats_results) {
       geom_boxplot(alpha = 0.7, outlier.alpha = 0.6) +
       geom_jitter(width = 0.2, alpha = 0.6, size = 2) +
       scale_fill_manual(
-        values = c("1" = "#E7B800", "2" = "#00AFBB"),
+        values = c("1" = "#a388bf", "2" = "#bc982f"),
         name = "Late Recovery\nCluster"
       ) +
       theme_bw() +
@@ -550,6 +550,292 @@ create_baseline_visualizations_late_recovery <- function(data, stats_results) {
     }
   }
   
+  # 修复后的分组OCTA基线特征箱线图函数
+  # 替换原来的 create_grouped_octa_baseline_boxplots 函数
+  
+  create_grouped_octa_baseline_boxplots <- function(data, analysis_params) {
+    
+    # 识别OCTA参数
+    octa_params <- analysis_params[grepl("SVP|ICP|DCP|Choroid|GCL|INL|Retina", analysis_params) & grepl("_T0$", analysis_params)]
+    
+    if(length(octa_params) == 0) {
+      cat("    No OCTA baseline parameters found\n")
+      return(NULL)
+    }
+    
+    cat("    Found", length(octa_params), "OCTA baseline parameters\n")
+    
+    # 分组OCTA参数
+    # 1. 血流参数 (代替PA参数)
+    bloodflow_params <- octa_params[grepl("SVP|ICP|DCP|Choroid", octa_params)]
+    
+    # 2. VD Parameters (如果存在)
+    vd_params <- octa_params[grepl("VD", octa_params)]
+    
+    # 3. Thickness Parameters
+    thickness_params <- octa_params[grepl("GCL|INL|Retina", octa_params)]
+    
+    # 存储生成的图
+    plots_list <- list()
+    
+    # 创建血流参数箱线图
+    if(length(bloodflow_params) > 0) {
+      cat("    Creating blood flow parameters boxplot...\n")
+      
+      # 初始化空的数据框，确保列名一致
+      bloodflow_data <- data.frame(
+        ID = character(0),
+        max_cluster = numeric(0),
+        Parameter_Name = character(0),
+        Parameter_Clean = character(0),
+        Baseline_Value = numeric(0),
+        Cluster = character(0),
+        stringsAsFactors = FALSE
+      )
+      
+      for(param in bloodflow_params) {
+        if(param %in% names(data)) {
+          param_data <- data %>%
+            dplyr::select(ID, max_cluster, all_of(param)) %>%
+            filter(!is.na(.data[[param]])) %>%
+            mutate(
+              Parameter_Name = gsub("_T0$", "", param),
+              Parameter_Clean = case_when(
+                grepl("Choroid", param) ~ "Choroid",
+                grepl("DCP", param) ~ "DCP", 
+                grepl("ICP", param) ~ "ICP",
+                grepl("SVP", param) ~ "SVP",
+                TRUE ~ gsub("_T0$|_0_21", "", param)
+              ),
+              Baseline_Value = as.numeric(.data[[param]]),
+              Cluster = as.character(max_cluster)
+            ) %>%
+            dplyr::select(ID, max_cluster, Parameter_Name, Parameter_Clean, Baseline_Value, Cluster)
+          
+          # 使用rbind.data.frame确保列名匹配
+          bloodflow_data <- rbind.data.frame(bloodflow_data, param_data)
+        }
+      }
+      
+      if(nrow(bloodflow_data) > 0) {
+        # 设置参数顺序
+        bloodflow_data$Parameter_Clean <- factor(bloodflow_data$Parameter_Clean, 
+                                                 levels = c("Choroid", "DCP", "ICP", "SVP"))
+        
+        p_bloodflow <- ggplot(bloodflow_data, aes(x = Parameter_Clean, y = Baseline_Value, fill = Cluster)) +
+          geom_boxplot(position = position_dodge(width = 0.8), alpha = 0.7, outlier.size = 1) +
+          scale_fill_manual(values = c("1" = "#a388bf", "2" = "#bc982f"), 
+                            name = "Late Recovery\nCluster") +
+          theme_bw() +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+            plot.subtitle = element_text(hjust = 0.5, size = 11),
+            legend.position = "right",
+            panel.grid.minor = element_blank(),
+            axis.text.x = element_text(size = 10),
+            axis.text.y = element_text(size = 10)
+          ) +
+          labs(
+            title = "Baseline Blood Flow Parameters (T0)",
+            subtitle = "Pre-operative OCTA measurements by Late Recovery Clusters",
+            x = "Blood Flow Parameters",
+            y = "Baseline Value (T0)"
+          )
+        
+        ggsave("plots/baseline_bloodflow_grouped_boxplot_late_recovery.pdf", p_bloodflow, width = 8, height = 6)
+        ggsave("plots/baseline_bloodflow_grouped_boxplot_late_recovery.png", p_bloodflow, width = 8, height = 6, dpi = 300)
+        
+        plots_list[["bloodflow"]] <- p_bloodflow
+        cat("    ✓ Baseline blood flow grouped boxplot saved\n")
+      }
+    }
+    
+    # 创建VD参数箱线图（如果存在）
+    if(length(vd_params) > 0) {
+      cat("    Creating VD parameters boxplot...\n")
+      
+      # 初始化空的数据框
+      vd_data <- data.frame(
+        ID = character(0),
+        max_cluster = numeric(0),
+        Parameter_Clean = character(0),
+        Baseline_Value = numeric(0),
+        Cluster = character(0),
+        stringsAsFactors = FALSE
+      )
+      
+      for(param in vd_params) {
+        if(param %in% names(data)) {
+          param_data <- data %>%
+            dplyr::select(ID, max_cluster, all_of(param)) %>%
+            filter(!is.na(.data[[param]])) %>%
+            mutate(
+              Parameter_Clean = case_when(
+                grepl("DCP", param) ~ "DCP",
+                grepl("ICP", param) ~ "ICP", 
+                grepl("SVP", param) ~ "SVP",
+                TRUE ~ gsub("VD_|_T0$|_0_21", "", param)
+              ),
+              Baseline_Value = as.numeric(.data[[param]]),
+              Cluster = as.character(max_cluster)
+            ) %>%
+            dplyr::select(ID, max_cluster, Parameter_Clean, Baseline_Value, Cluster)
+          
+          vd_data <- rbind.data.frame(vd_data, param_data)
+        }
+      }
+      
+      if(nrow(vd_data) > 0) {
+        vd_data$Parameter_Clean <- factor(vd_data$Parameter_Clean, 
+                                          levels = c("DCP", "ICP", "SVP"))
+        
+        p_vd <- ggplot(vd_data, aes(x = Parameter_Clean, y = Baseline_Value, fill = Cluster)) +
+          geom_boxplot(position = position_dodge(width = 0.8), alpha = 0.7, outlier.size = 1) +
+          scale_fill_manual(values = c("1" = "#a388bf", "2" = "#bc982f"), 
+                            name = "Late Recovery\nCluster") +
+          theme_bw() +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+            plot.subtitle = element_text(hjust = 0.5, size = 11),
+            legend.position = "right"
+          ) +
+          labs(
+            title = "Baseline VD Parameters (T0)",
+            subtitle = "Pre-operative Vessel Density by Late Recovery Clusters",
+            x = "VD Parameters",
+            y = "Baseline Value (T0)"
+          )
+        
+        ggsave("plots/baseline_VD_grouped_boxplot_late_recovery.pdf", p_vd, width = 8, height = 6)
+        ggsave("plots/baseline_VD_grouped_boxplot_late_recovery.png", p_vd, width = 8, height = 6, dpi = 300)
+        
+        plots_list[["vd"]] <- p_vd
+        cat("    ✓ Baseline VD grouped boxplot saved\n")
+      }
+    }
+    
+    # 创建厚度参数箱线图
+    if(length(thickness_params) > 0) {
+      cat("    Creating thickness parameters boxplot...\n")
+      
+      # 初始化空的数据框
+      thickness_data <- data.frame(
+        ID = character(0),
+        max_cluster = numeric(0),
+        Parameter_Clean = character(0),
+        Baseline_Value = numeric(0),
+        Cluster = character(0),
+        stringsAsFactors = FALSE
+      )
+      
+      for(param in thickness_params) {
+        if(param %in% names(data)) {
+          param_data <- data %>%
+            dplyr::select(ID, max_cluster, all_of(param)) %>%
+            filter(!is.na(.data[[param]])) %>%
+            mutate(
+              Parameter_Clean = case_when(
+                grepl("GCL.IPL|GCL_IPL", param) ~ "GCL.IPL",
+                grepl("INL", param) ~ "INL",
+                grepl("OuterRetina", param) ~ "OuterRetina",
+                grepl("Retina", param) & !grepl("Outer", param) ~ "Retina",
+                TRUE ~ gsub("_T0$|_0_21|_", " ", param)
+              ),
+              Baseline_Value = as.numeric(.data[[param]]),
+              Cluster = as.character(max_cluster)
+            ) %>%
+            dplyr::select(ID, max_cluster, Parameter_Clean, Baseline_Value, Cluster)
+          
+          thickness_data <- rbind.data.frame(thickness_data, param_data)
+        }
+      }
+      
+      if(nrow(thickness_data) > 0) {
+        thickness_data$Parameter_Clean <- factor(thickness_data$Parameter_Clean, 
+                                                 levels = c("GCL.IPL", "INL", "OuterRetina", "Retina"))
+        
+        p_thickness <- ggplot(thickness_data, aes(x = Parameter_Clean, y = Baseline_Value, fill = Cluster)) +
+          geom_boxplot(position = position_dodge(width = 0.8), alpha = 0.7, outlier.size = 1) +
+          scale_fill_manual(values = c("1" = "#a388bf", "2" = "#bc982f"), 
+                            name = "Late Recovery\nCluster") +
+          theme_bw() +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+            plot.subtitle = element_text(hjust = 0.5, size = 11),
+            legend.position = "right",
+            axis.text.x = element_text(size = 10, angle = 0)
+          ) +
+          labs(
+            title = "Baseline Retinal Thickness Parameters (T0)",
+            subtitle = "Pre-operative thickness measurements by Late Recovery Clusters",
+            x = "Thickness Parameters",
+            y = "Baseline Value (T0, μm)"
+          )
+        
+        ggsave("plots/baseline_thickness_grouped_boxplot_late_recovery.pdf", p_thickness, width = 9, height = 6)
+        ggsave("plots/baseline_thickness_grouped_boxplot_late_recovery.png", p_thickness, width = 9, height = 6, dpi = 300)
+        
+        plots_list[["thickness"]] <- p_thickness
+        cat("    ✓ Baseline thickness grouped boxplot saved\n")
+      }
+    }
+    
+    # 创建组合图（如果有多个图）
+    if(length(plots_list) >= 2) {
+      cat("    Creating combined plot...\n")
+      
+      # 确保加载必要的库
+      if(!requireNamespace("gridExtra", quietly = TRUE)) {
+        install.packages("gridExtra")
+      }
+      library(gridExtra)
+      library(grid)
+      
+      # 准备组合图 - 移除individual plots的legend（除了最后一个）
+      plots_for_combine <- list()
+      plot_names <- names(plots_list)
+      
+      for(i in 1:length(plots_list)) {
+        if(i < length(plots_list)) {
+          plots_for_combine[[i]] <- plots_list[[i]] + theme(legend.position = "none")
+        } else {
+          plots_for_combine[[i]] <- plots_list[[i]] + theme(legend.position = "right")
+        }
+      }
+      
+      # 创建组合图
+      if(length(plots_for_combine) == 2) {
+        combined_plot <- grid.arrange(
+          plots_for_combine[[1]], plots_for_combine[[2]],
+          ncol = 2,
+          top = textGrob("Pre-operative OCTA Parameters by Late Recovery Clusters", 
+                         gp = gpar(fontsize = 16, fontface = "bold")),
+          widths = c(1, 1.2)
+        )
+      } else if(length(plots_for_combine) == 3) {
+        combined_plot <- grid.arrange(
+          plots_for_combine[[1]], plots_for_combine[[2]], plots_for_combine[[3]],
+          ncol = 3,
+          top = textGrob("Pre-operative OCTA Parameters by Late Recovery Clusters", 
+                         gp = gpar(fontsize = 16, fontface = "bold")),
+          widths = c(1, 1, 1.2)
+        )
+      }
+      
+      # 保存组合图
+      ggsave("plots/baseline_octa_combined_grouped_boxplots_late_recovery.pdf", combined_plot, 
+             width = 15, height = 5, device = "pdf")
+      ggsave("plots/baseline_octa_combined_grouped_boxplots_late_recovery.png", combined_plot, 
+             width = 15, height = 5, dpi = 300)
+      
+      cat("    ✓ Combined baseline OCTA grouped boxplots saved\n")
+    }
+    
+   
+    return(plots_list)
+  }
+  octa_baseline_plots <- create_grouped_octa_baseline_boxplots(data, analysis_params)
+  
   # PCA分析（修改标题）
   if(length(analysis_params) > 2) {
     
@@ -577,7 +863,7 @@ create_baseline_visualizations_late_recovery <- function(data, stats_results) {
         geom_point(size = 3) +
         stat_ellipse(aes(group = Cluster), level = 0.95) +
         scale_color_manual(
-          values = c("1" = "#E7B800", "2" = "#00AFBB"),
+          values = c("1" = "#a388bf", "2" = "#bc982f"),
           name = "Late Recovery\nCluster"
         ) +
         theme_bw() +
@@ -1190,37 +1476,4 @@ viz_files_lr <- list.files("plots", pattern = "late_recovery\\.(pdf|png)$", full
 for(file in viz_files_lr) {
   cat(sprintf("✓ plots/%s\n", file))
 }
-
-cat("\n🎯 Late Recovery分析特色：\n")
-cat("✅ 专注0_21区域（广角区域）分析\n")
-cat("✅ 基于Late Recovery时间窗口聚类\n")
-cat("✅ 所有可视化标注Late Recovery\n") 
-cat("✅ 结合视力和OCTA参数\n")
-cat("✅ 明确术前vs Late Recovery差异来源\n")
-
-cat("\n这项分析专门针对0_21区域和Late Recovery聚类，回答了关键科学问题：\n")
-cat("Late Recovery阶段患者差异的时间起源，为Late Recovery聚类提供术前基线证据！\n")
-cat("\n🔬 与comprehensive clustering分析的区别：\n")
-cat("- 聚类来源：Late Recovery时间窗口 vs Comprehensive OCTA clustering\n")
-cat("- 时间焦点：Late Recovery期 vs 整个时间序列\n")
-cat("- 临床价值：长期恢复预测 vs 综合恢复模式\n")
-
-cat("\n✨ 关键科学贡献：\n")
-cat("1. 首次分析Late Recovery时间窗口聚类的术前预测因子\n")
-cat("2. 明确了Late Recovery差异是否在术前就能识别\n")
-cat("3. 为Late Recovery个性化管理提供证据基础\n")
-cat("4. 指导Late Recovery期的临床决策和资源分配\n")
-
-cat("\n========================================\n")
-cat("🎊 Late Recovery基线特征差异分析大功告成！\n")
-cat("现在你知道Late Recovery聚类模式是否可以通过术前基线特征预测了！\n")
-cat("========================================\n")n")
-cat("✅ 数据处理：术前OCTA T0 (0_21广角区域) + Pre-Vision参数\n")
-cat("✅ 聚类来源：Late Recovery时间窗口聚类结果\n")
-cat("✅ 统计分析：组间差异检验 + 效应量计算\n")
-cat("✅ 可视化：热图 + 带p值箱线图 + PCA + 效应量图\n")
-cat("✅ 临床解释：Late Recovery差异来源 + 临床意义 + 应用建议\n")
-cat("✅ 报告生成：详细Late Recovery分析报告和结论\n")
-cat("========================================\# Late Recovery时间窗口聚类的术前基线特征差异分析
-# 分析目标：基于late recovery聚类结果，分析患者群体在术前的基线差异
 

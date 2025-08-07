@@ -1,0 +1,2 @@
+"Parameter","Data_Type","Region","Variable_Type","Cluster1_Mean","Cluster2_Mean","Mean_Difference","P_Value","Effect_Size","Test_Method","Significant","P_Adjusted","Significant_Adjusted"
+"pre_vision","Baseline","logMAR Vision","Continuous",0.740616249872119,0.389687084083758,-0.350929165788361,0.356188085637733,0.632035461732769,"Independent t-test","No",0.691795707183667,"No"

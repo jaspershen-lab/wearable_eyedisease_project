@@ -27,6 +27,8 @@ Late Recovery聚类亚组深度分析报告
 ✅ 术前准备状态对比图 (pre_surgery_preparedness_*.pdf)
 ✅ 完整恢复轨迹图 (full_trajectory_*.pdf)
 ✅ 术前特征箱线图 (preoperative_characteristics_by_cluster.pdf)
+✅ 分离的聚类特征图 (preoperative_characteristics_cluster_*.pdf)
+✅ 聚类对比图 (preoperative_characteristics_comparison.pdf)
 ✅ OCTA关联验证热图 (late_recovery_octa_association_validation.pdf)
 
 🔍 关键发现:
@@ -40,6 +42,6 @@ Late Recovery聚类亚组深度分析报告
 - 不同恢复模式患者可能需要个性化干预策略
 - Late recovery阶段的模式与长期预后密切相关
 
-生成时间: 2025-07-22 16:23:51.958048
+生成时间: 2025-08-06 14:57:13.308851
 ========================================
 

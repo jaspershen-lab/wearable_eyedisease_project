@@ -1,0 +1,3 @@
+"max_cluster","n","mean_logmar","sd_logmar","median_logmar","q25_logmar","q75_logmar","min_logmar","max_logmar","mean_snellen_equiv","median_snellen_equiv","normal_vision_n","mild_impair_n","moderate_impair_n","severe_impair_n","normal_vision_pct","mild_impair_pct","moderate_impair_pct","severe_impair_pct"
+1,6,0.740616249872119,0.827803614679291,0.411954370472159,0.241644061128263,0.880719686320084,0.0969100130080564,2.30102999566398,"20/110","20/52",0,2,2,2,0,33.3,33.3,33.3
+2,9,0.389687084083758,0.269593324672014,0.301029995663981,0.221848749616356,0.522878745280338,0.0969100130080564,0.920818753952375,"20/49","20/40",0,4,4,1,0,44.4,44.4,11.1

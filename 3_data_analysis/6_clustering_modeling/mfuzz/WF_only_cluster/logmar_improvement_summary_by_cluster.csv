@@ -1,0 +1,3 @@
+"max_cluster","n","Mean_Improvement_LogMAR","SD_Improvement_LogMAR","Patients_Improved","Patients_Meaningful_Improvement","Patients_Substantial_Improvement"
+1,6,0.00762624842677918,0.183104339305208,2,2,1
+2,9,0.200686663775987,0.184163204608498,8,6,4

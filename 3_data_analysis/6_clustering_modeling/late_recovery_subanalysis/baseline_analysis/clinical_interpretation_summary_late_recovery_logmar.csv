@@ -1,0 +1,2 @@
+"Analysis_Date","Clustering_Source","Vision_Measure","Total_Patients","Total_Parameters","Significant_Parameters","Large_Effects","Medium_Effects","Vision_Significant","Vision_Effect_Size","Primary_Difference_Source","Clinical_Implication"
+2025-08-07,"Late Recovery Time Window","logMAR Visual Acuity",15,14,1,2,5,FALSE,0.632035461732769,"Late_Recovery_Pre_operative_logMAR","Develop comprehensive late recovery risk stratification"
