@@ -1448,3 +1448,578 @@ if(exists("analysis_results") && !is.null(analysis_results) && length(analysis_r
   cat("Please run the main correlation analysis first to generate analysis_results.\n")
   cat("The analysis_results should contain the correlation analysis results for all time windows.\n")
 }
+
+
+# ===== 敏感性分析：排除SH035样本 =====
+# 验证研究结论是否依赖于特殊手术方式患者(PPV+IVI vs IVI only)
+
+cat("\n\n========================================\n")
+cat("开始敏感性分析：排除SH035样本\n")
+cat("========================================\n\n")
+
+# 检查是否存在分析结果
+if(!exists("analysis_results") || is.null(analysis_results) || length(analysis_results) == 0) {
+  cat("❌ 错误：未找到原始分析结果，请先运行主要分析代码\n")
+} else {
+  
+  # ================== 1. 准备敏感性分析数据 ==================
+  
+  cat("===== 准备敏感性分析数据 =====\n")
+  
+  # 检查SH035是否在原始数据中
+  sh035_in_original <- "SH035" %in% common_ids
+  cat("SH035是否在原始共同患者列表中:", sh035_in_original, "\n")
+  
+  if(sh035_in_original) {
+    cat("✓ SH035发现在原始数据中，将进行排除分析\n")
+    
+    # 创建排除SH035的共同患者列表
+    common_ids_sensitivity <- common_ids[common_ids != "SH035"]
+    cat("原始共同患者数:", length(common_ids), "\n")
+    cat("敏感性分析患者数:", length(common_ids_sensitivity), "\n")
+    cat("排除患者数:", length(common_ids) - length(common_ids_sensitivity), "\n\n")
+    
+    # 检查剩余样本数量是否足够分析
+    if(length(common_ids_sensitivity) < 4) {
+      cat("❌ 警告：排除SH035后剩余样本不足，无法进行可靠的统计分析\n")
+    } else {
+      
+      # ================== 2. 重新运行所有时间窗口分析 ==================
+      
+      cat("===== 重新分析所有时间窗口（排除SH035）=====\n")
+      
+      # 对每个时间窗口执行敏感性分析
+      sensitivity_results <- list()
+      
+      for(window_name in names(wearable_data)) {
+        cat(sprintf("\n--- 敏感性分析: %s ---\n", toupper(window_name)))
+        
+        result_sensitivity <- perform_window_analysis(
+          wearable_data[[window_name]], 
+          outcome_data, 
+          common_ids_sensitivity,  # 使用排除SH035的患者列表
+          window_name
+        )
+        
+        if(!is.null(result_sensitivity)) {
+          sensitivity_results[[window_name]] <- result_sensitivity
+        }
+      }
+      
+      # ================== 3. 结果对比分析 ==================
+      
+      if(length(sensitivity_results) > 0) {
+        
+        cat("\n===== 敏感性分析结果对比 =====\n")
+        
+        # 创建对比汇总表
+        comparison_summary <- data.frame(
+          Time_Window = character(0),
+          Original_N = integer(0),
+          Sensitivity_N = integer(0),
+          Original_Fisher_P = numeric(0),
+          Sensitivity_Fisher_P = numeric(0),
+          P_Value_Difference = numeric(0),
+          Original_Cramers_V = numeric(0),
+          Sensitivity_Cramers_V = numeric(0),
+          Cramers_V_Difference = numeric(0),
+          Original_Significant = logical(0),
+          Sensitivity_Significant = logical(0),
+          Significance_Changed = logical(0),
+          stringsAsFactors = FALSE
+        )
+        
+        # 安全提取数值的函数
+        safe_extract_numeric <- function(x, default = NA) {
+          if(is.null(x) || length(x) == 0) return(default)
+          if(is.character(x)) {
+            numeric_val <- suppressWarnings(as.numeric(x))
+            return(ifelse(is.na(numeric_val), default, numeric_val))
+          }
+          return(as.numeric(x)[1])
+        }
+        
+        # 填充对比数据
+        for(window_name in names(sensitivity_results)) {
+          if(window_name %in% names(analysis_results)) {
+            
+            original <- analysis_results[[window_name]]
+            sensitivity <- sensitivity_results[[window_name]]
+            
+            # 安全提取数值
+            orig_cramers <- safe_extract_numeric(original$cramers_v, 0)
+            sens_cramers <- safe_extract_numeric(sensitivity$cramers_v, 0)
+            
+            comparison_summary <- rbind(comparison_summary, data.frame(
+              Time_Window = window_name,
+              Original_N = original$n_patients,
+              Sensitivity_N = sensitivity$n_patients,
+              Original_Fisher_P = round(original$fisher_p, 4),
+              Sensitivity_Fisher_P = round(sensitivity$fisher_p, 4),
+              P_Value_Difference = round(abs(original$fisher_p - sensitivity$fisher_p), 4),
+              Original_Cramers_V = round(orig_cramers, 3),
+              Sensitivity_Cramers_V = round(sens_cramers, 3),
+              Cramers_V_Difference = round(abs(orig_cramers - sens_cramers), 3),
+              Original_Significant = original$fisher_significant,
+              Sensitivity_Significant = sensitivity$fisher_significant,
+              Significance_Changed = original$fisher_significant != sensitivity$fisher_significant,
+              stringsAsFactors = FALSE
+            ))
+          }
+        }
+        
+        # 显示对比结果
+        cat("详细对比结果:\n")
+        print(comparison_summary)
+        
+        # ================== 4. 稳健性评估 ==================
+        
+        cat("\n===== 稳健性评估 =====\n")
+        
+        # 设置稳健性阈值
+        p_value_threshold <- 0.001  # P值差异阈值
+        effect_size_threshold <- 0.1  # 效应量差异阈值
+        
+        # 计算稳健性指标
+        n_windows <- nrow(comparison_summary)
+        n_significance_changed <- sum(comparison_summary$Significance_Changed)
+        mean_p_diff <- mean(comparison_summary$P_Value_Difference, na.rm = TRUE)
+        max_p_diff <- max(comparison_summary$P_Value_Difference, na.rm = TRUE)
+        mean_cramers_diff <- mean(comparison_summary$Cramers_V_Difference, na.rm = TRUE)
+        max_cramers_diff <- max(comparison_summary$Cramers_V_Difference, na.rm = TRUE)
+        
+        # 稳健性判断
+        p_robust <- max_p_diff < p_value_threshold
+        effect_robust <- max_cramers_diff < effect_size_threshold
+        significance_robust <- n_significance_changed == 0
+        
+        overall_robust <- p_robust && effect_robust && significance_robust
+        
+        cat("稳健性评估结果:\n")
+        cat("- 分析时间窗口总数:", n_windows, "\n")
+        cat("- 显著性改变的窗口数:", n_significance_changed, "\n")
+        cat("- P值差异 - 平均:", round(mean_p_diff, 4), "| 最大:", round(max_p_diff, 4), "\n")
+        cat("- Cramér's V差异 - 平均:", round(mean_cramers_diff, 3), "| 最大:", round(max_cramers_diff, 3), "\n")
+        cat("- P值稳健性 (差异 <", p_value_threshold, "):", ifelse(p_robust, "是", "否"), "\n")
+        cat("- 效应量稳健性 (差异 <", effect_size_threshold, "):", ifelse(effect_robust, "是", "否"), "\n")
+        cat("- 显著性稳健性 (无改变):", ifelse(significance_robust, "是", "否"), "\n")
+        
+        cat("\n【总体结论】:", ifelse(overall_robust, "结果稳健", "结果对SH035敏感"), "\n")
+        
+        if(overall_robust) {
+          cat("✓ 排除SH035后，所有统计结果保持一致，表明研究结论不依赖于该特殊样本\n")
+        } else {
+          cat("⚠️ 排除SH035后，部分统计结果发生变化，需要谨慎解释研究结论\n")
+          
+          # 详细报告变化
+          if(n_significance_changed > 0) {
+            changed_windows <- comparison_summary$Time_Window[comparison_summary$Significance_Changed]
+            cat("显著性改变的时间窗口:", paste(changed_windows, collapse = ", "), "\n")
+          }
+          
+          if(!p_robust) {
+            max_p_window <- comparison_summary$Time_Window[which.max(comparison_summary$P_Value_Difference)]
+            cat("P值变化最大的时间窗口:", max_p_window, "（差异:", round(max_p_diff, 4), "）\n")
+          }
+          
+          if(!effect_robust) {
+            max_effect_window <- comparison_summary$Time_Window[which.max(comparison_summary$Cramers_V_Difference)]
+            cat("效应量变化最大的时间窗口:", max_effect_window, "（差异:", round(max_cramers_diff, 3), "）\n")
+          }
+        }
+        
+        # ================== 5. 创建敏感性分析可视化 ==================
+        
+        cat("\n===== 创建敏感性分析可视化 =====\n")
+        
+        # 创建敏感性分析专用目录
+        dir.create("sensitivity_analysis_results", showWarnings = FALSE)
+        original_wd <- getwd()
+        setwd("sensitivity_analysis_results")
+        
+        tryCatch({
+          
+          # 5.1 P值对比图
+          p_comparison_data <- data.frame(
+            Time_Window = rep(comparison_summary$Time_Window, 2),
+            P_Value = c(comparison_summary$Original_Fisher_P, comparison_summary$Sensitivity_Fisher_P),
+            Analysis_Type = rep(c("Original (with SH035)", "Sensitivity (without SH035)"), 
+                                each = nrow(comparison_summary)),
+            Significant = c(comparison_summary$Original_Significant, comparison_summary$Sensitivity_Significant)
+          )
+          
+          p1 <- ggplot(p_comparison_data, aes(x = Time_Window, y = -log10(P_Value), 
+                                              fill = Analysis_Type, alpha = Significant)) +
+            geom_col(position = "dodge", width = 0.7) +
+            geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
+            scale_fill_manual(values = c("Original (with SH035)" = "#a488bf", 
+                                         "Sensitivity (without SH035)" = "#8b5a99")) +
+            scale_alpha_manual(values = c("TRUE" = 1.0, "FALSE" = 0.6)) +
+            labs(title = "Sensitivity Analysis: Fisher's Exact Test P-values",
+                 subtitle = "Comparison between original analysis and analysis excluding SH035",
+                 x = "Time Window", y = "-log10(P-value)",
+                 fill = "Analysis Type", alpha = "Significant") +
+            theme_minimal() +
+            theme(axis.text.x = element_text(angle = 45, hjust = 1),
+                  plot.title = element_text(hjust = 0.5, face = "bold"),
+                  plot.subtitle = element_text(hjust = 0.5))
+          
+          ggsave("Sensitivity_P_Values_Comparison.pdf", p1, width = 12, height = 8)
+          cat("✓ P值对比图已保存: Sensitivity_P_Values_Comparison.pdf\n")
+          
+          # 5.2 Cramér's V对比图
+          cramers_comparison_data <- data.frame(
+            Time_Window = rep(comparison_summary$Time_Window, 2),
+            Cramers_V = c(comparison_summary$Original_Cramers_V, comparison_summary$Sensitivity_Cramers_V),
+            Analysis_Type = rep(c("Original (with SH035)", "Sensitivity (without SH035)"), 
+                                each = nrow(comparison_summary))
+          )
+          
+          p2 <- ggplot(cramers_comparison_data, aes(x = Time_Window, y = Cramers_V, 
+                                                    fill = Analysis_Type)) +
+            geom_col(position = "dodge", width = 0.7, alpha = 0.8) +
+            geom_text(aes(label = round(Cramers_V, 3)), 
+                      position = position_dodge(width = 0.7), vjust = -0.3, size = 3) +
+            scale_fill_manual(values = c("Original (with SH035)" = "#a488bf", 
+                                         "Sensitivity (without SH035)" = "#8b5a99")) +
+            labs(title = "Sensitivity Analysis: Association Strength (Cramér's V)",
+                 subtitle = "Comparison of effect sizes between analyses",
+                 x = "Time Window", y = "Cramér's V",
+                 fill = "Analysis Type") +
+            theme_minimal() +
+            theme(axis.text.x = element_text(angle = 45, hjust = 1),
+                  plot.title = element_text(hjust = 0.5, face = "bold"),
+                  plot.subtitle = element_text(hjust = 0.5))
+          
+          ggsave("Sensitivity_Cramers_V_Comparison.pdf", p2, width = 12, height = 8)
+          cat("✓ Cramér's V对比图已保存: Sensitivity_Cramers_V_Comparison.pdf\n")
+          
+          # 5.3 差异热图
+          differences_data <- comparison_summary[, c("Time_Window", "P_Value_Difference", "Cramers_V_Difference")]
+          differences_long <- reshape2::melt(differences_data, id.vars = "Time_Window",
+                                             variable.name = "Metric", value.name = "Difference")
+          
+          # 重命名指标
+          differences_long$Metric <- factor(differences_long$Metric,
+                                            levels = c("P_Value_Difference", "Cramers_V_Difference"),
+                                            labels = c("P-value Difference", "Cramér's V Difference"))
+          
+          p3 <- ggplot(differences_long, aes(x = Time_Window, y = Metric, fill = Difference)) +
+            geom_tile(color = "white", size = 1) +
+            geom_text(aes(label = round(Difference, 4)), color = "black", fontweight = "bold") +
+            scale_fill_gradient(low = "white", high = "#a488bf", name = "Absolute\nDifference") +
+            labs(title = "Sensitivity Analysis: Magnitude of Changes",
+                 subtitle = "Absolute differences between original and sensitivity analyses",
+                 x = "Time Window", y = "Statistical Metric") +
+            theme_minimal() +
+            theme(axis.text.x = element_text(angle = 45, hjust = 1),
+                  plot.title = element_text(hjust = 0.5, face = "bold"),
+                  plot.subtitle = element_text(hjust = 0.5))
+          
+          ggsave("Sensitivity_Differences_Heatmap.pdf", p3, width = 10, height = 6)
+          cat("✓ 差异热图已保存: Sensitivity_Differences_Heatmap.pdf\n")
+          
+          # 5.4 显著性变化图
+          significance_data <- comparison_summary[, c("Time_Window", "Original_Significant", 
+                                                      "Sensitivity_Significant", "Significance_Changed")]
+          significance_long <- reshape2::melt(significance_data[, 1:3], id.vars = "Time_Window",
+                                              variable.name = "Analysis", value.name = "Significant")
+          
+          significance_long$Analysis <- factor(significance_long$Analysis,
+                                               levels = c("Original_Significant", "Sensitivity_Significant"),
+                                               labels = c("Original", "Sensitivity"))
+          
+          p4 <- ggplot(significance_long, aes(x = Time_Window, y = Analysis, fill = factor(Significant))) +
+            geom_tile(color = "white", size = 1) +
+            geom_text(aes(label = ifelse(Significant, "SIG", "NS")), 
+                      color = "white", fontweight = "bold", size = 4) +
+            scale_fill_manual(values = c("FALSE" = "#a488bf", "TRUE" = "#8b5a99"),
+                              name = "Result", labels = c("Non-Significant", "Significant")) +
+            labs(title = "Sensitivity Analysis: Significance Status Comparison",
+                 subtitle = "Statistical significance before and after excluding SH035",
+                 x = "Time Window", y = "Analysis Type") +
+            theme_minimal() +
+            theme(axis.text.x = element_text(angle = 45, hjust = 1),
+                  plot.title = element_text(hjust = 0.5, face = "bold"),
+                  plot.subtitle = element_text(hjust = 0.5))
+          
+          ggsave("Sensitivity_Significance_Comparison.pdf", p4, width = 10, height = 6)
+          cat("✓ 显著性对比图已保存: Sensitivity_Significance_Comparison.pdf\n")
+          
+          # 5.5 综合汇总图
+          summary_plot <- grid.arrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
+          ggsave("Sensitivity_Analysis_Comprehensive_Summary.pdf", summary_plot, 
+                 width = 16, height = 12)
+          cat("✓ 综合汇总图已保存: Sensitivity_Analysis_Comprehensive_Summary.pdf\n")
+          
+        }, error = function(e) {
+          cat("❌ 可视化创建出错:", e$message, "\n")
+        })
+        
+        # 回到原工作目录
+        setwd(original_wd)
+        
+        # ================== 6. 为每个时间窗口创建单独的热图 ==================
+        
+        cat("\n===== 为敏感性分析创建单独时间窗口热图 =====\n")
+        
+        # 创建单独热图的函数
+        create_sensitivity_heatmap_for_window <- function(result, window_name) {
+          
+          # 获取列联表
+          contingency_table <- result$contingency_table
+          
+          # 转换为数据框
+          contingency_df <- as.data.frame(contingency_table)
+          names(contingency_df) <- c("Wearable_Cluster", "OCTA_Cluster", "Frequency")
+          
+          # 计算百分比
+          contingency_df$Percentage <- round(contingency_df$Frequency / sum(contingency_df$Frequency) * 100, 1)
+          
+          # 创建热图
+          p <- ggplot(contingency_df, aes(x = OCTA_Cluster, y = Wearable_Cluster, fill = Frequency)) +
+            geom_tile(color = "white", size = 1) +
+            geom_text(aes(label = paste0(Frequency, "\n(", Percentage, "%)")), 
+                      color = "black", size = 4, fontweight = "bold") +
+            scale_fill_gradient(low = "white", high = "#a488bf", name = "Frequency") +  # 使用红色突出敏感性分析
+            labs(title = paste("Sensitivity Analysis: Cluster Association Heatmap"),
+                 subtitle = paste("Time Window:", toupper(gsub("_", " ", window_name)), 
+                                  "| Excluding SH035 (PPV+IVI patient)",
+                                  "\nFisher's p =", format(result$fisher_p, scientific = TRUE, digits = 3),
+                                  "| Cramér's V =", round(result$cramers_v, 3),
+                                  "| n =", result$n_patients, "patients"),
+                 x = "OCTA Improvement Cluster",
+                 y = "Wearable Device Cluster") +
+            theme_minimal() +
+            theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+                  plot.subtitle = element_text(hjust = 0.5, size = 11),
+                  axis.title = element_text(face = "bold"),
+                  legend.title = element_text(face = "bold"))
+          
+          # 保存为PDF
+          filename <- paste0("sensitivity_analysis_results/Sensitivity_Heatmap_", window_name, ".pdf")
+          ggsave(filename, p, width = 10, height = 8, device = "pdf")
+          cat(sprintf("  ✓ 敏感性分析热图已保存: %s\n", filename))
+          
+          return(p)
+        }
+        
+        # 为每个时间窗口创建敏感性分析热图
+        sensitivity_heatmaps <- list()
+        for(window_name in names(sensitivity_results)) {
+          result <- sensitivity_results[[window_name]]
+          heatmap_plot <- create_sensitivity_heatmap_for_window(result, window_name)
+          sensitivity_heatmaps[[window_name]] <- heatmap_plot
+        }
+        
+        # 创建原始分析vs敏感性分析的并排对比热图
+        create_side_by_side_comparison_heatmaps <- function() {
+          
+          cat("创建并排对比热图...\n")
+          
+          for(window_name in names(sensitivity_results)) {
+            if(window_name %in% names(analysis_results)) {
+              
+              # 获取原始分析数据
+              original_result <- analysis_results[[window_name]]
+              original_table <- original_result$contingency_table
+              original_df <- as.data.frame(original_table)
+              names(original_df) <- c("Wearable_Cluster", "OCTA_Cluster", "Frequency")
+              original_df$Percentage <- round(original_df$Frequency / sum(original_df$Frequency) * 100, 1)
+              original_df$Analysis_Type <- "Original (with SH035)"
+              
+              # 获取敏感性分析数据
+              sensitivity_result <- sensitivity_results[[window_name]]
+              sensitivity_table <- sensitivity_result$contingency_table
+              sensitivity_df <- as.data.frame(sensitivity_table)
+              names(sensitivity_df) <- c("Wearable_Cluster", "OCTA_Cluster", "Frequency")
+              sensitivity_df$Percentage <- round(sensitivity_df$Frequency / sum(sensitivity_df$Frequency) * 100, 1)
+              sensitivity_df$Analysis_Type <- "Sensitivity (without SH035)"
+              
+              # 合并数据
+              combined_df <- rbind(original_df, sensitivity_df)
+              
+              # 创建并排对比图
+              p_comparison <- ggplot(combined_df, aes(x = OCTA_Cluster, y = Wearable_Cluster, fill = Frequency)) +
+                geom_tile(color = "white", size = 1) +
+                geom_text(aes(label = paste0(Frequency, "\n(", Percentage, "%)")), 
+                          color = "black", size = 3.5, fontweight = "bold") +
+                scale_fill_gradient(low = "white", high = "#a488bf", name = "Frequency") +
+                facet_wrap(~ Analysis_Type, ncol = 2) +
+                labs(title = paste("Side-by-Side Comparison:", toupper(gsub("_", " ", window_name))),
+                     subtitle = paste("Original p =", round(original_result$fisher_p, 4),
+                                      "| Sensitivity p =", format(sensitivity_result$fisher_p, scientific = TRUE, digits = 3),
+                                      "\nOriginal Cramér's V =", round(original_result$cramers_v, 3),
+                                      "| Sensitivity Cramér's V =", round(sensitivity_result$cramers_v, 3)),
+                     x = "OCTA Improvement Cluster",
+                     y = "Wearable Device Cluster") +
+                theme_minimal() +
+                theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+                      plot.subtitle = element_text(hjust = 0.5, size = 10),
+                      axis.title = element_text(face = "bold"),
+                      legend.title = element_text(face = "bold"),
+                      strip.text = element_text(face = "bold", size = 12))
+              
+              # 保存对比图
+              filename_comparison <- paste0("sensitivity_analysis_results/Side_by_Side_Comparison_", window_name, ".pdf")
+              ggsave(filename_comparison, p_comparison, width = 16, height = 8, device = "pdf")
+              cat(sprintf("  ✓ 并排对比图已保存: %s\n", filename_comparison))
+            }
+          }
+        }
+        
+        # 创建并排对比热图
+        create_side_by_side_comparison_heatmaps()
+        
+        # 创建所有敏感性分析热图的汇总图
+        if(length(sensitivity_heatmaps) > 1) {
+          
+          cat("创建敏感性分析热图汇总...\n")
+          
+          # 根据时间窗口数量确定网格布局
+          n_windows <- length(sensitivity_heatmaps)
+          ncols <- ifelse(n_windows <= 2, n_windows, 2)
+          nrows <- ceiling(n_windows / ncols)
+          
+          # 创建网格汇总图
+          tryCatch({
+            all_sensitivity_heatmaps <- do.call(grid.arrange, c(sensitivity_heatmaps, 
+                                                                list(ncol = ncols, nrow = nrows)))
+            
+            # 保存汇总图
+            ggsave("sensitivity_analysis_results/All_Sensitivity_Heatmaps_Summary.pdf", 
+                   all_sensitivity_heatmaps, 
+                   width = 12 * ncols, height = 8 * nrows, device = "pdf")
+            cat("✓ 敏感性分析热图汇总已保存: All_Sensitivity_Heatmaps_Summary.pdf\n")
+            
+          }, error = function(e) {
+            cat("汇总图创建失败，单独保存各时间窗口热图\n")
+          })
+        }
+        
+        # ================== 7. 保存敏感性分析结果 ==================
+        
+        cat("\n===== 保存敏感性分析结果 =====\n")
+        
+        # 保存对比汇总表
+        write.csv(comparison_summary, "sensitivity_analysis_results/Sensitivity_Analysis_Summary.csv", 
+                  row.names = FALSE)
+        cat("✓ 敏感性分析汇总表已保存\n")
+        
+        # 保存敏感性分析的详细结果
+        if(length(sensitivity_results) > 0) {
+          sensitivity_summary_df <- data.frame(
+            Time_Window = names(sensitivity_results),
+            N_Patients = sapply(sensitivity_results, function(x) x$n_patients),
+            Fisher_P = sapply(sensitivity_results, function(x) round(x$fisher_p, 4)),
+            Fisher_Significant = sapply(sensitivity_results, function(x) x$fisher_significant),
+            Cramers_V = sapply(sensitivity_results, function(x) round(safe_extract_numeric(x$cramers_v, 0), 3)),
+            Association_Strength = sapply(sensitivity_results, function(x) x$association_strength),
+            stringsAsFactors = FALSE
+          )
+          
+          write.csv(sensitivity_summary_df, 
+                    "sensitivity_analysis_results/Sensitivity_Analysis_Detailed_Results.csv", 
+                    row.names = FALSE)
+          cat("✓ 敏感性分析详细结果已保存\n")
+        }
+        
+        # ================== 7. 生成最终敏感性分析报告 ==================
+        
+        sensitivity_report <- paste0(
+          "========================================\n",
+          "敏感性分析最终报告\n",
+          "排除SH035样本（PPV+IVI患者）\n",
+          "========================================\n\n",
+          
+          "分析目的:\n",
+          "验证研究结论是否依赖于唯一的PPV+IVI手术患者(SH035)\n",
+          "其余患者均为IVI only手术方式\n\n",
+          
+          "样本变化:\n",
+          "- 原始样本数: ", length(common_ids), " 患者\n",
+          "- 敏感性分析样本数: ", length(common_ids_sensitivity), " 患者\n",
+          "- 排除样本: SH035 (PPV+IVI)\n\n",
+          
+          "稳健性评估结果:\n",
+          "- 分析时间窗口总数: ", n_windows, "\n",
+          "- 显著性改变的窗口数: ", n_significance_changed, "/", n_windows, "\n",
+          "- P值差异范围: ", round(mean_p_diff, 4), " ± ", round(max_p_diff, 4), "\n",
+          "- Cramér's V差异范围: ", round(mean_cramers_diff, 3), " ± ", round(max_cramers_diff, 3), "\n",
+          "- 整体稳健性评估: ", ifelse(overall_robust, "稳健", "敏感"), "\n\n",
+          
+          "主要发现:\n"
+        )
+        
+        if(overall_robust) {
+          sensitivity_report <- paste0(sensitivity_report,
+                                       "✓ 研究结果对SH035样本不敏感\n",
+                                       "✓ 排除PPV+IVI患者后，所有统计结论保持一致\n",
+                                       "✓ 可穿戴设备与OCTA预后的关联性不依赖于手术方式差异\n",
+                                       "✓ 研究结论具有稳健性，可以推广到IVI only患者群体\n")
+        } else {
+          sensitivity_report <- paste0(sensitivity_report,
+                                       "⚠️ 研究结果对SH035样本存在一定敏感性\n",
+                                       "⚠️ 需要谨慎解释研究结论的普适性\n",
+                                       "⚠️ 建议扩大样本量或分层分析不同手术方式\n")
+          
+          if(n_significance_changed > 0) {
+            changed_windows <- paste(comparison_summary$Time_Window[comparison_summary$Significance_Changed], 
+                                     collapse = ", ")
+            sensitivity_report <- paste0(sensitivity_report,
+                                         "⚠️ 显著性改变的时间窗口: ", changed_windows, "\n")
+          }
+        }
+        
+        sensitivity_report <- paste0(sensitivity_report,
+                                     "\n技术细节:\n",
+                                     "- 统计方法: Fisher精确检验 + Cramér's V\n",
+                                     "- 稳健性阈值: P值差异 < ", p_value_threshold, 
+                                     ", 效应量差异 < ", effect_size_threshold, "\n",
+                                     "- 分析日期: ", Sys.Date(), "\n",
+                                     "- 分析时间: ", Sys.time(), "\n",
+                                     "========================================\n")
+        
+        # 保存报告
+        writeLines(sensitivity_report, "sensitivity_analysis_results/Sensitivity_Analysis_Final_Report.txt")
+        cat("✓ 敏感性分析最终报告已保存\n")
+        
+        # 显示报告摘要
+        cat("\n", sensitivity_report)
+        
+        # ================== 8. 列出所有保存的文件 ==================
+        
+        cat("\n===== 敏感性分析完成 =====\n")
+        cat("保存的文件列表:\n")
+        sensitivity_files <- list.files("sensitivity_analysis_results", full.names = FALSE)
+        for(file in sensitivity_files) {
+          cat(sprintf("  ✓ sensitivity_analysis_results/%s\n", file))
+        }
+        
+        # 返回敏感性分析结果供后续使用
+        sensitivity_analysis_output <- list(
+          comparison_summary = comparison_summary,
+          sensitivity_results = sensitivity_results,
+          robustness_assessment = list(
+            overall_robust = overall_robust,
+            p_robust = p_robust,
+            effect_robust = effect_robust,
+            significance_robust = significance_robust,
+            n_significance_changed = n_significance_changed,
+            max_p_diff = max_p_diff,
+            max_cramers_diff = max_cramers_diff
+          )
+        )
+        
+        cat("\n✅ 敏感性分析成功完成！\n")
+        cat("主要结论:", ifelse(overall_robust, "研究结果稳健，不依赖SH035样本", "研究结果对SH035样本敏感"), "\n")
+        
+      } else {
+        cat("❌ 敏感性分析失败：无法生成有效的分析结果\n")
+      }
+    }
+  } else {
+    cat("✓ SH035不在原始数据中，无需进行敏感性分析\n")
+    cat("当前共同患者列表:", paste(common_ids, collapse = ", "), "\n")
+  }
+}

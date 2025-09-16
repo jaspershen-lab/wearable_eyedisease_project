@@ -1,0 +1,6 @@
+"Time_Window","Original_N","Sensitivity_N","Original_Fisher_P","Sensitivity_Fisher_P","P_Value_Difference","Original_Cramers_V","Sensitivity_Cramers_V","Cramers_V_Difference","Original_Significant","Sensitivity_Significant","Significance_Changed"
+"baseline",10,10,1,1,0,0.218,0.218,0,FALSE,FALSE,FALSE
+"acute_recovery",11,10,1,1,0,0.179,0.089,0.089,FALSE,FALSE,FALSE
+"early_recovery",11,10,0.2424,0.5,0.2576,0.449,0.356,0.092,FALSE,FALSE,FALSE
+"mid_recovery",11,10,1,1,0,0.069,0.089,0.02,FALSE,FALSE,FALSE
+"late_recovery",11,10,0.0242,0.0667,0.0424,0.81,0.764,0.046,TRUE,FALSE,TRUE

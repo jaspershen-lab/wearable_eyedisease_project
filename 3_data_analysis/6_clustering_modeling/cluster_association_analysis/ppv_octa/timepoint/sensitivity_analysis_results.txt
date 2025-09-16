@@ -1,0 +1,64 @@
+===== SENSITIVITY ANALYSIS RESULTS =====
+
+Dataset Information:
+- Original sample size: 11 
+- Sensitivity analysis sample size: 10 
+- Excluded subject: SH035 (PPV+IVI patient)
+
+Original Analysis Results:
+                OCTA_Cluster
+Wearable_Cluster 1 2
+               1 2 6
+               2 2 1
+
+	Fisher's Exact Test for Count Data
+
+data:  contingency_table
+p-value = 0.4909
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 0.002439792 5.800624001
+sample estimates:
+odds ratio 
+ 0.2018654 
+
+                    X^2 df P(> X^2)
+Likelihood Ratio 1.6042  1  0.20532
+Pearson          1.6369  1  0.20075
+
+Phi-Coefficient   : 0.386 
+Contingency Coeff.: 0.36 
+Cramer's V        : 0.386 
+
+
+Sensitivity Analysis Results (excluding SH035):
+                OCTA_Cluster
+Wearable_Cluster 1 2
+               1 2 6
+               2 1 1
+
+	Fisher's Exact Test for Count Data
+
+data:  contingency_table_sensitivity
+p-value = 1
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+  0.003660373 39.142615141
+sample estimates:
+odds ratio 
+ 0.3779644 
+
+                     X^2 df P(> X^2)
+Likelihood Ratio 0.44734  1  0.50360
+Pearson          0.47619  1  0.49015
+
+Phi-Coefficient   : 0.218 
+Contingency Coeff.: 0.213 
+Cramer's V        : 0.218 
+
+
+Comparison:
+P-value difference: 5.091e-01 
+Cramer's V difference: 0.1675 
+
+CONCLUSION: Results show some sensitivity to exclusion of SH035.

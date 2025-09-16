@@ -1,0 +1,6 @@
+"Time_Window","N_Patients","Fisher_P","Fisher_Significant","Cramers_V","Association_Strength"
+"baseline",10,1,FALSE,0.218,"弱"
+"acute_recovery",10,1,FALSE,0.089,"很弱"
+"early_recovery",10,0.5,FALSE,0.356,"中等"
+"mid_recovery",10,1,FALSE,0.089,"很弱"
+"late_recovery",10,0.0667,FALSE,0.764,"强"

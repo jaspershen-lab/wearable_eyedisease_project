@@ -1,0 +1,54 @@
+========================================================
+SENSITIVITY ANALYSIS REPORT
+Excluding SH035 Sample: PPV+IVI vs IVI Only Validation
+========================================================
+
+OBJECTIVE
+Assess whether the wearable device prediction model depends on
+patients with special surgical procedures (PPV+IVI vs IVI only)
+by excluding the SH035 sample from the analysis.
+
+METHODOLOGY
+- Exclusion Criteria: SH035 sample removed
+- Model Type: Bayesian logistic regression
+- Features: CV RHR + Steps Max (Late Recovery period)
+- Comparison: Main analysis vs Sensitivity analysis
+
+SAMPLE CHANGES
+- Original Sample Size: 11
+- Sensitivity Analysis Size: 10
+- Excluded Samples: 1
+
+PERFORMANCE COMPARISON
+Main Analysis AUC: 0.821
+Sensitivity Analysis AUC: 0.762
+AUC Difference: -0.060
+Accuracy Difference: -0.009
+
+PARAMETER COMPARISON
+cv_rhr_scaled:
+  Main: -1.820, Sensitivity: -1.878, Diff: -0.058
+steps_max_scaled:
+  Main: 1.971, Sensitivity: 1.255, Diff: -0.717
+
+ROBUSTNESS ASSESSMENT
+AUC Stability: SENSITIVE (|diff| = 0.060)
+Parameter Stability: SENSITIVE
+Overall Assessment: MODEL SENSITIVE
+
+CLINICAL IMPLICATIONS
+1. Model shows sensitivity to SH035 sample exclusion
+2. Further investigation needed for SH035 characteristics
+3. Potential surgical procedure-specific effects
+4. Model validation in larger, diverse samples recommended
+5. Caution advised for clinical implementation
+
+CONCLUSION
+This sensitivity analysis evaluated the robustness of the
+wearable device prediction model by excluding the SH035 sample
+to test for dependency on special surgical procedures. The
+analysis revealed some sensitivity to sample composition,
+suggesting the need for larger validation studies.
+
+Generated: 2025-09-16 15:01:39
+========================================================
